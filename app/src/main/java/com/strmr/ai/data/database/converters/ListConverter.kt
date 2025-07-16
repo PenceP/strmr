@@ -4,6 +4,7 @@ import androidx.room.TypeConverter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.strmr.ai.data.Actor
+import com.strmr.ai.data.SimilarContent
 
 class ListConverter {
     @TypeConverter
@@ -34,6 +35,19 @@ class ListConverter {
     fun toActorList(value: String?): List<Actor>? {
         if (value == null) return null
         val listType = object : TypeToken<List<Actor>>() {}.type
+        return Gson().fromJson(value, listType)
+    }
+
+    @TypeConverter
+    fun fromSimilarContentList(list: List<SimilarContent>?): String? {
+        if (list == null) return null
+        return Gson().toJson(list)
+    }
+
+    @TypeConverter
+    fun toSimilarContentList(value: String?): List<SimilarContent>? {
+        if (value == null) return null
+        val listType = object : TypeToken<List<SimilarContent>>() {}.type
         return Gson().fromJson(value, listType)
     }
 } 

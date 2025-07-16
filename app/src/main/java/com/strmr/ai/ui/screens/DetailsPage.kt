@@ -41,10 +41,12 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.focusable
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import com.strmr.ai.data.Actor
 import androidx.compose.ui.platform.LocalConfiguration
@@ -65,6 +67,8 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInParent
 import com.strmr.ai.ui.components.MediaHero
 import com.strmr.ai.ui.components.MediaDetails
+import com.strmr.ai.ui.components.SimilarContentRow
+import com.strmr.ai.ui.components.CenteredMediaRow
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -79,6 +83,8 @@ import androidx.compose.foundation.border
 import com.strmr.ai.ui.screens.MediaDetailsType
 import com.strmr.ai.utils.DateFormatter
 import androidx.compose.material.icons.filled.Visibility
+import com.strmr.ai.data.MovieRepository
+import com.strmr.ai.data.SimilarContent
 
 sealed class MediaDetailsType {
     data class Movie(val movie: MovieEntity) : MediaDetailsType()
@@ -90,8 +96,10 @@ fun DetailsPage(
     mediaDetails: MediaDetailsType?,
     omdbRepository: OmdbRepository,
     tvShowRepository: TvShowRepository? = null, // Only needed for TV shows
+    movieRepository: MovieRepository? = null, // Only needed for movies
     onPlay: (season: Int?, episode: Int?) -> Unit = { _, _ -> },
     onAddToCollection: () -> Unit = {},
+    onNavigateToSimilar: (String, Int) -> Unit = { _, _ -> }, // New navigation callback
     cachedSeason: Int? = null,
     cachedEpisode: Int? = null
 ) {
@@ -102,10 +110,10 @@ fun DetailsPage(
         return
     }
     when (mediaDetails) {
-        is MediaDetailsType.Movie -> MovieDetailsView(mediaDetails.movie, omdbRepository, onPlay, onAddToCollection)
+        is MediaDetailsType.Movie -> MovieDetailsView(mediaDetails.movie, omdbRepository, movieRepository, onPlay, onAddToCollection, onNavigateToSimilar)
         is MediaDetailsType.TvShow -> {
             requireNotNull(tvShowRepository) { "tvShowRepository required for TV shows" }
-            TvShowDetailsView(mediaDetails.show, omdbRepository, tvShowRepository, onPlay, onAddToCollection, cachedSeason, cachedEpisode)
+            TvShowDetailsView(mediaDetails.show, omdbRepository, tvShowRepository, onPlay, onAddToCollection, onNavigateToSimilar, cachedSeason, cachedEpisode)
         }
     }
 }
@@ -114,13 +122,24 @@ fun DetailsPage(
 fun MovieDetailsView(
     movie: MovieEntity,
     omdbRepository: OmdbRepository,
+    movieRepository: MovieRepository?,
     onPlay: (season: Int?, episode: Int?) -> Unit,
-    onAddToCollection: () -> Unit
+    onAddToCollection: () -> Unit,
+    onNavigateToSimilar: (String, Int) -> Unit
 ) {
     val playButtonFocusRequester = remember { FocusRequester() }
     var omdbRatings by remember(movie.imdbId) { mutableStateOf<OmdbResponse?>(null) }
     var logoUrl by remember { mutableStateOf(movie.logoUrl) }
+    var similarContent by remember { mutableStateOf<List<SimilarContent>>(emptyList()) }
     val scrollState = rememberScrollState()
+    
+    // Selection state for actors and similar content rows
+    var actorsSelectedIndex by remember { mutableStateOf(0) }
+    var similarSelectedIndex by remember { mutableStateOf(0) }
+    var isActorsRowSelected by remember { mutableStateOf(false) }
+    var isSimilarRowSelected by remember { mutableStateOf(false) }
+    val actorsFocusRequester = remember { FocusRequester() }
+    val similarFocusRequester = remember { FocusRequester() }
 
     // Add comprehensive logging for debugging
     Log.d("MovieDetailsView", "🎬 MovieDetailsView initialized for movie: ${movie.title}")
@@ -149,6 +168,23 @@ fun MovieDetailsView(
         }
     }
 
+    // Fetch similar content
+    LaunchedEffect(movie.tmdbId) {
+        if (movieRepository != null) {
+            try {
+                Log.d("MovieDetailsView", "📡 Fetching similar movies for: ${movie.title}")
+                similarContent = withContext(Dispatchers.IO) {
+                    val similar = movieRepository.getOrFetchSimilarMovies(movie.tmdbId)
+                    Log.d("MovieDetailsView", "✅ Similar movies fetched: ${similar.size} items")
+                    similar
+                }
+            } catch (e: Exception) {
+                Log.e("MovieDetailsView", "❌ Error fetching similar movies for ${movie.title}", e)
+                similarContent = emptyList()
+            }
+        }
+    }
+
     // Log when omdbRatings state changes
     LaunchedEffect(omdbRatings) {
         Log.d("MovieDetailsView", "🔄 omdbRatings state changed to: $omdbRatings")
@@ -158,6 +194,7 @@ fun MovieDetailsView(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
+
     ) {
         // Backdrop
         movie.backdropUrl?.let {
@@ -241,7 +278,19 @@ fun MovieDetailsView(
                             val collectionButtonIsFocused by collectionButtonInteractionSource.collectIsFocusedAsState()
                             FrostedGlassButton(
                                 onClick = onAddToCollection,
-                                modifier = Modifier.weight(1f).height(48.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                                    .onKeyEvent { event ->
+                                        if (
+                                            event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
+                                            event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
+                                            !isActorsRowSelected && !isSimilarRowSelected && movie.cast.isNotEmpty()
+                                        ) {
+                                            isActorsRowSelected = true
+                                            true
+                                        } else false
+                                    },
                                 interactionSource = collectionButtonInteractionSource,
                                 isFocused = collectionButtonIsFocused,
                                 text = "",
@@ -258,7 +307,19 @@ fun MovieDetailsView(
                             val watchlistButtonIsFocused by watchlistButtonInteractionSource.collectIsFocusedAsState()
                             FrostedGlassButton(
                                 onClick = { /* TODO: Watchlist */ },
-                                modifier = Modifier.weight(1f).height(48.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                                    .onKeyEvent { event ->
+                                        if (
+                                            event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
+                                            event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
+                                            !isActorsRowSelected && !isSimilarRowSelected && movie.cast.isNotEmpty()
+                                        ) {
+                                            isActorsRowSelected = true
+                                            true
+                                        } else false
+                                    },
                                 interactionSource = watchlistButtonInteractionSource,
                                 isFocused = watchlistButtonIsFocused,
                                 text = "",
@@ -276,7 +337,19 @@ fun MovieDetailsView(
                             val watchedButtonIsFocused by watchedButtonInteractionSource.collectIsFocusedAsState()
                             FrostedGlassButton(
                                 onClick = { /* TODO: Watched/Unwatched */ },
-                                modifier = Modifier.weight(1f).height(48.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                                    .onKeyEvent { event ->
+                                        if (
+                                            event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
+                                            event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
+                                            !isActorsRowSelected && !isSimilarRowSelected && movie.cast.isNotEmpty()
+                                        ) {
+                                            isActorsRowSelected = true
+                                            true
+                                        } else false
+                                    },
                                 interactionSource = watchedButtonInteractionSource,
                                 isFocused = watchedButtonIsFocused,
                                 text = "",
@@ -294,7 +367,19 @@ fun MovieDetailsView(
                             val moreButtonIsFocused by moreButtonInteractionSource.collectIsFocusedAsState()
                             FrostedGlassButton(
                                 onClick = { /* TODO: More */ },
-                                modifier = Modifier.weight(1f).height(48.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                                    .onKeyEvent { event ->
+                                        if (
+                                            event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
+                                            event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
+                                            !isActorsRowSelected && !isSimilarRowSelected && movie.cast.isNotEmpty()
+                                        ) {
+                                            isActorsRowSelected = true
+                                            true
+                                        } else false
+                                    },
                                 interactionSource = moreButtonInteractionSource,
                                 isFocused = moreButtonIsFocused,
                                 text = "...",
@@ -308,7 +393,50 @@ fun MovieDetailsView(
                 if (movie.cast.isNotEmpty()) {
                     ActorsRow(
                         actors = movie.cast,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        selectedIndex = actorsSelectedIndex,
+                        isRowSelected = isActorsRowSelected,
+                        onSelectionChanged = { actorsSelectedIndex = it },
+                        onUpDown = { direction ->
+                            if (direction < 0) {
+                                // Move up to buttons
+                                isActorsRowSelected = false
+                            } else {
+                                // Move down to similar content
+                                isActorsRowSelected = false
+                                isSimilarRowSelected = true
+                            }
+                        },
+                        focusRequester = actorsFocusRequester,
+                        isContentFocused = isActorsRowSelected,
+                        onContentFocusChanged = { isActorsRowSelected = it }
+                    )
+                }
+                Spacer(Modifier.height(24.dp))
+                // Similar content row
+                if (similarContent.isNotEmpty()) {
+                    SimilarContentRow(
+                        similarContent = similarContent,
+                        onItemClick = { content ->
+                            onNavigateToSimilar(content.mediaType, content.tmdbId)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        selectedIndex = similarSelectedIndex,
+                        isRowSelected = isSimilarRowSelected,
+                        onSelectionChanged = { similarSelectedIndex = it },
+                        onUpDown = { direction ->
+                            if (direction < 0) {
+                                // Move up to actors
+                                isSimilarRowSelected = false
+                                isActorsRowSelected = true
+                            } else {
+                                // Move down (could be end of content)
+                                isSimilarRowSelected = false
+                            }
+                        },
+                        focusRequester = similarFocusRequester,
+                        isContentFocused = isSimilarRowSelected,
+                        onContentFocusChanged = { isSimilarRowSelected = it }
                     )
                 }
             }
@@ -500,6 +628,7 @@ fun TvShowDetailsView(
     tvShowRepository: TvShowRepository,
     onPlay: (season: Int?, episode: Int?) -> Unit,
     onAddToCollection: () -> Unit,
+    onNavigateToSimilar: (String, Int) -> Unit,
     cachedSeason: Int? = null,
     cachedEpisode: Int? = null
 ) {
@@ -510,7 +639,16 @@ fun TvShowDetailsView(
     var episodes by remember { mutableStateOf<List<EpisodeEntity>>(emptyList()) }
     var selectedEpisode by remember { mutableStateOf<EpisodeEntity?>(null) }
     var loading by remember { mutableStateOf(true) }
+    var similarContent by remember { mutableStateOf<List<SimilarContent>>(emptyList()) }
     val scrollState = rememberScrollState()
+    
+    // Selection state for actors and similar content rows
+    var actorsSelectedIndex by remember { mutableStateOf(0) }
+    var similarSelectedIndex by remember { mutableStateOf(0) }
+    var isActorsRowSelected by remember { mutableStateOf(false) }
+    var isSimilarRowSelected by remember { mutableStateOf(false) }
+    val actorsFocusRequester = remember { FocusRequester() }
+    val similarFocusRequester = remember { FocusRequester() }
 
     // Debug logging for cached values
     Log.d("TvShowDetailsView", "🎯 DEBUG: Show: ${show.title} (TMDB: ${show.tmdbId})")
@@ -543,6 +681,21 @@ fun TvShowDetailsView(
         } else {
             Log.w("TvShowDetailsView", "⚠️ Show IMDB ID is null or blank: ${show.imdbId}")
             omdbRatings = null
+        }
+    }
+
+    // Fetch similar content
+    LaunchedEffect(show.tmdbId) {
+        try {
+            Log.d("TvShowDetailsView", "📡 Fetching similar TV shows for: ${show.title}")
+            similarContent = withContext(Dispatchers.IO) {
+                val similar = tvShowRepository.getOrFetchSimilarTvShows(show.tmdbId)
+                Log.d("TvShowDetailsView", "✅ Similar TV shows fetched: ${similar.size} items")
+                similar
+            }
+        } catch (e: Exception) {
+            Log.e("TvShowDetailsView", "❌ Error fetching similar TV shows for ${show.title}", e)
+            similarContent = emptyList()
         }
     }
 
@@ -706,7 +859,19 @@ fun TvShowDetailsView(
                             val collectionButtonIsFocused by collectionButtonInteractionSource.collectIsFocusedAsState()
                             FrostedGlassButton(
                                 onClick = onAddToCollection,
-                                modifier = Modifier.weight(1f).height(48.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                                    .onKeyEvent { event ->
+                                        if (
+                                            event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
+                                            event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
+                                            !isActorsRowSelected && !isSimilarRowSelected && show.cast.isNotEmpty()
+                                        ) {
+                                            isActorsRowSelected = true
+                                            true
+                                        } else false
+                                    },
                                 interactionSource = collectionButtonInteractionSource,
                                 isFocused = collectionButtonIsFocused,
                                 text = "",
@@ -723,7 +888,19 @@ fun TvShowDetailsView(
                             val watchlistButtonIsFocused by watchlistButtonInteractionSource.collectIsFocusedAsState()
                             FrostedGlassButton(
                                 onClick = { /* TODO: Watchlist */ },
-                                modifier = Modifier.weight(1f).height(48.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                                    .onKeyEvent { event ->
+                                        if (
+                                            event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
+                                            event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
+                                            !isActorsRowSelected && !isSimilarRowSelected && show.cast.isNotEmpty()
+                                        ) {
+                                            isActorsRowSelected = true
+                                            true
+                                        } else false
+                                    },
                                 interactionSource = watchlistButtonInteractionSource,
                                 isFocused = watchlistButtonIsFocused,
                                 text = "",
@@ -741,7 +918,19 @@ fun TvShowDetailsView(
                             val watchedButtonIsFocused by watchedButtonInteractionSource.collectIsFocusedAsState()
                             FrostedGlassButton(
                                 onClick = { /* TODO: Watched/Unwatched */ },
-                                modifier = Modifier.weight(1f).height(48.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                                    .onKeyEvent { event ->
+                                        if (
+                                            event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
+                                            event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
+                                            !isActorsRowSelected && !isSimilarRowSelected && show.cast.isNotEmpty()
+                                        ) {
+                                            isActorsRowSelected = true
+                                            true
+                                        } else false
+                                    },
                                 interactionSource = watchedButtonInteractionSource,
                                 isFocused = watchedButtonIsFocused,
                                 text = "",
@@ -759,7 +948,19 @@ fun TvShowDetailsView(
                             val moreButtonIsFocused by moreButtonInteractionSource.collectIsFocusedAsState()
                             FrostedGlassButton(
                                 onClick = { /* TODO: More */ },
-                                modifier = Modifier.weight(1f).height(48.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                                    .onKeyEvent { event ->
+                                        if (
+                                            event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
+                                            event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
+                                            !isActorsRowSelected && !isSimilarRowSelected && show.cast.isNotEmpty()
+                                        ) {
+                                            isActorsRowSelected = true
+                                            true
+                                        } else false
+                                    },
                                 interactionSource = moreButtonInteractionSource,
                                 isFocused = moreButtonIsFocused,
                                 text = "...",
@@ -768,101 +969,56 @@ fun TvShowDetailsView(
                         }
                     }
                 }
-                Spacer(Modifier.height(24.dp))
-                // Season/Episode selection UI
-                if (loading) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = Color.White)
-                    }
-                } else if (seasons.isNotEmpty()) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = "Season & Episode",
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(bottom = 12.dp)
-                        )
-                        
-                        // Season selection
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = "Season:",
-                                color = Color.White.copy(alpha = 0.8f),
-                                fontSize = 16.sp
-                            )
-                            seasons.forEach { season ->
-                                val isSelected = selectedSeason == season.seasonNumber
-                                Text(
-                                    text = "${season.seasonNumber}",
-                                    color = if (isSelected) Color.White else Color.White.copy(alpha = 0.6f),
-                                    fontSize = 16.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                    modifier = Modifier
-                                        .clickable { selectedSeason = season.seasonNumber }
-                                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                                        .background(
-                                            if (isSelected) Color.White.copy(alpha = 0.2f) else Color.Transparent,
-                                            RoundedCornerShape(4.dp)
-                                        )
-                                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
-                            }
-                        }
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        // Episode selection
-                        if (episodes.isNotEmpty()) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Text(
-                                    text = "Episode:",
-                                    color = Color.White.copy(alpha = 0.8f),
-                                    fontSize = 16.sp
-                                )
-                                episodes.take(10).forEach { episode -> // Limit to first 10 episodes for UI
-                                    val isSelected = selectedEpisode?.episodeNumber == episode.episodeNumber
-                                    Text(
-                                        text = "${episode.episodeNumber}",
-                                        color = if (isSelected) Color.White else Color.White.copy(alpha = 0.6f),
-                                        fontSize = 16.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                        modifier = Modifier
-                                            .clickable { selectedEpisode = episode }
-                                            .padding(horizontal = 6.dp, vertical = 4.dp)
-                                            .background(
-                                                if (isSelected) Color.White.copy(alpha = 0.2f) else Color.Transparent,
-                                                RoundedCornerShape(4.dp)
-                                            )
-                                            .padding(horizontal = 6.dp, vertical = 4.dp)
-                                    )
-                                }
-                                if (episodes.size > 10) {
-                                    Text(
-                                        text = "...",
-                                        color = Color.White.copy(alpha = 0.6f),
-                                        fontSize = 16.sp
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
+
                 Spacer(Modifier.height(24.dp))
                 // Actors row
                 if (show.cast.isNotEmpty()) {
                     ActorsRow(
                         actors = show.cast,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        selectedIndex = actorsSelectedIndex,
+                        isRowSelected = isActorsRowSelected,
+                        onSelectionChanged = { actorsSelectedIndex = it },
+                        onUpDown = { direction ->
+                            if (direction < 0) {
+                                // Move up to buttons
+                                isActorsRowSelected = false
+                            } else {
+                                // Move down to similar content
+                                isActorsRowSelected = false
+                                isSimilarRowSelected = true
+                            }
+                        },
+                        focusRequester = actorsFocusRequester,
+                        isContentFocused = isActorsRowSelected,
+                        onContentFocusChanged = { isActorsRowSelected = it }
+                    )
+                }
+                Spacer(Modifier.height(24.dp))
+                // Similar content row
+                if (similarContent.isNotEmpty()) {
+                    SimilarContentRow(
+                        similarContent = similarContent,
+                        onItemClick = { content ->
+                            onNavigateToSimilar(content.mediaType, content.tmdbId)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        selectedIndex = similarSelectedIndex,
+                        isRowSelected = isSimilarRowSelected,
+                        onSelectionChanged = { similarSelectedIndex = it },
+                        onUpDown = { direction ->
+                            if (direction < 0) {
+                                // Move up to actors
+                                isSimilarRowSelected = false
+                                isActorsRowSelected = true
+                            } else {
+                                // Move down (could be end of content)
+                                isSimilarRowSelected = false
+                            }
+                        },
+                        focusRequester = similarFocusRequester,
+                        isContentFocused = isSimilarRowSelected,
+                        onContentFocusChanged = { isSimilarRowSelected = it }
                     )
                 }
             }
@@ -873,87 +1029,68 @@ fun TvShowDetailsView(
 @Composable
 fun ActorsRow(
     actors: List<Actor>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    selectedIndex: Int = 0,
+    isRowSelected: Boolean = false,
+    onSelectionChanged: (Int) -> Unit = {},
+    onUpDown: ((Int) -> Unit)? = null,
+    focusRequester: FocusRequester? = null,
+    isContentFocused: Boolean = false,
+    onContentFocusChanged: ((Boolean) -> Unit)? = null
 ) {
     if (actors.isEmpty()) return
-    Spacer(Modifier.height(14.dp))
-    Column(modifier = modifier) {
-        Text(
-            text = "Actors",
-            color = Color.White,
-            fontSize = 20.sp,
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
-        
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.height(120.dp)
-        ) {
-            items(actors.take(15)) { actor ->
-                ActorCard(actor = actor)
-            }
+    
+    CenteredMediaRow(
+        title = "Actors",
+        mediaItems = actors.take(15),
+        selectedIndex = selectedIndex,
+        isRowSelected = isRowSelected,
+        onSelectionChanged = onSelectionChanged,
+        onUpDown = onUpDown,
+        modifier = modifier,
+        itemWidth = 120.dp,
+        itemSpacing = 16.dp,
+        rowHeight = 200.dp,
+        focusRequester = focusRequester,
+        isContentFocused = isContentFocused,
+        onContentFocusChanged = onContentFocusChanged,
+        itemContent = { actor, isSelected ->
+            ActorCard(actor = actor as Actor, isSelected = isSelected)
         }
-        
-    }
+    )
 }
 
 @Composable
 fun ActorCard(
     actor: Actor,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isSelected: Boolean = false
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isFocused by interactionSource.collectIsFocusedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isFocused) 1.1f else 1.0f,
-        animationSpec = tween(durationMillis = 200)
-    )
-    var parentBounds by remember { mutableStateOf<Rect?>(null) }
-    val bringIntoViewRequester = remember { BringIntoViewRequester() }
-    val coroutineScope = rememberCoroutineScope()
-    val density = LocalDensity.current
-
-    LaunchedEffect(isFocused, parentBounds) {
-        if (isFocused && parentBounds != null) {
-            coroutineScope.launch {
-                val extra = with(density) { 40.dp.toPx() }
-                val rect = Rect(
-                    parentBounds!!.left,
-                    parentBounds!!.top,
-                    parentBounds!!.right,
-                    parentBounds!!.bottom + extra
-                )
-                bringIntoViewRequester.bringIntoView(rect)
-            }
-        }
-    }
+    val baseWidth = 120.dp
+    val baseHeight = 180.dp
+    val targetWidth = if (isSelected) baseWidth * 1.2f else baseWidth
+    val targetHeight = if (isSelected) baseHeight * 1.1f else baseHeight
+    val animatedWidth by animateDpAsState(targetValue = targetWidth, animationSpec = tween(durationMillis = 200))
+    val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = tween(durationMillis = 200))
 
     Column(
         modifier = modifier
-            .width(80.dp)
-            .focusable(interactionSource = interactionSource)
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
-            .bringIntoViewRequester(bringIntoViewRequester)
-            .onGloballyPositioned { coordinates ->
-                parentBounds = coordinates.boundsInParent()
-            },
+            .width(animatedWidth)
+            .height(animatedHeight)
+            .border(
+                width = if (isSelected) 2.dp else 0.dp,
+                color = Color.Transparent,
+                shape = RoundedCornerShape(8.dp)
+            ),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Actor image
         Box(
             modifier = Modifier
-                .size(100.dp)
-                .background(
-                    color = Color.Gray,
-                    shape = RoundedCornerShape(6.dp)
-                )
-                .shadow(
-                    elevation = 8.dp,
-                    shape = RoundedCornerShape(6.dp)
-                ),
+                .fillMaxWidth()
+                .weight(1f)
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color.Gray),
             contentAlignment = Alignment.Center
         ) {
             if (!actor.profilePath.isNullOrBlank()) {
@@ -971,25 +1108,30 @@ fun ActorCard(
                 )
             }
         }
+        
         Spacer(modifier = Modifier.height(8.dp))
+        
         // Actor name
         Text(
             text = actor.name ?: "Unknown",
             color = Color.White,
-            fontSize = 11.sp,
+            fontSize = 12.sp,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
-        // Character name (always shown as a separate line, if available)
-        Text(
-            text = actor.character ?: "",
-            color = Color.Gray,
-            fontSize = 10.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-        )
+        
+        // Character name
+        if (!actor.character.isNullOrBlank()) {
+            Text(
+                text = actor.character,
+                color = Color.Gray,
+                fontSize = 10.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        }
     }
 }
 
@@ -1092,3 +1234,5 @@ fun FrostedGlassButton(
         }
     }
 } 
+
+ 

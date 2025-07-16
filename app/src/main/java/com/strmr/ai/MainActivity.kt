@@ -285,12 +285,21 @@ fun MainScreen(
                     when (mediaType) {
                         "movie" -> DetailsPage(
                             mediaDetails = movie?.let { MediaDetailsType.Movie(it) },
-                            omdbRepository = omdbRepository
+                            omdbRepository = omdbRepository,
+                            movieRepository = movieRepository,
+                            onNavigateToSimilar = { mediaType, tmdbId ->
+                                val route = "details/$mediaType/$tmdbId"
+                                navController.navigate(route)
+                            }
                         )
                         "tvshow" -> DetailsPage(
                             mediaDetails = show?.let { MediaDetailsType.TvShow(it) },
                             omdbRepository = omdbRepository,
                             tvShowRepository = tvShowRepository,
+                            onNavigateToSimilar = { mediaType, tmdbId ->
+                                val route = "details/$mediaType/$tmdbId"
+                                navController.navigate(route)
+                            },
                             cachedSeason = season,
                             cachedEpisode = episode
                         )
@@ -324,7 +333,12 @@ fun MainScreen(
                     when (mediaType) {
                         "movie" -> DetailsPage(
                             mediaDetails = movie?.let { MediaDetailsType.Movie(it) },
-                            omdbRepository = omdbRepository
+                            omdbRepository = omdbRepository,
+                            movieRepository = movieRepository,
+                            onNavigateToSimilar = { mediaType, tmdbId ->
+                                val route = "details/$mediaType/$tmdbId"
+                                navController.navigate(route)
+                            }
                         )
                         "tvshow" -> DetailsPage(
                             mediaDetails = show?.let { MediaDetailsType.TvShow(it) },

@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.strmr.ai.ui.components.MediaDetails
 import com.strmr.ai.ui.components.MediaHero
-import com.strmr.ai.ui.components.MediaRow
+import com.strmr.ai.ui.components.CenteredMediaRow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.TransformOrigin
@@ -292,7 +292,7 @@ LaunchedEffect(isContentFocused, selectedRowIndex, selectedItemIndex) {
                             val rowTitle = rowTitles.getOrNull(rowIdx) ?: ""
                             val rowItems = rows.getOrNull(rowIdx) as? List<T> ?: emptyList()
                             if (rowItems.isNotEmpty()) {
-                                MediaRow(
+                                CenteredMediaRow(
                                     title = rowTitle,
                                     mediaItems = rowItems,
                                     selectedIndex = if (rowIdx == selectedRowIndex) selectedItemIndex else 0,
@@ -306,11 +306,10 @@ LaunchedEffect(isContentFocused, selectedRowIndex, selectedItemIndex) {
                                             onItemSelected(newRowIndex, 0)
                                         }
                                     },
-                                    onLoadMore = {
-                                        // Trigger paging when we're near the end
-                                        onCheckForMoreItems(rowIdx, selectedItemIndex, rowItems.size)
-                                    },
                                     onItemClick = onItemClick,
+                                    focusRequester = if (rowIdx == selectedRowIndex) focusRequester else null,
+                                    isContentFocused = isContentFocused,
+                                    onContentFocusChanged = onContentFocusChanged,
                                     itemContent = { item, isSelected ->
                                         MediaCard(
                                             title = item.getTitle(),

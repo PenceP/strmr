@@ -5,6 +5,7 @@ import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
 import com.strmr.ai.data.database.converters.ListConverter
 import com.strmr.ai.data.Actor
+import com.strmr.ai.data.SimilarContent
 
 @Entity(tableName = "movies")
 @TypeConverters(ListConverter::class)
@@ -24,6 +25,7 @@ data class MovieEntity(
     val runtime: Int?,
     val genres: List<String> = emptyList(),
     val cast: List<Actor> = emptyList(),
+    val similar: List<SimilarContent> = emptyList(),
     val trendingOrder: Int? = null,
     val popularOrder: Int? = null,
     val lastUpdated: Long = 0L // for cache expiry

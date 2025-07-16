@@ -33,7 +33,7 @@ import com.strmr.ai.data.database.EpisodeDao
         SeasonEntity::class,
         EpisodeEntity::class
     ],
-    version = 8, // bumped for schema changes - added date fields
+    version = 9, // bumped for schema changes - added similar field
     exportSchema = false
 )
 @TypeConverters(ListConverter::class)
@@ -52,6 +52,17 @@ abstract class StrmrDatabase : RoomDatabase() {
     companion object {
         @Volatile
         private var INSTANCE: StrmrDatabase? = null
+
+        // Migration from version 8 to 9
+        private val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add similar column to movies table with default empty list
+                database.execSQL("ALTER TABLE movies ADD COLUMN similar TEXT NOT NULL DEFAULT '[]'")
+                
+                // Add similar column to tv_shows table with default empty list
+                database.execSQL("ALTER TABLE tv_shows ADD COLUMN similar TEXT NOT NULL DEFAULT '[]'")
+            }
+        }
 
         // Migration from version 3 to 4
         private val MIGRATION_3_4 = object : Migration(3, 4) {
@@ -82,7 +93,7 @@ abstract class StrmrDatabase : RoomDatabase() {
                     StrmrDatabase::class.java,
                     "strmr_database"
                 )
-                //.addMigrations(MIGRATION_2_3, MIGRATION_3_4) // removed for dev
+                .addMigrations(MIGRATION_8_9) // Add the new migration
                 .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance

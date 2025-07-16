@@ -70,6 +70,24 @@ interface TmdbApiService {
         @Path("tv_id") tvId: Int,
         @Path("season_number") seasonNumber: Int
     ): TmdbSeasonDetails
+
+    @Headers(
+        "Authorization: Bearer $TMDB_BEARER_TOKEN",
+        "Content-Type: application/json"
+    )
+    @GET("movie/{movie_id}/similar")
+    suspend fun getSimilarMovies(
+        @Path("movie_id") movieId: Int
+    ): TmdbSimilarResponse
+
+    @Headers(
+        "Authorization: Bearer $TMDB_BEARER_TOKEN",
+        "Content-Type: application/json"
+    )
+    @GET("tv/{tv_id}/similar")
+    suspend fun getSimilarTvShows(
+        @Path("tv_id") tvId: Int
+    ): TmdbSimilarResponse
 }
 
 data class TmdbMovieDetails(
@@ -152,4 +170,23 @@ data class TmdbEpisode(
     val still_path: String?,
     val air_date: String?,
     val runtime: Int?
+) 
+
+data class TmdbSimilarResponse(
+    val page: Int,
+    val results: List<TmdbSimilarItem>,
+    val total_pages: Int,
+    val total_results: Int
+)
+
+data class TmdbSimilarItem(
+    val id: Int,
+    val title: String?, // For movies
+    val name: String?,  // For TV shows
+    val poster_path: String?,
+    val backdrop_path: String?,
+    val vote_average: Float?,
+    val release_date: String?, // For movies
+    val first_air_date: String?, // For TV shows
+    val media_type: String? = null
 ) 

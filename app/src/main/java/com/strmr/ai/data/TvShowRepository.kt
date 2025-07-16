@@ -354,4 +354,37 @@ class TvShowRepository(
             cached
         }
     }
+
+    suspend fun getOrFetchSimilarTvShows(tmdbId: Int): List<SimilarContent> {
+        val cachedShow = tvShowDao.getTvShowByTmdbId(tmdbId)
+        if (cachedShow != null && cachedShow.similar.isNotEmpty()) {
+            return cachedShow.similar
+        }
+        
+        return try {
+            val similarResponse = tmdbApiService.getSimilarTvShows(tmdbId)
+            val similarContent = similarResponse.results.take(10).map { item ->
+                SimilarContent(
+                    tmdbId = item.id,
+                    title = item.name ?: "",
+                    posterUrl = item.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" },
+                    backdropUrl = item.backdrop_path?.let { "https://image.tmdb.org/t/p/w780$it" },
+                    rating = item.vote_average,
+                    year = DateFormatter.extractYear(item.first_air_date),
+                    mediaType = "tv"
+                )
+            }
+            
+            // Update the TV show entity with similar content
+            cachedShow?.let { show ->
+                val updatedShow = show.copy(similar = similarContent)
+                tvShowDao.insertTvShows(listOf(updatedShow))
+            }
+            
+            similarContent
+        } catch (e: Exception) {
+            Log.e("TvShowRepository", "Error fetching similar TV shows for $tmdbId", e)
+            emptyList()
+        }
+    }
 } 

@@ -236,4 +236,37 @@ class MovieRepository(
             null
         }
     }
+
+    suspend fun getOrFetchSimilarMovies(tmdbId: Int): List<SimilarContent> {
+        val cachedMovie = movieDao.getMovieByTmdbId(tmdbId)
+        if (cachedMovie != null && cachedMovie.similar.isNotEmpty()) {
+            return cachedMovie.similar
+        }
+        
+        return try {
+            val similarResponse = tmdbApi.getSimilarMovies(tmdbId)
+            val similarContent = similarResponse.results.take(10).map { item ->
+                SimilarContent(
+                    tmdbId = item.id,
+                    title = item.title ?: "",
+                    posterUrl = item.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" },
+                    backdropUrl = item.backdrop_path?.let { "https://image.tmdb.org/t/p/w780$it" },
+                    rating = item.vote_average,
+                    year = DateFormatter.extractYear(item.release_date),
+                    mediaType = "movie"
+                )
+            }
+            
+            // Update the movie entity with similar content
+            cachedMovie?.let { movie ->
+                val updatedMovie = movie.copy(similar = similarContent)
+                movieDao.insertMovies(listOf(updatedMovie))
+            }
+            
+            similarContent
+        } catch (e: Exception) {
+            Log.e("MovieRepository", "Error fetching similar movies for $tmdbId", e)
+            emptyList()
+        }
+    }
 } 
