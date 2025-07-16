@@ -1,0 +1,152 @@
+{
+  "homePage": {
+    "rows": [
+      {
+        "id": "continue_watching",
+        "title": "Continue Watching",
+        "comment": "Continue Watching from trakt api",
+        "layout": "Landscape",
+        "imageURL": "use episode for the landscape image if tv show, and movie for the landscape image if movie",
+        "logoURL": "use the logo from the show or movie",
+        "backdropURL": "use the backdrop from the show or movie",
+        "dataSource": "trakt_watching",
+        "enabled": true
+      },
+      {
+        "id": "movie_watchlist",
+        "title": "Movie Watchlist",
+        "comment": "Movie Watchlist from trakt api",
+        "layout": "Landscape",
+        "imageURL": "use movie for the landscape image",
+        "logoURL": "use the logo from the movie",
+        "backdropURL": "use the backdrop from the movie",
+        "dataSource": "trakt_movie_watchlist",
+        "enabled": true
+      },
+      {
+        "id": "tv_watchlist",
+        "title": "TV Show Watchlist",
+        "comment": "TV Show Watchlist from trakt api",
+        "layout": "Landscape",
+        "imageURL": "use tv show for the landscape image",
+        "logoURL": "use the logo from the tv show",
+        "backdropURL": "use the backdrop from the tv show",
+        "dataSource": "trakt_tv_watchlist",
+        "enabled": true
+      },
+      {
+        "id": "networks",
+        "title": "Networks",
+        "comment": "Streaming service collections",
+        "layout": "Grid",
+        "dataSource": "networks",
+        "enabled": true,
+        "networks": [
+          {
+            "id": "Netflix",
+            "name": "Netflix Collections",
+            "category": "Streaming Services",
+            "catalogIds": [],
+            "displayMode": "Grid",
+            "layout": "Landscape",
+            "backgroundImageURL": "https://i.postimg.cc/xCjR34MQ/Netflix.jpg",
+            "iconName": "film",
+            "showIcon": false,
+            "nameDisplayMode": "Hidden",
+            "mediaTypeFilter": "All Content",
+            "textSize": "Large",
+            "textWeight": "Bold",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#000000",
+            "dataURL": "https://trakt.tv/users/asmobarki/lists/netflix?sort=released,asc"
+          },
+          {
+            "id": "DisneyPlus",
+            "name": "Disney+ Collections",
+            "category": "Streaming Services",
+            "catalogIds": [],
+            "displayMode": "Grid",
+            "layout": "Landscape",
+            "backgroundImageURL": "https://i.postimg.cc/rpkgKmpK/Disney-Plus.jpg",
+            "iconName": "film",
+            "showIcon": false,
+            "nameDisplayMode": "Hidden",
+            "mediaTypeFilter": "All Content",
+            "textSize": "Large",
+            "textWeight": "Bold",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#000000"
+          },
+          {
+            "id": "HBOMax",
+            "name": "HBO Max Collections",
+            "category": "Streaming Services",
+            "catalogIds": [],
+            "displayMode": "Grid",
+            "layout": "Landscape",
+            "backgroundImageURL": "https://i.postimg.cc/t4P2qPpK/HBO-Max.avif",
+            "iconName": "film",
+            "showIcon": false,
+            "nameDisplayMode": "Hidden",
+            "mediaTypeFilter": "All Content",
+            "textSize": "Large",
+            "textWeight": "Bold",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#000000"
+          },
+          {
+            "id": "Hulu",
+            "name": "Hulu Collections",
+            "category": "Streaming Services",
+            "catalogIds": [],
+            "displayMode": "Grid",
+            "layout": "Landscape",
+            "backgroundImageURL": "https://i.postimg.cc/4NqGj3CS/Hulu.avif",
+            "iconName": "film",
+            "showIcon": false,
+            "nameDisplayMode": "Hidden",
+            "mediaTypeFilter": "All Content",
+            "textSize": "Large",
+            "textWeight": "Bold",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#000000"
+          },
+          {
+            "id": "AmazonPrime",
+            "name": "Amazon Prime Collections",
+            "category": "Streaming Services",
+            "catalogIds": [],
+            "displayMode": "Grid",
+            "layout": "Landscape",
+            "backgroundImageURL": "https://i.postimg.cc/HWr2MFXm/Prime-Video.avif",
+            "iconName": "film",
+            "showIcon": false,
+            "nameDisplayMode": "Hidden",
+            "mediaTypeFilter": "All Content",
+            "textSize": "Large",
+            "textWeight": "Bold",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#000000"
+          },
+          {
+            "id": "AppleTVPlus",
+            "name": "Apple TV+ Collections",
+            "category": "Streaming Services",
+            "catalogIds": [],
+            "displayMode": "Grid",
+            "layout": "Landscape",
+            "backgroundImageURL": "https://i.postimg.cc/GtLcsvgg/Apple-TV.avif",
+            "iconName": "film",
+            "showIcon": false,
+            "nameDisplayMode": "Hidden",
+            "mediaTypeFilter": "All Content",
+            "textSize": "Large",
+            "textWeight": "Bold",
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#000000"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,4 @@
+<resources>
+
+    <style name="Theme.Strmr" parent="Theme.AppCompat.DayNight.NoActionBar" />
+</resources>

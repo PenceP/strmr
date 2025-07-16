@@ -1,0 +1,31 @@
+Accounts:
+  - Trakt:
+    - Authorize (if not already)
+    - Logout (if authorized)
+    - Username 
+    - Status 
+    - Sync on app launch (toggle)
+    - Sync on after playback (toggle)
+    - Statistics
+      - Shows
+      - Movies
+      - Last Sync (timestamp)
+  - Premiumize:
+    - Authorize (if not already)
+    - Username (if authorized)
+    - Status (if authorized)
+  - RealDebrid:
+    - Authorize (if not already)
+    - Username (if authorized)
+    - Status (if authorized)
+
+Content:
+  - Home:
+  - Movies:
+  - TV Shows:
+  - Debrid Cloud:
+
+Playback:
+  - Auto Play:
+    - Toggle on/off
+    - Time to display popup for Next Episode
