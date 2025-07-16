@@ -141,4 +141,38 @@ data class EpisodeIds(
     val tmdb: Int?,
     val imdb: String?,
     val tvdb: Int?
+)
+
+// Collection models
+data class BelongsToCollection(
+    val id: Int,
+    val name: String,
+    val poster_path: String?,
+    val backdrop_path: String?
+)
+
+data class Collection(
+    val id: Int,
+    val name: String,
+    val overview: String?,
+    val poster_path: String?,
+    val backdrop_path: String?,
+    val parts: List<CollectionMovie>
+)
+
+data class CollectionMovie(
+    val id: Int,
+    val title: String,
+    val original_title: String,
+    val overview: String?,
+    val poster_path: String?,
+    val backdrop_path: String?,
+    val media_type: String,
+    val original_language: String,
+    val genre_ids: List<Int>,
+    val popularity: Double,
+    val release_date: String?,
+    val video: Boolean,
+    val vote_average: Double,
+    val vote_count: Int
 ) 

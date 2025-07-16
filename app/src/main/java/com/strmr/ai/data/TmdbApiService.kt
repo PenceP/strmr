@@ -88,6 +88,15 @@ interface TmdbApiService {
     suspend fun getSimilarTvShows(
         @Path("tv_id") tvId: Int
     ): TmdbSimilarResponse
+
+    @Headers(
+        "Authorization: Bearer $TMDB_BEARER_TOKEN",
+        "Content-Type: application/json"
+    )
+    @GET("collection/{collection_id}")
+    suspend fun getCollectionDetails(
+        @Path("collection_id") collectionId: Int
+    ): Collection
 }
 
 data class TmdbMovieDetails(
