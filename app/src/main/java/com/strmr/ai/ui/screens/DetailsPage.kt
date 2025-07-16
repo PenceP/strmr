@@ -69,6 +69,7 @@ import com.strmr.ai.ui.components.MediaHero
 import com.strmr.ai.ui.components.MediaDetails
 import com.strmr.ai.ui.components.SimilarContentRow
 import com.strmr.ai.ui.components.CenteredMediaRow
+import com.strmr.ai.ui.components.CollectionRow
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -133,13 +134,44 @@ fun MovieDetailsView(
     var similarContent by remember { mutableStateOf<List<SimilarContent>>(emptyList()) }
     val scrollState = rememberScrollState()
     
-    // Selection state for actors and similar content rows
+    // Selection state for actors, collection, and similar content rows
     var actorsSelectedIndex by remember { mutableStateOf(0) }
+    var collectionSelectedIndex by remember { mutableStateOf(0) }
     var similarSelectedIndex by remember { mutableStateOf(0) }
     var isActorsRowSelected by remember { mutableStateOf(false) }
+    var isCollectionRowSelected by remember { mutableStateOf(false) }
     var isSimilarRowSelected by remember { mutableStateOf(false) }
     val actorsFocusRequester = remember { FocusRequester() }
+    val collectionFocusRequester = remember { FocusRequester() }
     val similarFocusRequester = remember { FocusRequester() }
+    var collection by remember { mutableStateOf<com.strmr.ai.data.database.CollectionEntity?>(null) }
+
+    // Fetch collection if movie belongs to one
+    LaunchedEffect(movie.belongsToCollection?.id) {
+        val collectionId = movie.belongsToCollection?.id
+        Log.d("MovieDetailsView", "🎬 Collection LaunchedEffect triggered")
+        Log.d("MovieDetailsView", "🎬 Movie belongsToCollection: ${movie.belongsToCollection}")
+        Log.d("MovieDetailsView", "🎬 Collection ID: $collectionId")
+        Log.d("MovieDetailsView", "🎬 MovieRepository available: ${movieRepository != null}")
+        
+        if (collectionId != null && movieRepository != null) {
+            try {
+                Log.d("MovieDetailsView", "📡 Fetching collection for ID: $collectionId")
+                collection = withContext(Dispatchers.IO) {
+                    val fetchedCollection = movieRepository.getOrFetchCollection(collectionId)
+                    Log.d("MovieDetailsView", "✅ Collection fetched: $fetchedCollection")
+                    Log.d("MovieDetailsView", "✅ Collection parts count: ${fetchedCollection?.parts?.size}")
+                    fetchedCollection
+                }
+                Log.d("MovieDetailsView", "✅ Collection state updated: $collection")
+            } catch (e: Exception) {
+                Log.e("MovieDetailsView", "❌ Error fetching collection for ID: $collectionId", e)
+                collection = null
+            }
+        } else {
+            Log.d("MovieDetailsView", "⚠️ Skipping collection fetch - ID: $collectionId, Repository: ${movieRepository != null}")
+        }
+    }
 
     // Add comprehensive logging for debugging
     Log.d("MovieDetailsView", "🎬 MovieDetailsView initialized for movie: ${movie.title}")
@@ -399,12 +431,16 @@ fun MovieDetailsView(
                         onSelectionChanged = { actorsSelectedIndex = it },
                         onUpDown = { direction ->
                             if (direction < 0) {
-                                // Move up to buttons
                                 isActorsRowSelected = false
                             } else {
-                                // Move down to similar content
-                                isActorsRowSelected = false
-                                isSimilarRowSelected = true
+                                val currentCollection = collection
+                                if (currentCollection != null && currentCollection.parts.size > 1) {
+                                    isActorsRowSelected = false
+                                    isCollectionRowSelected = true
+                                } else {
+                                    isActorsRowSelected = false
+                                    isSimilarRowSelected = true
+                                }
                             }
                         },
                         focusRequester = actorsFocusRequester,
@@ -412,7 +448,32 @@ fun MovieDetailsView(
                         onContentFocusChanged = { isActorsRowSelected = it }
                     )
                 }
-                Spacer(Modifier.height(24.dp))
+                // Collection row (if present)
+                val currentCollection = collection
+                Log.d("MovieDetailsView", "🎬 Rendering collection row check")
+                Log.d("MovieDetailsView", "🎬 Current collection: $currentCollection")
+                Log.d("MovieDetailsView", "🎬 Collection parts size: ${currentCollection?.parts?.size}")
+                if (currentCollection != null && currentCollection.parts.size > 1) {
+                    CollectionRow(
+                        collectionMovies = currentCollection.parts,
+                        selectedIndex = collectionSelectedIndex,
+                        isRowSelected = isCollectionRowSelected,
+                        onSelectionChanged = { collectionSelectedIndex = it },
+                        onUpDown = { direction ->
+                            if (direction < 0) {
+                                isCollectionRowSelected = false
+                                isActorsRowSelected = true
+                            } else {
+                                isCollectionRowSelected = false
+                                isSimilarRowSelected = true
+                            }
+                        },
+                        focusRequester = collectionFocusRequester,
+                        isContentFocused = isCollectionRowSelected,
+                        onContentFocusChanged = { isCollectionRowSelected = it },
+                        onItemClick = { /* TODO: handle collection movie click */ }
+                    )
+                }
                 // Similar content row
                 if (similarContent.isNotEmpty()) {
                     SimilarContentRow(
@@ -426,9 +487,14 @@ fun MovieDetailsView(
                         onSelectionChanged = { similarSelectedIndex = it },
                         onUpDown = { direction ->
                             if (direction < 0) {
-                                // Move up to actors
-                                isSimilarRowSelected = false
-                                isActorsRowSelected = true
+                                val currentCollection = collection
+                                if (currentCollection != null && currentCollection.parts.size > 1) {
+                                    isSimilarRowSelected = false
+                                    isCollectionRowSelected = true
+                                } else {
+                                    isSimilarRowSelected = false
+                                    isActorsRowSelected = true
+                                }
                             } else {
                                 // Move down (could be end of content)
                                 isSimilarRowSelected = false

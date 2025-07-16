@@ -31,9 +31,10 @@ import com.strmr.ai.data.database.EpisodeDao
         TraktUserStatsEntity::class,
         OmdbRatingsEntity::class,
         SeasonEntity::class,
-        EpisodeEntity::class
+        EpisodeEntity::class,
+        CollectionEntity::class
     ],
-    version = 9, // bumped for schema changes - added similar field
+    version = 10, // bumped for schema changes - added collection field and collection table
     exportSchema = false
 )
 @TypeConverters(ListConverter::class)
@@ -48,10 +49,32 @@ abstract class StrmrDatabase : RoomDatabase() {
     abstract fun omdbRatingsDao(): OmdbRatingsDao
     abstract fun seasonDao(): SeasonDao
     abstract fun episodeDao(): EpisodeDao
+    abstract fun collectionDao(): CollectionDao
 
     companion object {
         @Volatile
         private var INSTANCE: StrmrDatabase? = null
+
+        // Migration from version 9 to 10
+        private val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add belongsToCollection column to movies table
+                database.execSQL("ALTER TABLE movies ADD COLUMN belongsToCollection TEXT")
+                
+                // Create collections table
+                database.execSQL("""
+                    CREATE TABLE collections (
+                        id INTEGER PRIMARY KEY NOT NULL,
+                        name TEXT NOT NULL,
+                        overview TEXT,
+                        posterPath TEXT,
+                        backdropPath TEXT,
+                        parts TEXT NOT NULL DEFAULT '[]',
+                        lastUpdated INTEGER NOT NULL DEFAULT 0
+                    )
+                """)
+            }
+        }
 
         // Migration from version 8 to 9
         private val MIGRATION_8_9 = object : Migration(8, 9) {
@@ -93,7 +116,7 @@ abstract class StrmrDatabase : RoomDatabase() {
                     StrmrDatabase::class.java,
                     "strmr_database"
                 )
-                .addMigrations(MIGRATION_8_9) // Add the new migration
+                .addMigrations(MIGRATION_9_10, MIGRATION_8_9) // Add the new migrations
                 .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance

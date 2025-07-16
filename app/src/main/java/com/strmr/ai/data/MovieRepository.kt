@@ -3,6 +3,8 @@ package com.strmr.ai.data
 import android.util.Log
 import com.strmr.ai.data.database.MovieDao
 import com.strmr.ai.data.database.MovieEntity
+import com.strmr.ai.data.database.CollectionDao
+import com.strmr.ai.data.database.CollectionEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -10,6 +12,7 @@ import com.strmr.ai.utils.DateFormatter
 
 class MovieRepository(
     private val movieDao: MovieDao,
+    private val collectionDao: CollectionDao,
     private val traktApi: TraktApiService,
     private val tmdbApi: TmdbApiService
 ) {
@@ -96,6 +99,12 @@ class MovieRepository(
             val credits = tmdbApi.getMovieCredits(tmdbId)
             val traktRatings = traktApi.getMovieRatings(traktId)
             val cached = movieDao.getMovieByTmdbId(tmdbId)
+            
+            // Fetch collection data if available
+            val collection = details.belongs_to_collection?.let { belongsToCollection ->
+                getOrFetchCollection(belongsToCollection.id)
+            }
+            
             MovieEntity(
                 tmdbId = tmdbId,
                 imdbId = imdbId,
@@ -119,6 +128,7 @@ class MovieRepository(
                         profilePath = it.profile_path
                     )
                 },
+                belongsToCollection = details.belongs_to_collection,
                 trendingOrder = trendingOrder ?: cached?.trendingOrder, // Preserve other order
                 popularOrder = popularOrder ?: cached?.popularOrder
             )
@@ -137,6 +147,9 @@ class MovieRepository(
             val details = tmdbApi.getMovieDetails(tmdbId)
             val credits = tmdbApi.getMovieCredits(tmdbId)
             val imdbId = details.imdb_id
+            Log.d("MovieRepository", "🎬 Movie details fetched for TMDB ID: $tmdbId")
+            Log.d("MovieRepository", "🎬 Movie title: ${details.title}")
+            Log.d("MovieRepository", "🎬 Belongs to collection: ${details.belongs_to_collection}")
             val entity = MovieEntity(
                 tmdbId = tmdbId,
                 imdbId = imdbId,
@@ -159,7 +172,8 @@ class MovieRepository(
                         character = it.character,
                         profilePath = it.profile_path
                     )
-                }
+                },
+                belongsToCollection = details.belongs_to_collection
             )
             movieDao.insertMovies(listOf(entity))
             entity
@@ -177,6 +191,36 @@ class MovieRepository(
         movieDao.updateMovieLogo(tmdbId, logoUrl)
     }
 
+    suspend fun getOrFetchCollection(collectionId: Int): CollectionEntity? {
+        Log.d("MovieRepository", "🔍 getOrFetchCollection called for collectionId: $collectionId")
+        val cachedCollection = collectionDao.getCollectionById(collectionId)
+        if (cachedCollection != null) {
+            Log.d("MovieRepository", "✅ Returning cached collection: ${cachedCollection.name} with ${cachedCollection.parts.size} parts")
+            return cachedCollection
+        }
+        
+        Log.d("MovieRepository", "📡 Collection not cached, fetching from API")
+        return try {
+            val collection = tmdbApi.getCollectionDetails(collectionId)
+            Log.d("MovieRepository", "✅ API response received: ${collection.name} with ${collection.parts.size} parts")
+            val entity = CollectionEntity(
+                id = collection.id,
+                name = collection.name,
+                overview = collection.overview,
+                posterPath = collection.poster_path,
+                backdropPath = collection.backdrop_path,
+                parts = collection.parts,
+                lastUpdated = System.currentTimeMillis()
+            )
+            collectionDao.insertCollection(entity)
+            Log.d("MovieRepository", "✅ Collection saved to database: ${entity.name}")
+            entity
+        } catch (e: Exception) {
+            Log.e("MovieRepository", "❌ Error fetching collection with id $collectionId", e)
+            null
+        }
+    }
+
     suspend fun getOrFetchMovieWithLogo(tmdbId: Int): MovieEntity? {
         val cachedMovie = movieDao.getMovieByTmdbId(tmdbId)
         if (cachedMovie != null && !cachedMovie.logoUrl.isNullOrBlank()) {
@@ -187,6 +231,9 @@ class MovieRepository(
             val details = tmdbApi.getMovieDetails(tmdbId)
             val credits = tmdbApi.getMovieCredits(tmdbId)
             val images = tmdbApi.getMovieImages(tmdbId)
+            Log.d("MovieRepository", "🎬 Movie details fetched for TMDB ID: $tmdbId (with logo)")
+            Log.d("MovieRepository", "🎬 Movie title: ${details.title}")
+            Log.d("MovieRepository", "🎬 Belongs to collection: ${details.belongs_to_collection}")
             val logo = images.logos.firstOrNull { it.iso_639_1 == "en" && !it.file_path.isNullOrBlank() }
                 ?: images.logos.firstOrNull { !it.file_path.isNullOrBlank() }
             val logoUrl = logo?.file_path?.let { "https://image.tmdb.org/t/p/w500$it" }
@@ -217,6 +264,7 @@ class MovieRepository(
                         profilePath = it.profile_path
                     )
                 },
+                belongsToCollection = details.belongs_to_collection,
                 trendingOrder = cachedMovie?.trendingOrder,
                 popularOrder = cachedMovie?.popularOrder
             )

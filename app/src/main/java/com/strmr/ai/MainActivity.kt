@@ -111,7 +111,7 @@ class MainActivity : ComponentActivity() {
             database.traktUserProfileDao(),
             database.traktUserStatsDao()
         )
-        movieRepository = MovieRepository(database.movieDao(), traktApiService, tmdbApiService)
+        movieRepository = MovieRepository(database.movieDao(), database.collectionDao(), traktApiService, tmdbApiService)
         tvShowRepository = TvShowRepository(
             database.tvShowDao(),
             traktApiService,

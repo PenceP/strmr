@@ -109,7 +109,8 @@ data class TmdbMovieDetails(
     val vote_average: Float?,
     val release_date: String?,
     val runtime: Int?,
-    val genres: List<Genre>
+    val genres: List<Genre>,
+    val belongs_to_collection: BelongsToCollection?
 )
 
 data class TmdbTvShowDetails(

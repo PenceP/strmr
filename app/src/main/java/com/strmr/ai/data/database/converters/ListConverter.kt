@@ -5,6 +5,8 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.strmr.ai.data.Actor
 import com.strmr.ai.data.SimilarContent
+import com.strmr.ai.data.BelongsToCollection
+import com.strmr.ai.data.CollectionMovie
 
 class ListConverter {
     @TypeConverter
@@ -48,6 +50,31 @@ class ListConverter {
     fun toSimilarContentList(value: String?): List<SimilarContent>? {
         if (value == null) return null
         val listType = object : TypeToken<List<SimilarContent>>() {}.type
+        return Gson().fromJson(value, listType)
+    }
+
+    @TypeConverter
+    fun fromBelongsToCollection(collection: BelongsToCollection?): String? {
+        if (collection == null) return null
+        return Gson().toJson(collection)
+    }
+
+    @TypeConverter
+    fun toBelongsToCollection(value: String?): BelongsToCollection? {
+        if (value == null) return null
+        return Gson().fromJson(value, BelongsToCollection::class.java)
+    }
+
+    @TypeConverter
+    fun fromCollectionMovieList(list: List<CollectionMovie>?): String? {
+        if (list == null) return null
+        return Gson().toJson(list)
+    }
+
+    @TypeConverter
+    fun toCollectionMovieList(value: String?): List<CollectionMovie>? {
+        if (value == null) return null
+        val listType = object : TypeToken<List<CollectionMovie>>() {}.type
         return Gson().fromJson(value, listType)
     }
 } 
