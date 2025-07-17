@@ -4,6 +4,7 @@ import android.content.Context
 import com.strmr.ai.data.*
 import com.strmr.ai.data.database.*
 import com.strmr.ai.data.database.TraktRatingsDao
+import com.strmr.ai.domain.usecase.FetchLogoUseCase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -69,5 +70,13 @@ object RepositoryModule {
         omdbApiService: OmdbApiService
     ): OmdbRepository {
         return OmdbRepository(omdbRatingsDao, omdbApiService)
+    }
+    
+    @Provides
+    @Singleton
+    fun provideFetchLogoUseCase(
+        tmdbApiService: TmdbApiService
+    ): FetchLogoUseCase {
+        return FetchLogoUseCase(tmdbApiService)
     }
 } 

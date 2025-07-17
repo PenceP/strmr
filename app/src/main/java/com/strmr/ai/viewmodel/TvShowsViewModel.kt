@@ -6,27 +6,24 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.strmr.ai.data.TvShowRepository
-import com.strmr.ai.data.TmdbApiService
 import com.strmr.ai.data.OmdbRepository
 import com.strmr.ai.data.OmdbResponse
 import com.strmr.ai.data.database.TvShowEntity
+import com.strmr.ai.domain.usecase.FetchLogoUseCase
+import com.strmr.ai.domain.usecase.MediaType
 import com.strmr.ai.ui.screens.UiState
 import com.strmr.ai.ui.screens.PagingUiState
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 @HiltViewModel
 class TvShowsViewModel @Inject constructor(
     private val tvShowRepository: TvShowRepository,
-    private val tmdbApiService: TmdbApiService,
+    private val fetchLogoUseCase: FetchLogoUseCase,
     private val omdbRepository: OmdbRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(UiState<TvShowEntity>())
@@ -120,49 +117,9 @@ class TvShowsViewModel @Inject constructor(
 
     private fun fetchAndUpdateLogo(show: TvShowEntity) {
         viewModelScope.launch {
-            try {
-                Log.d("TvShowsViewModel", "📡 Fetching logo from TMDB API for '${show.title}' (TMDB: ${show.tmdbId})")
-                val images = withContext(Dispatchers.IO) {
-                    tmdbApiService.getTvShowImages(show.tmdbId)
-                }
-                
-                // Extract logo URL from images response
-                val logoUrl = extractLogoUrl(images)
-                Log.d("TvShowsViewModel", "🎨 Logo URL for '${show.title}': $logoUrl")
-                
-                // Save logo URL to database (null means no logo available, not an error)
-                tvShowRepository.updateTvShowLogo(show.tmdbId, logoUrl)
-                
-            } catch (e: Exception) {
-                Log.w("TvShowsViewModel", "❌ Error fetching logo for tmdbId=${show.tmdbId}", e)
-                // Don't save null on error - this allows retries
-                // Only save null when we successfully get a response but no logo is available
-            }
+            Log.d("TvShowsViewModel", "🎯 Fetching logo for '${show.title}' (TMDB: ${show.tmdbId})")
+            val logoUrl = fetchLogoUseCase.fetchAndExtractLogo(show.tmdbId, MediaType.TV_SHOW)
+            tvShowRepository.updateTvShowLogo(show.tmdbId, logoUrl)
         }
-    }
-
-    private fun extractLogoUrl(images: com.strmr.ai.data.TmdbImagesResponse): String? {
-        Log.d("TvShowsViewModel", "🔍 Extracting logo from ${images.logos.size} available logos")
-        
-        if (images.logos.isEmpty()) {
-            Log.d("TvShowsViewModel", "❌ No logos available")
-            return null
-        }
-        
-        // Log all available logos for debugging
-        images.logos.forEachIndexed { index, logo ->
-            Log.d("TvShowsViewModel", "🔍 Logo $index: iso=${logo.iso_639_1}, path=${logo.file_path}")
-        }
-        
-        // Prefer English logos, then any logo with a valid path
-        val selectedLogo = images.logos.firstOrNull { it.iso_639_1 == "en" && !it.file_path.isNullOrBlank() }
-            ?: images.logos.firstOrNull { !it.file_path.isNullOrBlank() }
-        
-        val logoUrl = selectedLogo?.file_path?.let { "https://image.tmdb.org/t/p/original$it" }
-        
-        Log.d("TvShowsViewModel", "✅ Selected logo: iso=${selectedLogo?.iso_639_1}, path=${selectedLogo?.file_path}")
-        Log.d("TvShowsViewModel", "✅ Final logo URL: $logoUrl")
-        
-        return logoUrl
     }
 } 

@@ -6,28 +6,25 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.strmr.ai.data.MovieRepository
-import com.strmr.ai.data.TmdbApiService
 import com.strmr.ai.data.OmdbRepository
 import com.strmr.ai.data.OmdbResponse
 import com.strmr.ai.data.database.MovieEntity
 import com.strmr.ai.data.database.TraktRatingsEntity
+import com.strmr.ai.domain.usecase.FetchLogoUseCase
+import com.strmr.ai.domain.usecase.MediaType
 import com.strmr.ai.ui.screens.UiState
 import com.strmr.ai.ui.screens.PagingUiState
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 @HiltViewModel
 class MoviesViewModel @Inject constructor(
     private val movieRepository: MovieRepository,
-    private val tmdbApiService: TmdbApiService,
+    private val fetchLogoUseCase: FetchLogoUseCase,
     private val omdbRepository: OmdbRepository
 ) : ViewModel() {
 
@@ -124,49 +121,9 @@ class MoviesViewModel @Inject constructor(
 
     private fun fetchAndUpdateLogo(movie: MovieEntity) {
         viewModelScope.launch {
-            try {
-                Log.d("MoviesViewModel", "📡 Fetching logo from TMDB API for '${movie.title}' (TMDB: ${movie.tmdbId})")
-                val images = withContext(Dispatchers.IO) {
-                    tmdbApiService.getMovieImages(movie.tmdbId)
-                }
-                
-                // Extract logo URL from images response
-                val logoUrl = extractLogoUrl(images)
-                Log.d("MoviesViewModel", "🎨 Logo URL for '${movie.title}': $logoUrl")
-                
-                // Save logo URL to database (null means no logo available, not an error)
-                movieRepository.updateMovieLogo(movie.tmdbId, logoUrl)
-                
-            } catch (e: Exception) {
-                Log.w("MoviesViewModel", "❌ Error fetching logo for tmdbId=${movie.tmdbId}", e)
-                // Don't save null on error - this allows retries
-                // Only save null when we successfully get a response but no logo is available
-            }
+            Log.d("MoviesViewModel", "🎯 Fetching logo for '${movie.title}' (TMDB: ${movie.tmdbId})")
+            val logoUrl = fetchLogoUseCase.fetchAndExtractLogo(movie.tmdbId, MediaType.MOVIE)
+            movieRepository.updateMovieLogo(movie.tmdbId, logoUrl)
         }
-    }
-
-    private fun extractLogoUrl(images: com.strmr.ai.data.TmdbImagesResponse): String? {
-        Log.d("MoviesViewModel", "🔍 Extracting logo from ${images.logos.size} available logos")
-        
-        if (images.logos.isEmpty()) {
-            Log.d("MoviesViewModel", "❌ No logos available")
-            return null
-        }
-        
-        // Log all available logos for debugging
-        images.logos.forEachIndexed { index, logo ->
-            Log.d("MoviesViewModel", "🔍 Logo $index: iso=${logo.iso_639_1}, path=${logo.file_path}")
-        }
-        
-        // Prefer English logos, then any logo with a valid path
-        val selectedLogo = images.logos.firstOrNull { it.iso_639_1 == "en" && !it.file_path.isNullOrBlank() }
-            ?: images.logos.firstOrNull { !it.file_path.isNullOrBlank() }
-        
-        val logoUrl = selectedLogo?.file_path?.let { "https://image.tmdb.org/t/p/original$it" }
-        
-        Log.d("MoviesViewModel", "✅ Selected logo: iso=${selectedLogo?.iso_639_1}, path=${selectedLogo?.file_path}")
-        Log.d("MoviesViewModel", "✅ Final logo URL: $logoUrl")
-        
-        return logoUrl
     }
 }

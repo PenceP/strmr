@@ -23,18 +23,16 @@ import com.strmr.ai.utils.DateFormatter
 
 class TvShowRepository(
     private val tvShowDao: TvShowDao,
-    private val traktApiService: TraktApiService,
-    private val tmdbApiService: TmdbApiService,
+    traktApiService: TraktApiService,
+    tmdbApi: TmdbApiService,
     private val seasonDao: SeasonDao,
     private val episodeDao: EpisodeDao,
-    private val database: StrmrDatabase,
-    private val traktRatingsDao: TraktRatingsDao // <-- Add DAO
+    database: StrmrDatabase,
+    traktRatingsDao: TraktRatingsDao
+) : BaseMediaRepository<TvShowEntity, Show, TrendingShow>(
+    traktApiService, tmdbApi, database, traktRatingsDao
 ) {
-    private val detailsExpiryMs = 7 * 24 * 60 * 60 * 1000L // 7 days
-    private val ratingsExpiryMs = 7 * 24 * 60 * 60 * 1000L // 7 days
-    private var currentTrendingPage = 0
-    private var currentPopularPage = 0
-    private val pageSize = 20
+    // These are now inherited from BaseMediaRepository
 
     fun getTrendingTvShows(): Flow<List<TvShowEntity>> = tvShowDao.getTrendingTvShows()
     
@@ -42,101 +40,60 @@ class TvShowRepository(
     
     @OptIn(ExperimentalPagingApi::class)
     fun getTrendingTvShowsPager(): Flow<PagingData<TvShowEntity>> {
-        return Pager(
-            config = PagingConfig(
-                pageSize = 20,
-                enablePlaceholders = false,
-                prefetchDistance = 5
-            ),
+        return createPager(
+            contentType = ContentType.TRENDING,
             remoteMediator = TvShowsRemoteMediator(
                 contentType = TvShowsRemoteMediator.ContentType.TRENDING,
                 database = database,
-                traktApi = traktApiService,
-                tmdbApi = tmdbApiService,
+                traktApi = traktApi,
+                tmdbApi = tmdbApi,
                 tvShowRepository = this
             ),
             pagingSourceFactory = { tvShowDao.getTrendingTvShowsPagingSource() }
-        ).flow
+        )
     }
     
     @OptIn(ExperimentalPagingApi::class)
     fun getPopularTvShowsPager(): Flow<PagingData<TvShowEntity>> {
-        return Pager(
-            config = PagingConfig(
-                pageSize = 20,
-                enablePlaceholders = false,
-                prefetchDistance = 5
-            ),
+        return createPager(
+            contentType = ContentType.POPULAR,
             remoteMediator = TvShowsRemoteMediator(
                 contentType = TvShowsRemoteMediator.ContentType.POPULAR,
                 database = database,
-                traktApi = traktApiService,
-                tmdbApi = tmdbApiService,
+                traktApi = traktApi,
+                tmdbApi = tmdbApi,
                 tvShowRepository = this
             ),
             pagingSourceFactory = { tvShowDao.getPopularTvShowsPagingSource() }
-        ).flow
+        )
     }
     
     suspend fun loadMoreTrendingTvShows() {
-        currentTrendingPage++
-        refreshTrendingTvShows()
+        refreshContent(
+            contentType = ContentType.TRENDING,
+            fetchTrendingFromTrakt = { page, limit -> traktApi.getTrendingTvShows(page, limit) },
+            fetchPopularFromTrakt = { _, _ -> emptyList() }, // Not used for trending
+            mapTrendingToEntity = { trendingShow, order -> 
+                fetchAndMapToEntity(trendingShow.show, trendingOrder = order)
+            },
+            mapPopularToEntity = { _, _ -> null } // Not used for trending
+        )
     }
     
     suspend fun loadMorePopularTvShows() {
-        currentPopularPage++
-        refreshPopularTvShows()
+        refreshContent(
+            contentType = ContentType.POPULAR,
+            fetchTrendingFromTrakt = { _, _ -> emptyList() }, // Not used for popular
+            fetchPopularFromTrakt = { page, limit -> traktApi.getPopularTvShows(page, limit) },
+            mapTrendingToEntity = { _, _ -> null }, // Not used for popular
+            mapPopularToEntity = { show, order -> 
+                fetchAndMapToEntity(show, popularOrder = order)
+            }
+        )
     }
 
-    suspend fun refreshTrendingTvShows() {
-        withContext(Dispatchers.IO) {
-            val limit = pageSize
-            val page = currentTrendingPage + 1 // Trakt API uses 1-based page numbers
-            val trending = traktApiService.getTrendingTvShows(page = page, limit = limit).mapIndexedNotNull { index, trendingShow ->
-                val tmdbId = trendingShow.show.ids.tmdb ?: return@mapIndexedNotNull null
-                val traktId = trendingShow.show.ids.trakt ?: return@mapIndexedNotNull null
-                val cached = tvShowDao.getTvShowByTmdbId(tmdbId)
-                val now = System.currentTimeMillis()
-                val actualIndex = currentTrendingPage * pageSize + index
-                if (cached == null || now - cached.lastUpdated > detailsExpiryMs) {
-                    fetchAndMapToEntity(trendingShow.show, trendingOrder = actualIndex)?.copy(lastUpdated = now)
-                } else {
-                    cached.copy(trendingOrder = actualIndex)
-                }
-            }
-            Log.d("TvShowRepository", "Fetched trending page $page, got IDs: ${trending.map { it.tmdbId }}")
-            if (currentTrendingPage == 0) {
-                tvShowDao.updateTrendingTvShows(trending)
-            } else {
-                tvShowDao.insertTvShows(trending)
-            }
-        }
-    }
-    
-    suspend fun refreshPopularTvShows() {
-        withContext(Dispatchers.IO) {
-            val limit = pageSize
-            val page = currentPopularPage + 1 // Trakt API uses 1-based page numbers
-            val popular = traktApiService.getPopularTvShows(page = page, limit = limit).mapIndexedNotNull { index, show ->
-                val tmdbId = show.ids.tmdb ?: return@mapIndexedNotNull null
-                val traktId = show.ids.trakt ?: return@mapIndexedNotNull null
-                val cached = tvShowDao.getTvShowByTmdbId(tmdbId)
-                val now = System.currentTimeMillis()
-                val actualIndex = currentPopularPage * pageSize + index
-                if (cached == null || now - cached.lastUpdated > detailsExpiryMs) {
-                    fetchAndMapToEntity(show, popularOrder = actualIndex)?.copy(lastUpdated = now)
-                } else {
-                    cached.copy(popularOrder = actualIndex)
-                }
-            }
-            Log.d("TvShowRepository", "Fetched popular page $page, got IDs: ${popular.map { it.tmdbId }}")
-            if (currentPopularPage == 0) {
-                tvShowDao.updatePopularTvShows(popular)
-            } else {
-                tvShowDao.insertTvShows(popular)
-            }
-        }
-    }
+    suspend fun refreshTrendingTvShows() = loadMoreTrendingTvShows()
+    suspend fun refreshPopularTvShows() = loadMorePopularTvShows()
 
     suspend fun mapTraktShowToEntity(
         show: Show,
@@ -155,8 +112,8 @@ class TvShowRepository(
         val traktId = show.ids.trakt ?: return null
         val imdbId = show.ids.imdb
         return try {
-            val details = tmdbApiService.getTvShowDetails(tmdbId)
-            val credits = tmdbApiService.getTvShowCredits(tmdbId)
+            val details = tmdbApi.getTvShowDetails(tmdbId)
+            val credits = tmdbApi.getTvShowCredits(tmdbId)
             
             // Use cached Trakt ratings instead of direct API call
             val traktRatings = getTraktRatings(traktId)
@@ -202,8 +159,8 @@ class TvShowRepository(
         }
 
         return try {
-            val details = tmdbApiService.getTvShowDetails(tmdbId)
-            val credits = tmdbApiService.getTvShowCredits(tmdbId)
+            val details = tmdbApi.getTvShowDetails(tmdbId)
+            val credits = tmdbApi.getTvShowCredits(tmdbId)
             val imdbId = details.imdb_id
             val entity = TvShowEntity(
                 tmdbId = tmdbId,
@@ -238,17 +195,13 @@ class TvShowRepository(
         }
     }
 
-    suspend fun getTvShowByTmdbId(tmdbId: Int): TvShowEntity? {
-        return tvShowDao.getTvShowByTmdbId(tmdbId)
-    }
-
-    suspend fun updateTvShowLogo(tmdbId: Int, logoUrl: String?) {
-        tvShowDao.updateTvShowLogo(tmdbId, logoUrl)
-    }
-
-    suspend fun clearNullLogos() {
-        tvShowDao.clearNullLogos()
-    }
+    // These methods are now inherited from BaseMediaRepository:
+    // - getItemByTmdbId() -> getTvShowByTmdbId()
+    // - updateItemLogo() -> updateTvShowLogo()  
+    // - clearNullLogos()
+    
+    suspend fun getTvShowByTmdbId(tmdbId: Int): TvShowEntity? = getItemByTmdbId(tmdbId)
+    suspend fun updateTvShowLogo(tmdbId: Int, logoUrl: String?) = updateItemLogo(tmdbId, logoUrl)
 
     suspend fun getOrFetchTvShowWithLogo(tmdbId: Int): TvShowEntity? {
         Log.d("TvShowRepository", "🔍 getOrFetchTvShowWithLogo called for tmdbId=$tmdbId")
@@ -263,9 +216,9 @@ class TvShowRepository(
         // Fetch logo from TMDB if missing
         return try {
             Log.d("TvShowRepository", "🌐 Fetching logo from TMDB for tmdbId=$tmdbId")
-            val details = tmdbApiService.getTvShowDetails(tmdbId)
-            val credits = tmdbApiService.getTvShowCredits(tmdbId)
-            val images = tmdbApiService.getTvShowImages(tmdbId)
+            val details = tmdbApi.getTvShowDetails(tmdbId)
+            val credits = tmdbApi.getTvShowCredits(tmdbId)
+            val images = tmdbApi.getTvShowImages(tmdbId)
             
             Log.d("TvShowRepository", "🌐 TMDB images response for tmdbId=$tmdbId: ${images.logos.size} logos available")
             images.logos.forEachIndexed { index, logo ->
@@ -327,7 +280,7 @@ class TvShowRepository(
 
     suspend fun getEpisodeDetails(tvId: Int, seasonNumber: Int, episodeNumber: Int): TmdbEpisodeDetails? {
         return try {
-            tmdbApiService.getEpisodeDetails(tvId, seasonNumber, episodeNumber)
+            tmdbApi.getEpisodeDetails(tvId, seasonNumber, episodeNumber)
         } catch (e: Exception) {
             Log.e("TvShowRepository", "Error fetching episode details for tvId=$tvId, season=$seasonNumber, episode=$episodeNumber", e)
             null
@@ -343,17 +296,15 @@ class TvShowRepository(
         }
     }
 
-    private val cacheExpiryMs = 7 * 24 * 60 * 60 * 1000L // 7 days
-
     suspend fun getOrFetchSeasons(showTmdbId: Int): List<SeasonEntity> {
         val cached = seasonDao.getSeasonsForShow(showTmdbId)
         val now = System.currentTimeMillis()
-        if (cached.isNotEmpty() && cached.all { now - it.lastUpdated < cacheExpiryMs }) {
+        if (cached.isNotEmpty() && cached.all { now - it.lastUpdated < detailsExpiryMs }) {
             return cached
         }
         // Fetch from TMDB
         return try {
-            val details = tmdbApiService.getTvShowDetails(showTmdbId)
+            val details = tmdbApi.getTvShowDetails(showTmdbId)
             // Try to get the number of seasons from episode_run_time or another field (fallback to 10 if not available)
             val numberOfSeasons = details.episode_run_time?.size ?: 0
             // If episode_run_time is not the right field, you may need to hardcode or fetch from another endpoint
@@ -362,7 +313,7 @@ class TvShowRepository(
             val seasonsList = mutableListOf<SeasonEntity>()
             for (seasonNumber in seasonNumbers) {
                 try {
-                    val seasonDetails = tmdbApiService.getSeasonDetails(showTmdbId, seasonNumber)
+                    val seasonDetails = tmdbApi.getSeasonDetails(showTmdbId, seasonNumber)
                     seasonsList.add(
                         SeasonEntity(
                             showTmdbId = showTmdbId,
@@ -389,12 +340,12 @@ class TvShowRepository(
     suspend fun getOrFetchEpisodes(showTmdbId: Int, seasonNumber: Int): List<EpisodeEntity> {
         val cached = episodeDao.getEpisodesForSeason(showTmdbId, seasonNumber)
         val now = System.currentTimeMillis()
-        if (cached.isNotEmpty() && cached.all { now - it.lastUpdated < cacheExpiryMs }) {
+        if (cached.isNotEmpty() && cached.all { now - it.lastUpdated < detailsExpiryMs }) {
             return cached
         }
         // Fetch from TMDB
         return try {
-            val seasonDetails = tmdbApiService.getSeasonDetails(showTmdbId, seasonNumber)
+            val seasonDetails = tmdbApi.getSeasonDetails(showTmdbId, seasonNumber)
             val episodesList = seasonDetails.episodes?.map { episode ->
                 EpisodeEntity(
                     showTmdbId = showTmdbId,
@@ -424,7 +375,7 @@ class TvShowRepository(
         }
         
         return try {
-            val similarResponse = tmdbApiService.getSimilarTvShows(tmdbId)
+            val similarResponse = tmdbApi.getSimilarTvShows(tmdbId)
             val similarContent = similarResponse.results.take(10).map { item ->
                 SimilarContent(
                     tmdbId = item.id,
@@ -450,26 +401,40 @@ class TvShowRepository(
         }
     }
 
-    suspend fun getTraktRatings(traktId: Int): TraktRatingsEntity? {
-        val cached = traktRatingsDao.getRatings(traktId)
-        val now = System.currentTimeMillis()
-        if (cached != null && now - cached.updatedAt < ratingsExpiryMs) {
-            return cached
-        }
-        // Fetch from API
+    // Override getTraktRatings to handle TV show-specific API calls
+    suspend override fun getTraktRatings(traktId: Int): TraktRatingsEntity? {
+        val cached = super.getTraktRatings(traktId)
+        if (cached != null) return cached
+        
+        // Fetch from API if not cached or expired
         return try {
-            val api = traktApiService.getShowRatings(traktId)
-            val entity = TraktRatingsEntity(
-                traktId = traktId,
-                rating = api.rating,
-                votes = api.votes,
-                updatedAt = now
-            )
-            traktRatingsDao.insertOrUpdate(entity)
-            entity
+            val api = traktApi.getShowRatings(traktId)
+            saveTraktRatings(traktId, api.rating, api.votes)
+            super.getTraktRatings(traktId)
         } catch (e: Exception) {
-            // If API fails, return stale cache if available
-            cached
+            null
         }
     }
+
+    // Implement abstract methods from BaseMediaRepository
+    override fun getLogTag(): String = "TvShowRepository"
+    
+    override suspend fun getTmdbId(item: Show): Int? = item.ids.tmdb
+    
+    override suspend fun getTraktId(item: Show): Int? = item.ids.trakt
+    
+    override suspend fun getTmdbIdFromTrending(item: TrendingShow): Int? = item.show.ids.tmdb
+    
+    override suspend fun getTraktIdFromTrending(item: TrendingShow): Int? = item.show.ids.trakt
+    
+    override suspend fun updateEntityTimestamp(entity: TvShowEntity): TvShowEntity = 
+        entity.copy(lastUpdated = System.currentTimeMillis())
+    
+    // Implement abstract DAO methods from BaseMediaRepository
+    override suspend fun insertItems(items: List<TvShowEntity>) = tvShowDao.insertTvShows(items)
+    override suspend fun updateTrendingItems(items: List<TvShowEntity>) = tvShowDao.updateTrendingTvShows(items)
+    override suspend fun updatePopularItems(items: List<TvShowEntity>) = tvShowDao.updatePopularTvShows(items)
+    override suspend fun getItemByTmdbId(tmdbId: Int): TvShowEntity? = tvShowDao.getTvShowByTmdbId(tmdbId)
+    override suspend fun updateItemLogo(tmdbId: Int, logoUrl: String?) = tvShowDao.updateTvShowLogo(tmdbId, logoUrl)
+    override suspend fun clearNullLogos() = tvShowDao.clearNullLogos()
 } 
