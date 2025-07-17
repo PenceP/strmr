@@ -8,6 +8,8 @@ import androidx.paging.PagingData
 import com.strmr.ai.data.database.TvShowDao
 import com.strmr.ai.data.database.TvShowEntity
 import com.strmr.ai.data.database.StrmrDatabase
+import com.strmr.ai.data.database.TraktRatingsDao
+import com.strmr.ai.data.database.TraktRatingsEntity
 import com.strmr.ai.data.paging.TvShowsRemoteMediator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -25,9 +27,11 @@ class TvShowRepository(
     private val tmdbApiService: TmdbApiService,
     private val seasonDao: SeasonDao,
     private val episodeDao: EpisodeDao,
-    private val database: StrmrDatabase
+    private val database: StrmrDatabase,
+    private val traktRatingsDao: TraktRatingsDao // <-- Add DAO
 ) {
     private val detailsExpiryMs = 7 * 24 * 60 * 60 * 1000L // 7 days
+    private val ratingsExpiryMs = 7 * 24 * 60 * 60 * 1000L // 7 days
     private var currentTrendingPage = 0
     private var currentPopularPage = 0
     private val pageSize = 20
@@ -153,8 +157,11 @@ class TvShowRepository(
         return try {
             val details = tmdbApiService.getTvShowDetails(tmdbId)
             val credits = tmdbApiService.getTvShowCredits(tmdbId)
-            val traktRatings = traktApiService.getShowRatings(traktId)
+            
+            // Use cached Trakt ratings instead of direct API call
+            val traktRatings = getTraktRatings(traktId)
             val cached = tvShowDao.getTvShowByTmdbId(tmdbId)
+            
             TvShowEntity(
                 tmdbId = tmdbId,
                 imdbId = imdbId,
@@ -164,8 +171,8 @@ class TvShowRepository(
                 overview = details.overview,
                 rating = details.vote_average,
                 logoUrl = cached?.logoUrl,
-                traktRating = traktRatings.rating,
-                traktVotes = traktRatings.votes,
+                traktRating = traktRatings?.rating,
+                traktVotes = traktRatings?.votes,
                 year = DateFormatter.extractYear(details.first_air_date),
                 firstAirDate = details.first_air_date,
                 lastAirDate = details.last_air_date,
@@ -440,6 +447,29 @@ class TvShowRepository(
         } catch (e: Exception) {
             Log.e("TvShowRepository", "Error fetching similar TV shows for $tmdbId", e)
             emptyList()
+        }
+    }
+
+    suspend fun getTraktRatings(traktId: Int): TraktRatingsEntity? {
+        val cached = traktRatingsDao.getRatings(traktId)
+        val now = System.currentTimeMillis()
+        if (cached != null && now - cached.updatedAt < ratingsExpiryMs) {
+            return cached
+        }
+        // Fetch from API
+        return try {
+            val api = traktApiService.getShowRatings(traktId)
+            val entity = TraktRatingsEntity(
+                traktId = traktId,
+                rating = api.rating,
+                votes = api.votes,
+                updatedAt = now
+            )
+            traktRatingsDao.insertOrUpdate(entity)
+            entity
+        } catch (e: Exception) {
+            // If API fails, return stale cache if available
+            cached
         }
     }
 } 

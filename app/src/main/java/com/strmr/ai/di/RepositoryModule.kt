@@ -36,9 +36,10 @@ object RepositoryModule {
         tmdbApiService: TmdbApiService,
         seasonDao: SeasonDao,
         episodeDao: EpisodeDao,
-        database: StrmrDatabase
+        database: StrmrDatabase,
+        traktRatingsDao: TraktRatingsDao
     ): TvShowRepository {
-        return TvShowRepository(tvShowDao, traktApiService, tmdbApiService, seasonDao, episodeDao, database)
+        return TvShowRepository(tvShowDao, traktApiService, tmdbApiService, seasonDao, episodeDao, database, traktRatingsDao)
     }
     
     @Provides

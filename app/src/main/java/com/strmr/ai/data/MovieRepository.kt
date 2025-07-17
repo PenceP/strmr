@@ -152,7 +152,9 @@ class MovieRepository(
         return try {
             val details = tmdbApi.getMovieDetails(tmdbId)
             val credits = tmdbApi.getMovieCredits(tmdbId)
-            val traktRatings = traktApi.getMovieRatings(traktId)
+            
+            // Use cached Trakt ratings instead of direct API call
+            val traktRatings = getTraktRatings(traktId)
             val cached = movieDao.getMovieByTmdbId(tmdbId)
             
             // Fetch collection data if available
@@ -169,8 +171,8 @@ class MovieRepository(
                 overview = details.overview,
                 rating = details.vote_average,
                 logoUrl = cached?.logoUrl, // Preserve existing logo
-                traktRating = traktRatings.rating,
-                traktVotes = traktRatings.votes,
+                traktRating = traktRatings?.rating,
+                traktVotes = traktRatings?.votes,
                 year = DateFormatter.extractYear(details.release_date),
                 releaseDate = details.release_date,
                 runtime = details.runtime,
