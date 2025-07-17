@@ -20,6 +20,8 @@ import com.strmr.ai.data.database.SeasonEntity
 import com.strmr.ai.data.database.EpisodeEntity
 import com.strmr.ai.data.database.SeasonDao
 import com.strmr.ai.data.database.EpisodeDao
+import com.strmr.ai.data.database.TraktRatingsEntity
+import com.strmr.ai.data.database.TraktRatingsDao
 
 @Database(
     entities = [
@@ -32,7 +34,8 @@ import com.strmr.ai.data.database.EpisodeDao
         OmdbRatingsEntity::class,
         SeasonEntity::class,
         EpisodeEntity::class,
-        CollectionEntity::class
+        CollectionEntity::class,
+        TraktRatingsEntity::class
     ],
     version = 10, // bumped for schema changes - added collection field and collection table
     exportSchema = false
@@ -50,6 +53,7 @@ abstract class StrmrDatabase : RoomDatabase() {
     abstract fun seasonDao(): SeasonDao
     abstract fun episodeDao(): EpisodeDao
     abstract fun collectionDao(): CollectionDao
+    abstract fun traktRatingsDao(): TraktRatingsDao
 
     companion object {
         @Volatile

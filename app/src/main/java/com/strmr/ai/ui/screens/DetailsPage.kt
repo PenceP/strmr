@@ -95,9 +95,7 @@ sealed class MediaDetailsType {
 @Composable
 fun DetailsPage(
     mediaDetails: MediaDetailsType?,
-    omdbRepository: OmdbRepository,
-    tvShowRepository: TvShowRepository? = null, // Only needed for TV shows
-    movieRepository: MovieRepository? = null, // Only needed for movies
+    viewModel: com.strmr.ai.viewmodel.DetailsViewModel,
     onPlay: (season: Int?, episode: Int?) -> Unit = { _, _ -> },
     onAddToCollection: () -> Unit = {},
     onNavigateToSimilar: (String, Int) -> Unit = { _, _ -> }, // New navigation callback
@@ -111,10 +109,9 @@ fun DetailsPage(
         return
     }
     when (mediaDetails) {
-        is MediaDetailsType.Movie -> MovieDetailsView(mediaDetails.movie, omdbRepository, movieRepository, onPlay, onAddToCollection, onNavigateToSimilar)
+        is MediaDetailsType.Movie -> MovieDetailsView(mediaDetails.movie, viewModel, onPlay, onAddToCollection, onNavigateToSimilar)
         is MediaDetailsType.TvShow -> {
-            requireNotNull(tvShowRepository) { "tvShowRepository required for TV shows" }
-            TvShowDetailsView(mediaDetails.show, omdbRepository, tvShowRepository, onPlay, onAddToCollection, onNavigateToSimilar, cachedSeason, cachedEpisode)
+            TvShowDetailsView(mediaDetails.show, viewModel, onPlay, onAddToCollection, onNavigateToSimilar, cachedSeason, cachedEpisode)
         }
     }
 }
@@ -122,8 +119,7 @@ fun DetailsPage(
 @Composable
 fun MovieDetailsView(
     movie: MovieEntity,
-    omdbRepository: OmdbRepository,
-    movieRepository: MovieRepository?,
+    viewModel: com.strmr.ai.viewmodel.DetailsViewModel,
     onPlay: (season: Int?, episode: Int?) -> Unit,
     onAddToCollection: () -> Unit,
     onNavigateToSimilar: (String, Int) -> Unit
@@ -152,13 +148,13 @@ fun MovieDetailsView(
         Log.d("MovieDetailsView", "🎬 Collection LaunchedEffect triggered")
         Log.d("MovieDetailsView", "🎬 Movie belongsToCollection: ${movie.belongsToCollection}")
         Log.d("MovieDetailsView", "🎬 Collection ID: $collectionId")
-        Log.d("MovieDetailsView", "🎬 MovieRepository available: ${movieRepository != null}")
+        Log.d("MovieDetailsView", "🎬 DetailsViewModel available: true")
         
-        if (collectionId != null && movieRepository != null) {
+        if (collectionId != null) {
             try {
                 Log.d("MovieDetailsView", "📡 Fetching collection for ID: $collectionId")
                 collection = withContext(Dispatchers.IO) {
-                    val fetchedCollection = movieRepository.getOrFetchCollection(collectionId)
+                    val fetchedCollection = viewModel.getCollection(collectionId)
                     Log.d("MovieDetailsView", "✅ Collection fetched: $fetchedCollection")
                     Log.d("MovieDetailsView", "✅ Collection parts count: ${fetchedCollection?.parts?.size}")
                     fetchedCollection
@@ -169,7 +165,7 @@ fun MovieDetailsView(
                 collection = null
             }
         } else {
-            Log.d("MovieDetailsView", "⚠️ Skipping collection fetch - ID: $collectionId, Repository: ${movieRepository != null}")
+            Log.d("MovieDetailsView", "⚠️ Skipping collection fetch - ID: $collectionId")
         }
     }
 
@@ -185,7 +181,7 @@ fun MovieDetailsView(
             try {
                 Log.d("MovieDetailsView", "📡 Fetching OMDb ratings for: ${movie.imdbId}")
                 omdbRatings = withContext(Dispatchers.IO) {
-                    val response = omdbRepository.getOmdbRatings(movie.imdbId)
+                    val response = viewModel.getOmdbRatings(movie.imdbId)
                     Log.d("MovieDetailsView", "✅ OMDb API response received: $response")
                     response
                 }
@@ -202,18 +198,16 @@ fun MovieDetailsView(
 
     // Fetch similar content
     LaunchedEffect(movie.tmdbId) {
-        if (movieRepository != null) {
-            try {
-                Log.d("MovieDetailsView", "📡 Fetching similar movies for: ${movie.title}")
-                similarContent = withContext(Dispatchers.IO) {
-                    val similar = movieRepository.getOrFetchSimilarMovies(movie.tmdbId)
-                    Log.d("MovieDetailsView", "✅ Similar movies fetched: ${similar.size} items")
-                    similar
-                }
-            } catch (e: Exception) {
-                Log.e("MovieDetailsView", "❌ Error fetching similar movies for ${movie.title}", e)
-                similarContent = emptyList()
+        try {
+            Log.d("MovieDetailsView", "📡 Fetching similar movies for: ${movie.title}")
+            similarContent = withContext(Dispatchers.IO) {
+                val similar = viewModel.getSimilarMovies(movie.tmdbId)
+                                    Log.d("MovieDetailsView", "✅ Similar movies fetched: ${similar.size} items")
+                similar
             }
+        } catch (e: Exception) {
+            Log.e("MovieDetailsView", "❌ Error fetching similar movies for ${movie.title}", e)
+            similarContent = emptyList()
         }
     }
 
@@ -690,8 +684,7 @@ private fun HeaderSection(
 @Composable
 fun TvShowDetailsView(
     show: TvShowEntity,
-    omdbRepository: OmdbRepository,
-    tvShowRepository: TvShowRepository,
+    viewModel: com.strmr.ai.viewmodel.DetailsViewModel,
     onPlay: (season: Int?, episode: Int?) -> Unit,
     onAddToCollection: () -> Unit,
     onNavigateToSimilar: (String, Int) -> Unit,
@@ -735,7 +728,7 @@ fun TvShowDetailsView(
             try {
                 Log.d("TvShowDetailsView", "📡 Fetching OMDb ratings for: ${show.imdbId}")
                 omdbRatings = withContext(Dispatchers.IO) {
-                    val response = omdbRepository.getOmdbRatings(show.imdbId)
+                    val response = viewModel.getOmdbRatings(show.imdbId)
                     Log.d("TvShowDetailsView", "✅ OMDb API response received: $response")
                     response
                 }
@@ -755,7 +748,7 @@ fun TvShowDetailsView(
         try {
             Log.d("TvShowDetailsView", "📡 Fetching similar TV shows for: ${show.title}")
             similarContent = withContext(Dispatchers.IO) {
-                val similar = tvShowRepository.getOrFetchSimilarTvShows(show.tmdbId)
+                    val similar = viewModel.getSimilarTvShows(show.tmdbId)
                 Log.d("TvShowDetailsView", "✅ Similar TV shows fetched: ${similar.size} items")
                 similar
             }
@@ -775,7 +768,7 @@ fun TvShowDetailsView(
         try {
             loading = true
             Log.d("TvShowDetailsView", "📡 Fetching seasons for show: ${show.title}")
-            val fetchedSeasons = tvShowRepository.getOrFetchSeasons(show.tmdbId)
+                                val fetchedSeasons = viewModel.getSeasons(show.tmdbId)
             seasons = fetchedSeasons
             Log.d("TvShowDetailsView", "✅ Fetched ${fetchedSeasons.size} seasons")
             Log.d("TvShowDetailsView", "🎯 DEBUG: Available seasons: ${fetchedSeasons.map { it.seasonNumber }}")
@@ -791,7 +784,7 @@ fun TvShowDetailsView(
             
             // Fetch episodes for the selected season
             if (selectedSeason != null) {
-                val fetchedEpisodes = tvShowRepository.getOrFetchEpisodes(show.tmdbId, selectedSeason!!)
+                val fetchedEpisodes = viewModel.getEpisodes(show.tmdbId, selectedSeason!!)
                 episodes = fetchedEpisodes
                 Log.d("TvShowDetailsView", "✅ Fetched ${fetchedEpisodes.size} episodes for season $selectedSeason")
                 Log.d("TvShowDetailsView", "🎯 DEBUG: Available episodes: ${fetchedEpisodes.map { it.episodeNumber }}")
@@ -817,7 +810,7 @@ fun TvShowDetailsView(
         if (selectedSeason != null) {
             try {
                 Log.d("TvShowDetailsView", "📡 Fetching episodes for season: $selectedSeason")
-                val fetchedEpisodes = tvShowRepository.getOrFetchEpisodes(show.tmdbId, selectedSeason!!)
+                val fetchedEpisodes = viewModel.getEpisodes(show.tmdbId, selectedSeason!!)
                 episodes = fetchedEpisodes
                 Log.d("TvShowDetailsView", "✅ Fetched ${fetchedEpisodes.size} episodes for season $selectedSeason")
                 

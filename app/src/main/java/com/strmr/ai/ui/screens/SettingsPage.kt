@@ -17,23 +17,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.strmr.ai.data.AccountRepository
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.strmr.ai.viewmodel.SettingsViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
 fun SettingsPage(
-    accountRepository: AccountRepository,
     onNavigateToTraktSettings: () -> Unit,
     onNavigateToPremiumizeSettings: () -> Unit,
     onNavigateToRealDebridSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val viewModel: SettingsViewModel = viewModel { 
-        SettingsViewModel(accountRepository) 
-    }
+    val viewModel: SettingsViewModel = hiltViewModel()
     val traktAuthState by viewModel.traktAuthState.collectAsState()
     val traktUserState by viewModel.traktUserState.collectAsState()
     

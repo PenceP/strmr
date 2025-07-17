@@ -16,6 +16,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 
 data class TraktAuthState(
     val isAuthorizing: Boolean = false,
@@ -39,7 +41,8 @@ data class TraktSettingsState(
     val lastSyncTimestamp: Long = 0L
 )
 
-class SettingsViewModel(
+@HiltViewModel
+class SettingsViewModel @Inject constructor(
     private val accountRepository: AccountRepository
 ) : ViewModel() {
     private val _traktAuthState = MutableStateFlow(TraktAuthState())

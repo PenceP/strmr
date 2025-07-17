@@ -1,10 +1,18 @@
 package com.strmr.ai.data
 
 import android.util.Log
+import androidx.paging.ExperimentalPagingApi
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import com.strmr.ai.data.database.MovieDao
 import com.strmr.ai.data.database.MovieEntity
 import com.strmr.ai.data.database.CollectionDao
 import com.strmr.ai.data.database.CollectionEntity
+import com.strmr.ai.data.database.StrmrDatabase
+import com.strmr.ai.data.database.TraktRatingsDao
+import com.strmr.ai.data.database.TraktRatingsEntity
+import com.strmr.ai.data.paging.MoviesRemoteMediator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -14,9 +22,12 @@ class MovieRepository(
     private val movieDao: MovieDao,
     private val collectionDao: CollectionDao,
     private val traktApi: TraktApiService,
-    private val tmdbApi: TmdbApiService
+    private val tmdbApi: TmdbApiService,
+    private val database: StrmrDatabase,
+    private val traktRatingsDao: TraktRatingsDao // <-- Inject DAO
 ) {
     private val detailsExpiryMs = 7 * 24 * 60 * 60 * 1000L // 7 days
+    private val ratingsExpiryMs = 7 * 24 * 60 * 60 * 1000L // 7 days
     private var currentTrendingPage = 0
     private var currentPopularPage = 0
     private val pageSize = 20
@@ -24,7 +35,43 @@ class MovieRepository(
     fun getTrendingMovies(): Flow<List<MovieEntity>> = movieDao.getTrendingMovies()
     fun getPopularMovies(): Flow<List<MovieEntity>> = movieDao.getPopularMovies()
     
-    fun getTrendingMoviesPagingSource() = movieDao.getMoviesPagingSource()
+    @OptIn(ExperimentalPagingApi::class)
+    fun getTrendingMoviesPager(): Flow<PagingData<MovieEntity>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = 20,
+                enablePlaceholders = false,
+                prefetchDistance = 5
+            ),
+            remoteMediator = MoviesRemoteMediator(
+                contentType = MoviesRemoteMediator.ContentType.TRENDING,
+                database = database,
+                traktApi = traktApi,
+                tmdbApi = tmdbApi,
+                movieRepository = this
+            ),
+            pagingSourceFactory = { movieDao.getTrendingMoviesPagingSource() }
+        ).flow
+    }
+    
+    @OptIn(ExperimentalPagingApi::class)
+    fun getPopularMoviesPager(): Flow<PagingData<MovieEntity>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = 20,
+                enablePlaceholders = false,
+                prefetchDistance = 5
+            ),
+            remoteMediator = MoviesRemoteMediator(
+                contentType = MoviesRemoteMediator.ContentType.POPULAR,
+                database = database,
+                traktApi = traktApi,
+                tmdbApi = tmdbApi,
+                movieRepository = this
+            ),
+            pagingSourceFactory = { movieDao.getPopularMoviesPagingSource() }
+        ).flow
+    }
     
     suspend fun loadMoreTrendingMovies() {
         currentTrendingPage++
@@ -84,6 +131,14 @@ class MovieRepository(
                 movieDao.insertMovies(popular)
             }
         }
+    }
+
+    suspend fun mapTraktMovieToEntity(
+        movie: Movie,
+        trendingOrder: Int? = null,
+        popularOrder: Int? = null
+    ): MovieEntity? {
+        return fetchAndMapToEntity(movie, trendingOrder, popularOrder)
     }
 
     private suspend fun fetchAndMapToEntity(
@@ -189,6 +244,10 @@ class MovieRepository(
 
     suspend fun updateMovieLogo(tmdbId: Int, logoUrl: String?) {
         movieDao.updateMovieLogo(tmdbId, logoUrl)
+    }
+
+    suspend fun clearNullLogos() {
+        movieDao.clearNullLogos()
     }
 
     suspend fun getOrFetchCollection(collectionId: Int): CollectionEntity? {
@@ -315,6 +374,29 @@ class MovieRepository(
         } catch (e: Exception) {
             Log.e("MovieRepository", "Error fetching similar movies for $tmdbId", e)
             emptyList()
+        }
+    }
+
+    suspend fun getTraktRatings(traktId: Int): TraktRatingsEntity? {
+        val cached = traktRatingsDao.getRatings(traktId)
+        val now = System.currentTimeMillis()
+        if (cached != null && now - cached.updatedAt < ratingsExpiryMs) {
+            return cached
+        }
+        // Fetch from API
+        return try {
+            val api = traktApi.getMovieRatings(traktId)
+            val entity = TraktRatingsEntity(
+                traktId = traktId,
+                rating = api.rating,
+                votes = api.votes,
+                updatedAt = now
+            )
+            traktRatingsDao.insertOrUpdate(entity)
+            entity
+        } catch (e: Exception) {
+            // If API fails, return stale cache if available
+            cached
         }
     }
 } 

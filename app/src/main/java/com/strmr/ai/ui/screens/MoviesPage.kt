@@ -4,42 +4,27 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.strmr.ai.viewmodel.MoviesViewModel
 import com.strmr.ai.data.database.MovieEntity
-import com.strmr.ai.data.MovieRepository
-import com.strmr.ai.data.TmdbApiService
-import com.strmr.ai.data.OmdbRepository
 import androidx.compose.ui.focus.FocusRequester
 import android.util.Log
 import com.strmr.ai.ui.components.rememberSelectionManager
 
 @Composable
 fun MoviesPage(
-    movieRepository: MovieRepository,
-    tmdbApiService: TmdbApiService,
-    omdbRepository: OmdbRepository,
     isContentFocused: Boolean,
     onContentFocusChanged: ((Boolean) -> Unit)?,
     onNavigateToDetails: ((Int) -> Unit)?
 ) {
-    val viewModel: MoviesViewModel = viewModel(
-        factory = viewModelFactory {
-            initializer {
-                MoviesViewModel(movieRepository, tmdbApiService)
-            }
-        }
-    )
+    val viewModel: MoviesViewModel = hiltViewModel()
     
-    val uiState by viewModel.uiState.collectAsState()
+    val pagingUiState by viewModel.pagingUiState.collectAsState()
     
     // Use the new SelectionManager
     val selectionManager = rememberSelectionManager()
     
-    val rowTitles = uiState.mediaRows.keys.toList()
+    val rowTitles = pagingUiState.mediaRows.keys.toList()
     val rowCount = rowTitles.size
     val focusRequesters = remember(rowCount) { List(rowCount) { FocusRequester() } }
 
@@ -54,25 +39,16 @@ fun MoviesPage(
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        MediaPage(
-            uiState = uiState,
+        MediaPagingPage(
+            pagingUiState = pagingUiState,
             selectedRowIndex = selectionManager.selectedRowIndex,
             selectedItemIndex = selectionManager.selectedItemIndex,
             onItemSelected = { rowIdx, itemIdx ->
                 selectionManager.updateSelection(rowIdx, itemIdx)
-                val rowTitles = uiState.mediaRows.keys.toList()
-                val rowTitle = rowTitles.getOrNull(rowIdx) ?: return@MediaPage
-                val movies = uiState.mediaRows[rowTitle] ?: return@MediaPage
-                val selectedMovie = movies.getOrNull(itemIdx) ?: return@MediaPage
                 viewModel.onMovieSelected(rowIdx, itemIdx)
-                // Do NOT navigate here
             },
             onSelectionChanged = { newIndex ->
                 selectionManager.updateSelection(selectionManager.selectedRowIndex, newIndex)
-            },
-            // Pass the paging function here:
-            onCheckForMoreItems = { rowIdx, itemIdx, totalItems ->
-                viewModel.loadMore(rowIdx, itemIdx, totalItems)
             },
             modifier = Modifier,
             focusRequester = if (selectionManager.selectedRowIndex < focusRequesters.size && selectionManager.isContentFocused) focusRequesters[selectionManager.selectedRowIndex] else null,
@@ -87,9 +63,11 @@ fun MoviesPage(
                 selectionManager.updateContentFocus(focused)
                 onContentFocusChanged?.invoke(focused)
             },
-            omdbRepository = omdbRepository,
             onItemClick = { movie ->
                 onNavigateToDetails?.invoke((movie as MovieEntity).tmdbId)
+            },
+            getOmdbRatings = { imdbId ->
+                viewModel.getOmdbRatings(imdbId)
             }
         )
     }

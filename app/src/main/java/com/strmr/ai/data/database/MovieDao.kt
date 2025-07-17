@@ -35,6 +35,9 @@ interface MovieDao {
     @Query("UPDATE movies SET logoUrl = :logoUrl WHERE tmdbId = :tmdbId")
     suspend fun updateMovieLogo(tmdbId: Int, logoUrl: String?)
 
+    @Query("UPDATE movies SET logoUrl = NULL WHERE logoUrl IS NULL")
+    suspend fun clearNullLogos()
+
     @Query("UPDATE movies SET trendingOrder = NULL")
     suspend fun clearTrendingOrder()
 
@@ -52,4 +55,16 @@ interface MovieDao {
         clearPopularOrder()
         insertMovies(movies)
     }
+    
+    @Query("SELECT COUNT(*) FROM movies WHERE trendingOrder IS NOT NULL")
+    suspend fun getTrendingMoviesCount(): Int
+    
+    @Query("SELECT COUNT(*) FROM movies WHERE popularOrder IS NOT NULL")
+    suspend fun getPopularMoviesCount(): Int
+    
+    @Query("SELECT * FROM movies WHERE trendingOrder IS NOT NULL ORDER BY trendingOrder ASC")
+    fun getTrendingMoviesPagingSource(): PagingSource<Int, MovieEntity>
+    
+    @Query("SELECT * FROM movies WHERE popularOrder IS NOT NULL ORDER BY popularOrder ASC")
+    fun getPopularMoviesPagingSource(): PagingSource<Int, MovieEntity>
 } 

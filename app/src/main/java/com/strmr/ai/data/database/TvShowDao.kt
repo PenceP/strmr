@@ -52,4 +52,19 @@ interface TvShowDao {
     
     @Query("UPDATE tv_shows SET logoUrl = :logoUrl WHERE tmdbId = :tmdbId")
     suspend fun updateTvShowLogo(tmdbId: Int, logoUrl: String?)
+    
+    @Query("UPDATE tv_shows SET logoUrl = NULL WHERE logoUrl IS NULL")
+    suspend fun clearNullLogos()
+    
+    @Query("SELECT COUNT(*) FROM tv_shows WHERE trendingOrder IS NOT NULL")
+    suspend fun getTrendingTvShowsCount(): Int
+    
+    @Query("SELECT COUNT(*) FROM tv_shows WHERE popularOrder IS NOT NULL")
+    suspend fun getPopularTvShowsCount(): Int
+    
+    @Query("SELECT * FROM tv_shows WHERE trendingOrder IS NOT NULL ORDER BY trendingOrder ASC")
+    fun getTrendingTvShowsPagingSource(): PagingSource<Int, TvShowEntity>
+    
+    @Query("SELECT * FROM tv_shows WHERE popularOrder IS NOT NULL ORDER BY popularOrder ASC")
+    fun getPopularTvShowsPagingSource(): PagingSource<Int, TvShowEntity>
 } 

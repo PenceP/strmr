@@ -18,8 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.strmr.ai.data.AccountRepository
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.strmr.ai.viewmodel.SettingsViewModel
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
@@ -27,14 +26,11 @@ import java.util.*
 
 @Composable
 fun TraktSettingsPage(
-    accountRepository: AccountRepository,
     onBackPressed: () -> Unit,
     onTraktAuthorized: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    val viewModel: SettingsViewModel = viewModel { 
-        SettingsViewModel(accountRepository) 
-    }
+    val viewModel: SettingsViewModel = hiltViewModel()
     val traktAuthState by viewModel.traktAuthState.collectAsState()
     val traktUserState by viewModel.traktUserState.collectAsState()
     val traktSettingsState by viewModel.traktSettingsState.collectAsState()

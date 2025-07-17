@@ -1,8 +1,14 @@
 package com.strmr.ai.data
 
 import android.util.Log
+import androidx.paging.ExperimentalPagingApi
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import com.strmr.ai.data.database.TvShowDao
 import com.strmr.ai.data.database.TvShowEntity
+import com.strmr.ai.data.database.StrmrDatabase
+import com.strmr.ai.data.paging.TvShowsRemoteMediator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -18,7 +24,8 @@ class TvShowRepository(
     private val traktApiService: TraktApiService,
     private val tmdbApiService: TmdbApiService,
     private val seasonDao: SeasonDao,
-    private val episodeDao: EpisodeDao
+    private val episodeDao: EpisodeDao,
+    private val database: StrmrDatabase
 ) {
     private val detailsExpiryMs = 7 * 24 * 60 * 60 * 1000L // 7 days
     private var currentTrendingPage = 0
@@ -29,7 +36,43 @@ class TvShowRepository(
     
     fun getPopularTvShows(): Flow<List<TvShowEntity>> = tvShowDao.getPopularTvShows()
     
-    fun getTrendingTvShowsPagingSource() = tvShowDao.getTvShowsPagingSource()
+    @OptIn(ExperimentalPagingApi::class)
+    fun getTrendingTvShowsPager(): Flow<PagingData<TvShowEntity>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = 20,
+                enablePlaceholders = false,
+                prefetchDistance = 5
+            ),
+            remoteMediator = TvShowsRemoteMediator(
+                contentType = TvShowsRemoteMediator.ContentType.TRENDING,
+                database = database,
+                traktApi = traktApiService,
+                tmdbApi = tmdbApiService,
+                tvShowRepository = this
+            ),
+            pagingSourceFactory = { tvShowDao.getTrendingTvShowsPagingSource() }
+        ).flow
+    }
+    
+    @OptIn(ExperimentalPagingApi::class)
+    fun getPopularTvShowsPager(): Flow<PagingData<TvShowEntity>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = 20,
+                enablePlaceholders = false,
+                prefetchDistance = 5
+            ),
+            remoteMediator = TvShowsRemoteMediator(
+                contentType = TvShowsRemoteMediator.ContentType.POPULAR,
+                database = database,
+                traktApi = traktApiService,
+                tmdbApi = tmdbApiService,
+                tvShowRepository = this
+            ),
+            pagingSourceFactory = { tvShowDao.getPopularTvShowsPagingSource() }
+        ).flow
+    }
     
     suspend fun loadMoreTrendingTvShows() {
         currentTrendingPage++
@@ -89,6 +132,14 @@ class TvShowRepository(
                 tvShowDao.insertTvShows(popular)
             }
         }
+    }
+
+    suspend fun mapTraktShowToEntity(
+        show: Show,
+        trendingOrder: Int? = null,
+        popularOrder: Int? = null
+    ): TvShowEntity? {
+        return fetchAndMapToEntity(show, trendingOrder, popularOrder)
     }
 
     private suspend fun fetchAndMapToEntity(
@@ -186,6 +237,10 @@ class TvShowRepository(
 
     suspend fun updateTvShowLogo(tmdbId: Int, logoUrl: String?) {
         tvShowDao.updateTvShowLogo(tmdbId, logoUrl)
+    }
+
+    suspend fun clearNullLogos() {
+        tvShowDao.clearNullLogos()
     }
 
     suspend fun getOrFetchTvShowWithLogo(tmdbId: Int): TvShowEntity? {

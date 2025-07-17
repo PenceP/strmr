@@ -132,7 +132,7 @@ fun MediaDetails(
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
-        // Ratings row (IMDb, Rotten Tomatoes, Metacritic)
+        // Ratings row (IMDb, Rotten Tomatoes, Metacritic, Trakt)
         omdbRatings?.let { omdb ->
             val imdb = omdb.imdbRating?.takeIf { it.isNotBlank() }
             val rt = omdb.Ratings?.find { it.Source == "Rotten Tomatoes" }?.Value
@@ -178,10 +178,41 @@ fun MediaDetails(
                         color = Color.White.copy(alpha = 0.9f),
                         fontSize = 15.sp,
                     )
+                    Spacer(modifier = Modifier.width(12.dp))
+                }
+                // Add Trakt rating
+                rating?.let { traktRating ->
+                    Image(
+                        painter = painterResource(id = R.drawable.trakt1),
+                        contentDescription = "Trakt",
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = String.format("%.1f", traktRating),
+                        color = Color.White.copy(alpha = 0.9f),
+                        fontSize = 15.sp,
+                    )
+                }
+            }
+        } ?: run {
+            // Show only Trakt rating if no OMDb ratings available
+            rating?.let { traktRating ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Image(
+                        painter = painterResource(id = R.drawable.trakt1),
+                        contentDescription = "Trakt",
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = String.format("%.1f", traktRating),
+                        color = Color.White.copy(alpha = 0.9f),
+                        fontSize = 15.sp,
+                    )
                 }
             }
         }
-        //extraContent?.invoke()
         
     }
 } 

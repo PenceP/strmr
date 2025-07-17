@@ -38,7 +38,6 @@ import androidx.compose.foundation.rememberScrollState
 import com.strmr.ai.data.RetrofitInstance
 import com.strmr.ai.data.OmdbResponse
 import com.strmr.ai.data.OmdbRating
-import com.strmr.ai.data.OmdbRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.strmr.ai.ui.components.MediaCard
@@ -61,7 +60,7 @@ fun <T> MediaPage(
     onUpDown: ((Int) -> Unit)? = null,
     isContentFocused: Boolean = false,
     onContentFocusChanged: ((Boolean) -> Unit)? = null,
-    omdbRepository: OmdbRepository,
+    getOmdbRatings: suspend (String) -> OmdbResponse? = { null },
     onItemClick: ((T) -> Unit)? = null
 ) where T : Any {
     val rowTitles = uiState.mediaRows.keys.toList()
@@ -82,7 +81,7 @@ fun <T> MediaPage(
             }
             if (!imdbId.isNullOrBlank()) {
                 coroutineScope.launch {
-                    omdbRepository.getOmdbRatings(imdbId)
+                        getOmdbRatings(imdbId)
                 }
             }
         }
@@ -239,7 +238,7 @@ LaunchedEffect(isContentFocused, selectedRowIndex, selectedItemIndex) {
                             if (!selectedImdbId.isNullOrBlank()) {
                                 try {
                                     omdbRatings = withContext(Dispatchers.IO) {
-                                        omdbRepository.getOmdbRatings(selectedImdbId)
+                                        getOmdbRatings(selectedImdbId)
                                     }
                                 } catch (_: Exception) {
                                     omdbRatings = null

@@ -12,23 +12,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Surface
-import com.strmr.ai.data.MovieRepository
-import com.strmr.ai.data.AccountRepository
-import com.strmr.ai.data.RetrofitInstance
-import com.strmr.ai.data.TmdbApiService
-import com.strmr.ai.data.TraktApiService
-import com.strmr.ai.data.TvShowRepository
-import com.strmr.ai.data.database.StrmrDatabase
 import com.strmr.ai.ui.navigation.NavigationBar
 import com.strmr.ai.ui.screens.DebridCloudPage
 import com.strmr.ai.ui.screens.HomePage
@@ -40,15 +32,10 @@ import com.strmr.ai.ui.screens.TraktSettingsPage
 import com.strmr.ai.ui.screens.PremiumizeSettingsPage
 import com.strmr.ai.ui.screens.RealDebridSettingsPage
 import com.strmr.ai.ui.theme.StrmrTheme
-import com.strmr.ai.viewmodel.HomeViewModel
-import com.strmr.ai.viewmodel.MoviesViewModel
-import com.strmr.ai.viewmodel.TvShowsViewModel
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.FocusDirection
-import com.strmr.ai.data.HomeRepository
 import androidx.compose.ui.zIndex
-import com.strmr.ai.data.OmdbRepository
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.strmr.ai.data.database.MovieEntity
@@ -56,15 +43,25 @@ import com.strmr.ai.data.database.TvShowEntity
 import com.strmr.ai.ui.screens.DetailsPage
 import com.strmr.ai.ui.screens.MediaDetailsType
 import android.util.Log
+import dagger.hilt.android.AndroidEntryPoint
+import com.strmr.ai.viewmodel.HomeViewModel
+import com.strmr.ai.viewmodel.MoviesViewModel
+import com.strmr.ai.viewmodel.TvShowsViewModel
+import com.strmr.ai.data.MovieRepository
+import com.strmr.ai.data.TvShowRepository
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    // Dependencies
-    private lateinit var movieRepository: MovieRepository
-    private lateinit var tvShowRepository: TvShowRepository
-    private lateinit var accountRepository: AccountRepository
-    private lateinit var tmdbApiService: TmdbApiService
-    private lateinit var homeRepository: HomeRepository
-    private lateinit var omdbRepository: OmdbRepository
+    
+    @Inject
+    lateinit var movieRepository: MovieRepository
+    
+    @Inject
+    lateinit var tvShowRepository: TvShowRepository
     
     @OptIn(ExperimentalTvMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -72,8 +69,8 @@ class MainActivity : ComponentActivity() {
         
         android.util.Log.d("FontLoading", "🚀 MainActivity onCreate started")
         
-        // Initialize dependencies
-        initializeDependencies()
+        // Clear null logos on app start to allow retries
+        clearNullLogos()
         
         setContent {
             android.util.Log.d("FontLoading", "🎨 Setting content with StrmrTheme")
@@ -83,56 +80,29 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     shape = RectangleShape
                 ) {
-                    MainScreen(
-                        movieRepository = movieRepository,
-                        tvShowRepository = tvShowRepository,
-                        accountRepository = accountRepository,
-                        tmdbApiService = tmdbApiService,
-                        homeRepository = homeRepository,
-                        omdbRepository = omdbRepository
-                    )
+                    MainScreen()
                 }
             }
         }
     }
     
-    private fun initializeDependencies() {
-        // Initialize API services
-        val traktApiService = RetrofitInstance.trakt.create(TraktApiService::class.java)
-        tmdbApiService = RetrofitInstance.tmdb.create(TmdbApiService::class.java)
-        
-        // Initialize database
-        val database = (application as StrmrApplication).database
-        
-        // Initialize repositories
-        homeRepository = HomeRepository(
-            this, // context
-            database.playbackDao(),
-            database.traktUserProfileDao(),
-            database.traktUserStatsDao()
-        )
-        movieRepository = MovieRepository(database.movieDao(), database.collectionDao(), traktApiService, tmdbApiService)
-        tvShowRepository = TvShowRepository(
-            database.tvShowDao(),
-            traktApiService,
-            tmdbApiService,
-            database.seasonDao(),
-            database.episodeDao()
-        )
-        accountRepository = AccountRepository(database.accountDao(), traktApiService)
-        omdbRepository = OmdbRepository(database.omdbRatingsDao(), RetrofitInstance.omdbApiService)
+    private fun clearNullLogos() {
+        // Use a coroutine to clear null logos asynchronously
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                movieRepository.clearNullLogos()
+                tvShowRepository.clearNullLogos()
+                
+                Log.d("MainActivity", "✅ Cleared null logos for retry")
+            } catch (e: Exception) {
+                Log.e("MainActivity", "❌ Error clearing null logos", e)
+            }
+        }
     }
 }
 
 @Composable
-fun MainScreen(
-    movieRepository: MovieRepository,
-    tvShowRepository: TvShowRepository,
-    accountRepository: AccountRepository,
-    tmdbApiService: TmdbApiService,
-    homeRepository: HomeRepository,
-    omdbRepository: OmdbRepository
-) {
+fun MainScreen() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -172,16 +142,9 @@ fun MainScreen(
                     PlaceholderPage("Search")
                 }
                 composable("home") {
-                    val homeViewModel: HomeViewModel = viewModel(
-                        factory = viewModelFactory {
-                            initializer {
-                                HomeViewModel(accountRepository, movieRepository, tvShowRepository, homeRepository)
-                            }
-                        }
-                    )
+                    val homeViewModel: HomeViewModel = hiltViewModel()
                     HomePage(
                         viewModel = homeViewModel,
-                        omdbRepository = omdbRepository,
                         isContentFocused = isContentFocused,
                         onContentFocusChanged = { focused ->
                             isContentFocused = focused
@@ -198,9 +161,6 @@ fun MainScreen(
                 }
                 composable("movies") {
                     MoviesPage(
-                        movieRepository = movieRepository,
-                        tmdbApiService = tmdbApiService,
-                        omdbRepository = omdbRepository, // <-- added
                         isContentFocused = isContentFocused,
                         onContentFocusChanged = { focused ->
                             isContentFocused = focused
@@ -212,9 +172,6 @@ fun MainScreen(
                 }
                 composable("tvshows") {
                     TvShowsPage(
-                        tvShowRepository = tvShowRepository,
-                        tmdbApiService = tmdbApiService,
-                        omdbRepository = omdbRepository, // <-- added
                         isContentFocused = isContentFocused,
                         onContentFocusChanged = { focused ->
                             isContentFocused = focused
@@ -229,22 +186,14 @@ fun MainScreen(
                 }
                 composable("settings") {
                     SettingsPage(
-                        accountRepository = accountRepository,
                         onNavigateToTraktSettings = { navController.navigate("trakt_settings") },
                         onNavigateToPremiumizeSettings = { navController.navigate("premiumize_settings") },
                         onNavigateToRealDebridSettings = { navController.navigate("realdebrid_settings") }
                     )
                 }
                 composable("trakt_settings") {
-                    val homeViewModel: HomeViewModel = viewModel(
-                        factory = viewModelFactory {
-                            initializer {
-                                HomeViewModel(accountRepository, movieRepository, tvShowRepository, homeRepository)
-                            }
-                        }
-                    )
+                    val homeViewModel: HomeViewModel = hiltViewModel()
                     TraktSettingsPage(
-                        accountRepository = accountRepository,
                         onBackPressed = { navController.popBackStack() },
                         onTraktAuthorized = { homeViewModel.refreshContinueWatching() }
                     )
@@ -273,20 +222,21 @@ fun MainScreen(
                     
                     // Debug logging for navigation parameters
                     Log.d("MainActivity", "🎯 DEBUG: Navigation to details - mediaType: $mediaType, tmdbId: $tmdbId, season: $season, episode: $episode")
-                    var movie by remember { mutableStateOf<MovieEntity?>(null) }
-                    var show by remember { mutableStateOf<TvShowEntity?>(null) }
+                    val detailsViewModel: com.strmr.ai.viewmodel.DetailsViewModel = hiltViewModel()
+                    val movie by detailsViewModel.movie.collectAsState()
+                    val show by detailsViewModel.tvShow.collectAsState()
+                    
                     LaunchedEffect(mediaType, tmdbId) {
                         if (mediaType == "movie" && tmdbId != null) {
-                            movie = movieRepository.getMovieByTmdbId(tmdbId)
+                            detailsViewModel.loadMovie(tmdbId)
                         } else if (mediaType == "tvshow" && tmdbId != null) {
-                            show = tvShowRepository.getTvShowByTmdbId(tmdbId)
+                            detailsViewModel.loadTvShow(tmdbId)
                         }
                     }
                     when (mediaType) {
                         "movie" -> DetailsPage(
                             mediaDetails = movie?.let { MediaDetailsType.Movie(it) },
-                            omdbRepository = omdbRepository,
-                            movieRepository = movieRepository,
+                            viewModel = detailsViewModel,
                             onNavigateToSimilar = { mediaType, tmdbId ->
                                 val route = "details/$mediaType/$tmdbId"
                                 navController.navigate(route)
@@ -294,8 +244,7 @@ fun MainScreen(
                         )
                         "tvshow" -> DetailsPage(
                             mediaDetails = show?.let { MediaDetailsType.TvShow(it) },
-                            omdbRepository = omdbRepository,
-                            tvShowRepository = tvShowRepository,
+                            viewModel = detailsViewModel,
                             onNavigateToSimilar = { mediaType, tmdbId ->
                                 val route = "details/$mediaType/$tmdbId"
                                 navController.navigate(route)
@@ -321,20 +270,21 @@ fun MainScreen(
                     
                     // Debug logging for navigation parameters
                     Log.d("MainActivity", "🎯 DEBUG: Navigation to details - mediaType: $mediaType, tmdbId: $tmdbId, season: $season, episode: $episode")
-                    var movie by remember { mutableStateOf<MovieEntity?>(null) }
-                    var show by remember { mutableStateOf<TvShowEntity?>(null) }
+                    val detailsViewModel: com.strmr.ai.viewmodel.DetailsViewModel = hiltViewModel()
+                    val movie by detailsViewModel.movie.collectAsState()
+                    val show by detailsViewModel.tvShow.collectAsState()
+                    
                     LaunchedEffect(mediaType, tmdbId) {
                         if (mediaType == "movie" && tmdbId != null) {
-                            movie = movieRepository.getMovieByTmdbId(tmdbId)
+                            detailsViewModel.loadMovie(tmdbId)
                         } else if (mediaType == "tvshow" && tmdbId != null) {
-                            show = tvShowRepository.getTvShowByTmdbId(tmdbId)
+                            detailsViewModel.loadTvShow(tmdbId)
                         }
                     }
                     when (mediaType) {
                         "movie" -> DetailsPage(
                             mediaDetails = movie?.let { MediaDetailsType.Movie(it) },
-                            omdbRepository = omdbRepository,
-                            movieRepository = movieRepository,
+                            viewModel = detailsViewModel,
                             onNavigateToSimilar = { mediaType, tmdbId ->
                                 val route = "details/$mediaType/$tmdbId"
                                 navController.navigate(route)
@@ -342,8 +292,7 @@ fun MainScreen(
                         )
                         "tvshow" -> DetailsPage(
                             mediaDetails = show?.let { MediaDetailsType.TvShow(it) },
-                            omdbRepository = omdbRepository,
-                            tvShowRepository = tvShowRepository,
+                            viewModel = detailsViewModel,
                             cachedSeason = season,
                             cachedEpisode = episode
                         )

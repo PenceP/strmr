@@ -318,7 +318,6 @@ fun HomeMediaRow(
 fun HomePage(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel,
-    omdbRepository: OmdbRepository,
     isContentFocused: Boolean = false,
     onContentFocusChanged: ((Boolean) -> Unit)? = null,
     onNavigateToDetails: ((String, Int, Int?, Int?) -> Unit)? = null
@@ -364,7 +363,7 @@ fun HomePage(
             }
             if (!imdbId.isNullOrBlank()) {
                 coroutineScope.launch {
-                    omdbRepository.getOmdbRatings(imdbId)
+                    viewModel.getOmdbRatings(imdbId)
                 }
             }
         }
@@ -492,7 +491,7 @@ fun HomePage(
                 }
                 if (!imdbId.isNullOrBlank()) {
                     omdbRatings = withContext(Dispatchers.IO) {
-                        omdbRepository.getOmdbRatings(imdbId)
+                        viewModel.getOmdbRatings(imdbId)
                     }
                 } else {
                     omdbRatings = null

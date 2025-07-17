@@ -11,8 +11,14 @@ import coil.memory.MemoryCache
 import androidx.work.*
 import java.util.concurrent.TimeUnit
 import com.strmr.ai.BackgroundSyncWorker
+import dagger.hilt.android.HiltAndroidApp
+import androidx.hilt.work.HiltWorkerFactory
+import javax.inject.Inject
 
-class StrmrApplication : Application(), ImageLoaderFactory {
+@HiltAndroidApp
+class StrmrApplication : Application(), ImageLoaderFactory, Configuration.Provider {
+    
+    @Inject lateinit var workerFactory: HiltWorkerFactory
     
     val database: StrmrDatabase by lazy {
         StrmrDatabase.getDatabase(this)
@@ -33,6 +39,11 @@ class StrmrApplication : Application(), ImageLoaderFactory {
             }
             .build()
     }
+    
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
+            .setWorkerFactory(workerFactory)
+            .build()
 
     override fun onCreate() {
         super.onCreate()
