@@ -6,6 +6,7 @@ To build and run this project, you must create a `secrets.properties` file in th
 
 ```
 TRAKT_API_KEY=your_trakt_key_here
+TMDB_READ_KEY=your_tmdb_key_here
 OMDB_API_KEY=your_omdb_key_here
 ```
 

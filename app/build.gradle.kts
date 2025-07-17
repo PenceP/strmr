@@ -27,6 +27,7 @@ android {
         versionName = "1.0"
         buildConfigField("String", "TRAKT_API_KEY", "\"${secrets.getProperty("TRAKT_API_KEY", "")}\"")
         buildConfigField("String", "OMDB_API_KEY", "\"${secrets.getProperty("OMDB_API_KEY", "")}\"")
+        buildConfigField("String", "TMDB_READ_KEY", "\"${secrets.getProperty("TMDB_READ_KEY", "")}\"")
     }
 
     buildTypes {
