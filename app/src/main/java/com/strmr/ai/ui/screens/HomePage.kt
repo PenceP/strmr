@@ -609,7 +609,10 @@ fun HomePage(
                             onUpDown = { direction ->
                                 val newRowIndex = validRowIndex + direction
                                 if (newRowIndex >= 0 && newRowIndex < rows.size) {
+                                    Log.d("HomePage", "🎯 Row navigation: $validRowIndex -> $newRowIndex, maintaining focus")
                                     selectionManager.updateSelection(newRowIndex, 0)
+                                    // Ensure content focus is maintained during row transitions
+                                    selectionManager.updateContentFocus(true)
                                 }
                             },
                             isContentFocused = selectionManager.isContentFocused,

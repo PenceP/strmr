@@ -56,7 +56,10 @@ fun TvShowsPage(
             onUpDown = { direction ->
                 val newRowIndex = selectionManager.selectedRowIndex + direction
                 if (newRowIndex >= 0 && newRowIndex < rowCount) {
+                    Log.d("TvShowsPage", "🎯 Row navigation: ${selectionManager.selectedRowIndex} -> $newRowIndex, maintaining focus")
                     selectionManager.updateSelection(newRowIndex, 0)
+                    // Ensure content focus is maintained during row transitions
+                    selectionManager.updateContentFocus(true)
                 }
             },
             isContentFocused = selectionManager.isContentFocused,

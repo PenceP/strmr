@@ -198,51 +198,42 @@ fun <T : Any> MediaPagingPage(
                 }
             }
 
-            // Active row section with indicators
+            // Active row section with indicators - simplified without AnimatedContent
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(0.51f)
             ) {
-                AnimatedContent(
-                    targetState = selectedRowIndex,
-                    transitionSpec = {
-                        val direction = if (targetState > initialState) 1 else -1
-                        (slideInVertically(
-                            animationSpec = tween(350),
-                            initialOffsetY = { height -> direction * height }
-                        ) + fadeIn()).togetherWith(
-                            slideOutVertically(
-                                animationSpec = tween(350),
-                                targetOffsetY = { height -> -direction * height }
-                            ) + fadeOut()
-                        )
-                    }
-                ) { rowIdx ->
-                    val rowTitle = rowTitles.getOrNull(rowIdx) ?: ""
-                    val pagingFlow = pagingUiState.mediaRows[rowTitle] ?: return@AnimatedContent
+                // Render only the selected row (like HomePage approach)
+                val rowTitle = rowTitles.getOrNull(selectedRowIndex) ?: ""
+                val pagingFlow = pagingUiState.mediaRows[rowTitle]
+                
+                if (pagingFlow != null) {
                     val lazyPagingItems = pagingFlow.collectAsLazyPagingItems()
                     
                     if (lazyPagingItems.itemCount > 0) {
                         PagingCenteredMediaRow(
                             title = rowTitle,
                             items = lazyPagingItems,
-                            selectedIndex = if (rowIdx == selectedRowIndex) selectedItemIndex else 0,
+                            selectedIndex = selectedItemIndex,
                             onItemSelected = { itemIndex ->
-                                onItemSelected(rowIdx, itemIndex)
+                                onItemSelected(selectedRowIndex, itemIndex)
                             },
                             onSelectionChanged = { newIndex ->
-                                if (rowIdx == selectedRowIndex) onSelectionChanged(newIndex)
+                                onSelectionChanged(newIndex)
                             },
                             modifier = Modifier.fillMaxWidth(),
-                            focusRequester = if (rowIdx == selectedRowIndex) focusRequester else null,
+                            focusRequester = focusRequester,
                             onUpDown = { direction ->
                                 val newRowIndex = selectedRowIndex + direction
                                 if (newRowIndex in 0 until rowCount) {
+                                    Log.d("MediaPagingPage", "🎯 Row navigation: $selectedRowIndex -> $newRowIndex, maintaining content focus")
                                     onItemSelected(newRowIndex, 0)
+                                    // Ensure content focus is maintained during row transitions
+                                    onContentFocusChanged?.invoke(true)
                                 }
                             },
-                            isContentFocused = isContentFocused && rowIdx == selectedRowIndex,
+                            isContentFocused = isContentFocused,
                             onContentFocusChanged = onContentFocusChanged,
                             onItemClick = onItemClick
                         )

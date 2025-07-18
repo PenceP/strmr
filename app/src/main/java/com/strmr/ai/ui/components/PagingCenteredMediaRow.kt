@@ -66,9 +66,10 @@ fun <T : Any> PagingCenteredMediaRow(
         }
     }
 
-    // Request focus when this row becomes selected
+    // Request focus when this row becomes selected (simplified approach like HomePage)
     if (focusRequester != null && isContentFocused) {
         LaunchedEffect(isContentFocused) {
+            Log.d("PagingCenteredMediaRow", "🎯 Requesting focus for '$title'")
             focusRequester.requestFocus()
         }
     }
@@ -98,7 +99,10 @@ fun <T : Any> PagingCenteredMediaRow(
                 .height(rowHeight)
                 .onFocusChanged { 
                     Log.d("PagingCenteredMediaRow", "🎯 Focus changed for '$title': ${it.isFocused}")
-                    onContentFocusChanged?.invoke(it.isFocused) 
+                    // Only report focus gained, not focus lost to prevent interference during row transitions
+                    if (it.isFocused) {
+                        onContentFocusChanged?.invoke(true)
+                    }
                 }
                 .focusRequester(focusRequester ?: FocusRequester())
                 .focusable(enabled = isContentFocused)
