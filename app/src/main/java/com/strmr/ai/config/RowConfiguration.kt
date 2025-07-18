@@ -43,7 +43,11 @@ data class RowConfig(
     @SerializedName("displayOptions")
     val displayOptions: DisplayOptions,
     @SerializedName("traktConfig")
-    val traktConfig: TraktConfig? = null
+    val traktConfig: TraktConfig? = null,
+    @SerializedName("nestedRows")
+    val nestedRows: List<RowConfig>? = null,
+    @SerializedName("nestedItems")
+    val nestedItems: List<NestedItemConfig>? = null
 )
 
 /**
@@ -107,6 +111,25 @@ data class NetworkConfig(
     @SerializedName("dataUrl")
     val dataUrl: String?
 )
+
+/**
+ * Configuration for a nested item within a row
+ */
+data class NestedItemConfig(
+    @SerializedName("id")
+    val id: String,
+    @SerializedName("name")
+    val name: String,
+    @SerializedName("backgroundImageUrl")
+    val backgroundImageUrl: String,
+    @SerializedName("nameDisplayMode")
+    val nameDisplayMode: String,
+    @SerializedName("dataUrl")
+    val dataUrl: String,
+    @SerializedName("type")
+    val type: String // movies/shows
+)
+
 
 /**
  * Enum for row types

@@ -18,7 +18,62 @@
         "showEpisodeInfo": true,
         "clickable": true,
         "supportedTypes": ["movie", "tvshow"]
-      }
+      },
+      "nestedRows": [
+        {
+          "id": "quick_access",
+          "title": "Trakt Lists",
+          "type": "nested_items",
+          "dataSource": "static.quick_access",
+          "cardType": "landscape",
+          "cardHeight": 120,
+          "showHero": false,
+          "showLoading": false,
+          "order": 2,
+          "enabled": true,
+          "displayOptions": {
+            "showOverlays": false,
+            "showProgress": false,
+            "showEpisodeInfo": false,
+            "clickable": true,
+            "supportedTypes": ["collection"]
+          }
+        }
+      ],
+      "nestedItems": [
+        {
+          "id": "movie_collection",
+          "name": "Movie Collection",
+          "backgroundImageUrl": "https://user-images.githubusercontent.com/62456796/170290527-fd8bd058-8414-43b8-be11-d01397ff697f.png",
+          "nameDisplayMode": "Visible",
+          "dataUrl": "https://api.trakt.tv/sync/collection/movies",
+          "type": "movies"
+        },
+        {
+          "id": "movie_watchlist",
+          "name": "Movie Watchlist",
+          "backgroundImageUrl": "https://user-images.githubusercontent.com/62456796/170290527-fd8bd058-8414-43b8-be11-d01397ff697f.png",
+          "nameDisplayMode": "Visible",
+          "dataUrl": "https://api.trakt.tv/sync/watchlist/movies",
+          "type": "movies"
+        },
+        {
+          "id": "tv_collection",
+          "name": "TV Collection",
+          "backgroundImageUrl": "https://user-images.githubusercontent.com/62456796/170290527-fd8bd058-8414-43b8-be11-d01397ff697f.png",
+          "nameDisplayMode": "Visible",
+          "dataUrl": "https://api.trakt.tv/sync/collection/shows",
+          "type": "shows"
+        },
+        {
+          "id": "tv_watchlist",
+          "name": "TV Watchlist",
+          "backgroundImageUrl": "https://user-images.githubusercontent.com/62456796/170290527-fd8bd058-8414-43b8-be11-d01397ff697f.png",
+          "nameDisplayMode": "Visible",
+          "dataUrl": "https://api.trakt.tv/sync/watchlist/shows",
+          "type": "shows"
+        }
+      ]
     },
     {
       "id": "networks",

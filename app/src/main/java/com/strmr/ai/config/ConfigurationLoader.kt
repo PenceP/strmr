@@ -65,6 +65,27 @@ class ConfigurationLoader(private val context: Context) {
             )
         } ?: emptyList()
     }
+
+    /**
+     * Get nested rows from configuration as complete row configurations
+     */
+    fun getNestedRowsFromConfig(rowConfig: RowConfig): List<RowConfig> {
+        return rowConfig.nestedRows?.filter { it.enabled } ?: emptyList()
+    }
+
+    /**
+     * Get nested items from configuration as NetworkInfo objects
+     */
+    fun getNestedItemsFromConfig(rowConfig: RowConfig): List<NetworkInfo> {
+        return rowConfig.nestedItems?.map { nestedItemConfig ->
+            NetworkInfo(
+                id = nestedItemConfig.id,
+                name = nestedItemConfig.name,
+                posterUrl = nestedItemConfig.backgroundImageUrl,
+                dataUrl = nestedItemConfig.dataUrl
+            )
+        } ?: emptyList()
+    }
     
     /**
      * Get enabled rows sorted by order

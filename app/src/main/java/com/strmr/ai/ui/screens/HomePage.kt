@@ -63,6 +63,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import com.strmr.ai.utils.DateFormatter
 import com.strmr.ai.config.ConfigurationLoader
 import com.strmr.ai.config.PageConfiguration
+import com.strmr.ai.config.RowConfig
+import com.strmr.ai.data.NetworkInfo
 import androidx.compose.ui.platform.LocalContext
 
 private data class HeroData(
@@ -318,6 +320,7 @@ fun HomePage(
     
     // Create media rows dynamically based on configuration
     val mediaRows = mutableMapOf<String, List<Any>>()
+    val rowConfigs = mutableMapOf<String, RowConfig>()
     pageConfiguration?.let { config ->
         val enabledRows = ConfigurationLoader(context).getEnabledRowsSortedByOrder(config)
         
@@ -326,16 +329,35 @@ fun HomePage(
                 "continue_watching" -> {
                     if (continueWatching.isNotEmpty()) {
                         mediaRows[rowConfig.title] = continueWatching
+                        rowConfigs[rowConfig.title] = rowConfig
+                    }
+                    // Add nested rows if they exist
+                    if (!rowConfig.nestedRows.isNullOrEmpty()) {
+                        val nestedRowConfigs = ConfigurationLoader(context).getNestedRowsFromConfig(rowConfig)
+                        for (nestedRowConfig in nestedRowConfigs) {
+                            when (nestedRowConfig.type) {
+                                "nested_items" -> {
+                                    // Get the individual items from the parent row configuration
+                                    val nestedItems = ConfigurationLoader(context).getNestedItemsFromConfig(rowConfig)
+                                    if (nestedItems.isNotEmpty()) {
+                                        mediaRows[nestedRowConfig.title] = nestedItems
+                                        rowConfigs[nestedRowConfig.title] = nestedRowConfig
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
                 "networks" -> {
                     if (networks.isNotEmpty()) {
                         mediaRows[rowConfig.title] = networks
+                        rowConfigs[rowConfig.title] = rowConfig
                     }
                 }
                 "collections" -> {
                     if (collections.isNotEmpty()) {
                         mediaRows[rowConfig.title] = collections
+                        rowConfigs[rowConfig.title] = rowConfig
                     }
                 }
             }
@@ -574,7 +596,7 @@ fun HomePage(
                     val rowItems = rows.getOrNull(rowIndex) ?: emptyList()
                     
                     // Get row configuration for this row
-                    val rowConfig = pageConfiguration?.rows?.find { it.title == rowTitle }
+                    val rowConfig = rowConfigs[rowTitle] ?: pageConfiguration?.rows?.find { it.title == rowTitle }
                     val rowHeight = rowConfig?.cardHeight?.dp ?: 140.dp
                     
                     // Check if this row should show loading state based on configuration
