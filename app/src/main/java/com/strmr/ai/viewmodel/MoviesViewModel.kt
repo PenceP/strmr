@@ -20,12 +20,17 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import android.content.Context
+import com.strmr.ai.config.ConfigurationLoader
+import com.strmr.ai.config.PageConfiguration
+import dagger.hilt.android.qualifiers.ApplicationContext
 
 @HiltViewModel
 class MoviesViewModel @Inject constructor(
     private val movieRepository: MovieRepository,
     private val fetchLogoUseCase: FetchLogoUseCase,
-    private val omdbRepository: OmdbRepository
+    private val omdbRepository: OmdbRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UiState<MovieEntity>())
@@ -35,20 +40,64 @@ class MoviesViewModel @Inject constructor(
     val pagingUiState = _pagingUiState.asStateFlow()
 
     private var initialLoadComplete = false
+    private var pageConfiguration: PageConfiguration? = null
+    private val _traktListMovies = MutableStateFlow<Map<String, List<MovieEntity>>>(emptyMap())
+    val traktListMovies = _traktListMovies.asStateFlow()
 
     init {
+        loadConfiguration()
         setupPaging()
         loadMovies()
         refreshAllMovies()
     }
     
+    private fun loadConfiguration() {
+        viewModelScope.launch {
+            try {
+                val configLoader = ConfigurationLoader(context)
+                pageConfiguration = configLoader.loadPageConfiguration("MOVIES")
+                pageConfiguration?.let { config ->
+                    loadTraktLists(config)
+                }
+            } catch (e: Exception) {
+                Log.e("MoviesViewModel", "Error loading configuration", e)
+            }
+        }
+    }
+
     private fun setupPaging() {
         _pagingUiState.value = PagingUiState(
             mediaRows = mapOf(
-                "Trending Movies" to movieRepository.getTrendingMoviesPager().cachedIn(viewModelScope),
-                "Popular Movies" to movieRepository.getPopularMoviesPager().cachedIn(viewModelScope)
+                "Trending" to movieRepository.getTrendingMoviesPager().cachedIn(viewModelScope),
+                "Popular" to movieRepository.getPopularMoviesPager().cachedIn(viewModelScope)
             )
         )
+    }
+
+    private fun loadTraktLists(config: PageConfiguration) {
+        viewModelScope.launch {
+            val traktRows = config.rows.filter { it.type == "trakt_list" }
+            val traktListData = mutableMapOf<String, List<MovieEntity>>()
+            
+            for (row in traktRows) {
+                try {
+                    val traktConfig = row.traktConfig
+                    if (traktConfig != null) {
+                        Log.d("MoviesViewModel", "Loading Trakt list: ${row.title}")
+                        val movies = movieRepository.getTraktListMovies(
+                            traktConfig.username,
+                            traktConfig.listSlug
+                        )
+                        traktListData[row.title] = movies
+                        Log.d("MoviesViewModel", "Loaded ${movies.size} movies for ${row.title}")
+                    }
+                } catch (e: Exception) {
+                    Log.e("MoviesViewModel", "Error loading Trakt list ${row.title}", e)
+                }
+            }
+            
+            _traktListMovies.value = traktListData
+        }
     }
 
     private fun loadMovies() {
@@ -57,14 +106,36 @@ class MoviesViewModel @Inject constructor(
             var firstDbEmission = false
             combine(
                 movieRepository.getTrendingMovies(),
-                movieRepository.getPopularMovies()
-            ) { trending, popular ->
+                movieRepository.getPopularMovies(),
+                _traktListMovies
+            ) { trending, popular, traktLists ->
+                val mediaRows = mutableMapOf<String, List<MovieEntity>>()
+                
+                // Add rows based on configuration order
+                pageConfiguration?.let { config ->
+                    val enabledRows = config.rows.filter { it.enabled }.sortedBy { it.order }
+                    for (row in enabledRows) {
+                        when (row.title) {
+                            "Trending" -> mediaRows["Trending"] = trending
+                            "Popular" -> mediaRows["Popular"] = popular
+                            else -> {
+                                // Check if it's a Trakt list
+                                traktLists[row.title]?.let { movies ->
+                                    mediaRows[row.title] = movies
+                                }
+                            }
+                        }
+                    }
+                } ?: run {
+                    // Fallback if no configuration
+                    mediaRows["Trending"] = trending
+                    mediaRows["Popular"] = popular
+                    mediaRows.putAll(traktLists)
+                }
+                
                 UiState(
                     isLoading = !initialLoadComplete || !firstDbEmission,
-                    mediaRows = mapOf(
-                        "Trending Movies" to trending,
-                        "Popular Movies" to popular
-                    )
+                    mediaRows = mediaRows
                 )
             }.collect {
                 firstDbEmission = true

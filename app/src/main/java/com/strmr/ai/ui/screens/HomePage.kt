@@ -61,6 +61,9 @@ import kotlinx.coroutines.withContext
 import com.strmr.ai.ui.components.rememberSelectionManager
 import androidx.compose.runtime.rememberCoroutineScope
 import com.strmr.ai.utils.DateFormatter
+import com.strmr.ai.config.ConfigurationLoader
+import com.strmr.ai.config.PageConfiguration
+import androidx.compose.ui.platform.LocalContext
 
 private data class HeroData(
     val backdropUrl: String? = null,
@@ -75,46 +78,7 @@ private data class HeroData(
     val cast: List<String>? = null
 )
 
-// Data class for collections
-private data class CollectionItem(
-    val id: String,
-    val name: String,
-    val backgroundImageURL: String,
-    val nameDisplayMode: String
-)
-
-// Hardcoded collections data as HomeMediaItem.Collection
-private val collections = listOf(
-    HomeMediaItem.Collection("007", "007", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250512_2110_Cinematic%20Tuxedo%20Poster_remix_01jv2yd0kyfvt83j7q9kzpway4.png", "Hidden"),
-    HomeMediaItem.Collection("avatar", "Avatar", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250512_2027_Avatar%20Cinematic%20Poster_remix_01jv2vz7svfbw8ad3dn38vp074.png", "Hidden"),
-    HomeMediaItem.Collection("back-to-the-future", "Back to the Future", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250513_0832_Retro%20Sci-Fi%20Poster_remix_01jv45d54dewbtaqmtbg87gk5s.png", "Hidden"),
-    HomeMediaItem.Collection("ben-10", "Ben 10", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250514_1030_Ben%2010%20Cinematic%20Poster_remix_01jv71zngkfe38b50x5sdcm3dh.png", "Hidden"),
-    HomeMediaItem.Collection("breaking-bad", "Breaking Bad", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250512_2030_Cinematic%20Breaking%20Bad%20Poster_remix_01jv2w4r62emj8kna15hacb6pz.png", "Hidden"),
-    HomeMediaItem.Collection("dc-comics", "DC Comics", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250513_0835_Cinematic%20DC%20Poster_remix_01jv45jzwzfbmaeb5v8wjggeg9.png", "Hidden"),
-    HomeMediaItem.Collection("dune", "Dune", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250513_0828_Epic%20Arrakis%20Poster_remix_01jv456f12ehkscc876rznjvpr.png", "Hidden"),
-    HomeMediaItem.Collection("fast-and-furious", "Fast & Furious", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250512_2040_Fast%20%26%20Furious%20Poster_remix_01jv2wq5nye45vt5bscrfmwswe.png", "Hidden"),
-    HomeMediaItem.Collection("game-of-thrones", "Game of Thrones", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250512_2042_Medieval%20Fantasy%20Poster_remix_01jv2wtkyrewqtngcdmyed29vf.png", "Hidden"),
-    HomeMediaItem.Collection("harry-potter", "Harry Potter", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250513_0756_Wizarding%20World%20Poster_remix_01jv43btmyeq6af9s146nhp85n.png", "Hidden"),
-    HomeMediaItem.Collection("herbie", "Herbie", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250514_1012_Herbie%20Racing%20Poster_remix_01jv70z6tbe1s86zdybys22zqw.png", "Hidden"),
-    HomeMediaItem.Collection("indiana-jones", "Indiana Jones", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250513_0812_Timeless%20Adventure%20Poster_remix_01jv44946ferns4p8te68r5bwt.png", "Hidden"),
-    HomeMediaItem.Collection("jurassic-park", "Jurassic Park", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250512_2111_T-Rex%20Silhouette%20Poster_remix_01jv2yfss6fesarrb5jjb9vjh1.png", "Hidden"),
-    HomeMediaItem.Collection("john-wick", "John Wick", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250513_0826_Noir%20Action%20Poster_remix_01jv4529kyfrj8eapqh9xbxhm8.png", "Hidden"),
-    HomeMediaItem.Collection("matrix", "Matrix", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250513_0802_Futuristic%20Matrix%20Poster_remix_01jv43pazgesdaqxmqmgaxfkd9.png", "Hidden"),
-    HomeMediaItem.Collection("marvel", "Marvel", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250513_0804_Epic%20Superhero%20Poster_remix_01jv43tb9xe5jbxfqmre33h866.png", "Hidden"),
-    HomeMediaItem.Collection("mission-impossible", "Mission Impossible", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250513_0816_Cinematic%20Mission%20Poster_remix_01jv44h75cehvb1eesyfww1ng3.png", "Hidden"),
-    HomeMediaItem.Collection("monsterverse", "MonsterVerse", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250513_1557_Epic%20Monster%20Showdown_remix_01jv4yxmk9f60v574cj11xp1pg.png", "Hidden"),
-    HomeMediaItem.Collection("pirates-of-the-caribbean", "Pirates of the Caribbean", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250514_1039_Cinematic%20Pirate%20Adventure_remix_01jv72gwcbez1rh9w1jzwxbbpv.png", "Hidden"),
-    HomeMediaItem.Collection("rambo", "Rambo", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250519_0834_Cinematic%20Jungle%20Soldier_remix_01jvkqb9zqfq59xpv86tkvvjea.png", "Hidden"),
-    HomeMediaItem.Collection("rocky", "Rocky", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250513_0809_Gritty%20Cinematic%20Poster_remix_01jv444ctafdar03tt4keqhqww.png", "Hidden"),
-    HomeMediaItem.Collection("scooby-doo", "Scooby-Doo", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250519_0831_Mystery%20Machine%20Teal%20Poster_remix_01jvkq6nsff62aagg5627479zc.png", "Hidden"),
-    HomeMediaItem.Collection("star-trek", "Star Trek", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250514_1023_Futuristic%20Star%20Trek%20Poster_remix_01jv71m3r5e97r65edeb3h5ea2.png", "Hidden"),
-    HomeMediaItem.Collection("star-wars", "Star Wars", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250513_0806_Galactic%20Cinematic%20Poster_remix_01jv43zdnafx7vb2w89gdajs4e.png", "Hidden"),
-    HomeMediaItem.Collection("the-hunger-games", "The Hunger Games", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250512_2108_Cinematic%20Mockingjay%20Poster_remix_01jv2y9artebgsehjq0jc4yrs7.png", "Hidden"),
-    HomeMediaItem.Collection("the-lord-of-the-rings", "The Lord of the Rings", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250513_0758_Cinematic%20Middle-earth%20Poster_remix_01jv43gan0eknscea2eh238k7d.png", "Hidden"),
-    HomeMediaItem.Collection("tom-and-jerry", "Tom & Jerry", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250519_0826_Playful%20Chase%20Poster_remix_01jvkpwgt6egq9zpdswx7cc44y.png", "Hidden"),
-    HomeMediaItem.Collection("transformers", "Transformers", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250513_0822_Futuristic%20Transformers%20Poster_remix_01jv44vam8f45s54j0z08pyyff.png", "Hidden"),
-    HomeMediaItem.Collection("x-men", "X-Men", "https://raw.githubusercontent.com/Yakuza2635/fusion/main/genre/landscape/caesarius/20250519_0828_Epic%20Marvel%20Poster_remix_01jvkq0vsfedvt72n1dv75d93t.png", "Hidden")
-)
+// Data class for collections (removed hardcoded collections - now loaded from JSON)
 
 @Composable
 fun HomeMediaRow(
@@ -324,13 +288,27 @@ fun HomePage(
     onContentFocusChanged: ((Boolean) -> Unit)? = null,
     onNavigateToDetails: ((String, Int, Int?, Int?) -> Unit)? = null
 ) {
+    val context = LocalContext.current
     val continueWatching by viewModel.continueWatching.collectAsState()
-    val networks by viewModel.networks.collectAsState()
     val isContinueWatchingLoading by viewModel.isContinueWatchingLoading.collectAsState()
     val isNetworksLoading by viewModel.isNetworksLoading.collectAsState()
     
     // Use the new SelectionManager
     val selectionManager = rememberSelectionManager()
+    
+    // Load configuration from JSON
+    var pageConfiguration by remember { mutableStateOf<PageConfiguration?>(null) }
+    var collections by remember { mutableStateOf<List<HomeMediaItem.Collection>>(emptyList()) }
+    var networks by remember { mutableStateOf<List<com.strmr.ai.data.NetworkInfo>>(emptyList()) }
+    
+    LaunchedEffect(Unit) {
+        val configLoader = ConfigurationLoader(context)
+        pageConfiguration = configLoader.loadPageConfiguration("HOME")
+        pageConfiguration?.let { config ->
+            collections = configLoader.getCollectionsFromConfig(config)
+            networks = configLoader.getNetworksFromConfig(config)
+        }
+    }
     
     // Update SelectionManager with focus state from MainActivity
     LaunchedEffect(isContentFocused) {
@@ -338,16 +316,31 @@ fun HomePage(
         selectionManager.updateContentFocus(isContentFocused)
     }
     
-    // Create media rows similar to MediaPage
+    // Create media rows dynamically based on configuration
     val mediaRows = mutableMapOf<String, List<Any>>()
-    if (continueWatching.isNotEmpty()) {
-        mediaRows["Continue Watching"] = continueWatching
+    pageConfiguration?.let { config ->
+        val enabledRows = ConfigurationLoader(context).getEnabledRowsSortedByOrder(config)
+        
+        for (rowConfig in enabledRows) {
+            when (rowConfig.type) {
+                "continue_watching" -> {
+                    if (continueWatching.isNotEmpty()) {
+                        mediaRows[rowConfig.title] = continueWatching
+                    }
+                }
+                "networks" -> {
+                    if (networks.isNotEmpty()) {
+                        mediaRows[rowConfig.title] = networks
+                    }
+                }
+                "collections" -> {
+                    if (collections.isNotEmpty()) {
+                        mediaRows[rowConfig.title] = collections
+                    }
+                }
+            }
+        }
     }
-    if (networks.isNotEmpty()) {
-        mediaRows["Networks"] = networks
-    }
-    // Add Collections row after Networks
-    mediaRows["Collections"] = collections
 
     val rowTitles = mediaRows.keys.toList()
     val rows = mediaRows.values.toList()
@@ -453,10 +446,11 @@ fun HomePage(
     }
 
     // Debug logging
-    LaunchedEffect(selectionManager.selectedRowIndex, selectionManager.selectedItemIndex, continueWatching.size, networks.size) {
+    LaunchedEffect(selectionManager.selectedRowIndex, selectionManager.selectedItemIndex, continueWatching.size, networks.size, collections.size) {
         Log.d("HomePage", "🔄 Selection updated: rowIndex=$validRowIndex, itemIndex=${selectionManager.selectedItemIndex}")
         Log.d("HomePage", "📊 Data: continueWatching=${continueWatching.size}, networks=${networks.size}")
         Log.d("HomePage", "📦 Collections size: ${collections.size}")
+        Log.d("HomePage", "⚙️ Configuration loaded: ${pageConfiguration != null}")
     }
 
     val navBarWidth = 56.dp
@@ -480,14 +474,20 @@ fun HomePage(
             contentScale = ContentScale.Crop
         )
 
-        // If Continue Watching is selected and the selected item has a backdrop, overlay it
-        val isContinueWatchingSelected = validRowIndex == 0 && rowTitles.getOrNull(0) == "Continue Watching"
-        val backdropUrl = if (isContinueWatchingSelected) heroData.backdropUrl else null
+        // Check if current row should show hero based on configuration
+        val currentRowTitle = rowTitles.getOrNull(validRowIndex)
+        val shouldShowHero = pageConfiguration?.let { config ->
+            currentRowTitle?.let { title ->
+                val rowConfig = config.rows.find { it.title == title }
+                rowConfig?.showHero == true
+            }
+        } ?: false
+        val backdropUrl = if (shouldShowHero) heroData.backdropUrl else null
 
         // OMDb ratings state for hero
         var omdbRatings by remember(selectedItem) { mutableStateOf<OmdbResponse?>(null) }
         LaunchedEffect(selectedItem) {
-            if (isContinueWatchingSelected) {
+            if (shouldShowHero) {
                 val imdbId = when (selectedItem) {
                     is HomeMediaItem.Movie -> selectedItem.movie.imdbId
                     is HomeMediaItem.TvShow -> selectedItem.show.imdbId
@@ -504,7 +504,7 @@ fun HomePage(
                 omdbRatings = null
             }
         }
-        if (isContinueWatchingSelected && !backdropUrl.isNullOrBlank()) {
+        if (shouldShowHero && !backdropUrl.isNullOrBlank()) {
             AsyncImage(
                 model = backdropUrl,
                 contentDescription = null,
@@ -520,8 +520,8 @@ fun HomePage(
             )
         }
 
-        // Hero section (only for Continue Watching)
-        if (isContinueWatchingSelected) {
+        // Hero section (based on configuration)
+        if (shouldShowHero) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -562,7 +562,7 @@ fun HomePage(
                 .fillMaxSize()
                 .padding(start = navBarWidth)
         ) {
-            Spacer(modifier = Modifier.height(if (isContinueWatchingSelected) 290.dp else 32.dp)) // Dynamic space for hero overlay
+            Spacer(modifier = Modifier.height(if (shouldShowHero) 290.dp else 32.dp)) // Dynamic space for hero overlay
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -572,24 +572,31 @@ fun HomePage(
             ) {
                 for ((rowIndex, rowTitle) in rowTitles.withIndex()) {
                     val rowItems = rows.getOrNull(rowIndex) ?: emptyList()
-                    val isPosterRow = rowItems.firstOrNull() is HomeMediaItem.Collection
-                    val rowHeight = if (isPosterRow) 200.dp else 140.dp
                     
-                    // Check if this row should show loading state
-                    val isLoading = when (rowTitle) {
-                        "Continue Watching" -> isContinueWatchingLoading
-                        "Networks" -> isNetworksLoading
+                    // Get row configuration for this row
+                    val rowConfig = pageConfiguration?.rows?.find { it.title == rowTitle }
+                    val rowHeight = rowConfig?.cardHeight?.dp ?: 140.dp
+                    
+                    // Check if this row should show loading state based on configuration
+                    val isLoading = rowConfig?.showLoading == true && when (rowConfig.type) {
+                        "continue_watching" -> isContinueWatchingLoading
+                        "networks" -> isNetworksLoading
                         else -> false
                     }
                     
                     Log.d("HomePage", "🎬 Rendering row $rowIndex: '$rowTitle' with ${rowItems.size} items, loading: $isLoading")
                     
                     if (isLoading) {
-                        // Show skeleton loading state
+                        // Show skeleton loading state based on configuration
+                        val skeletonCardType = when (rowConfig?.cardType) {
+                            "landscape" -> SkeletonCardType.LANDSCAPE
+                            "portrait" -> SkeletonCardType.PORTRAIT
+                            else -> SkeletonCardType.PORTRAIT
+                        }
                         MediaRowSkeleton(
                             title = rowTitle,
                             cardCount = 6,
-                            cardType = if (rowTitle == "Continue Watching") SkeletonCardType.LANDSCAPE else SkeletonCardType.PORTRAIT,
+                            cardType = skeletonCardType,
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
                     } else {
@@ -620,9 +627,9 @@ fun HomePage(
                                 selectionManager.updateContentFocus(focused)
                                 onContentFocusChanged?.invoke(focused)
                             },
-                            showOverlays = rowIndex == 0 && rowTitle == "Continue Watching",
+                            showOverlays = rowConfig?.displayOptions?.showOverlays == true,
                             rowHeight = rowHeight,
-                            onItemClick = if (rowTitle == "Continue Watching") { item ->
+                            onItemClick = if (rowConfig?.displayOptions?.clickable == true) { item ->
                                 when (item) {
                                     is HomeMediaItem.Movie -> onNavigateToDetails?.invoke("movie", item.movie.tmdbId, null, null)
                                     is HomeMediaItem.TvShow -> {

@@ -332,6 +332,42 @@ class MovieRepository(
         }
     }
 
+    suspend fun getTraktListMovies(username: String, listSlug: String): List<MovieEntity> {
+        Log.d("MovieRepository", "🎬 Fetching Trakt list movies: $username/$listSlug")
+        
+        return try {
+            val listItems = traktApi.getUserListItems(username, listSlug)
+            Log.d("MovieRepository", "✅ Received ${listItems.size} items from Trakt list")
+            
+            // Filter only movies and convert to MovieEntity
+            val movies = listItems.filter { it.type == "movie" && it.movie != null }
+            Log.d("MovieRepository", "🎬 Found ${movies.size} movies in list")
+            
+            val movieEntities = movies.mapNotNull { listItem ->
+                listItem.movie?.let { movie ->
+                    try {
+                        fetchAndMapToEntity(movie)
+                    } catch (e: Exception) {
+                        Log.e("MovieRepository", "Error mapping movie ${movie.title}", e)
+                        null
+                    }
+                }
+            }
+            
+            Log.d("MovieRepository", "✅ Successfully converted ${movieEntities.size} movies to entities")
+            
+            // Insert/update in database
+            if (movieEntities.isNotEmpty()) {
+                movieDao.insertMovies(movieEntities)
+            }
+            
+            movieEntities
+        } catch (e: Exception) {
+            Log.e("MovieRepository", "Error fetching Trakt list $username/$listSlug", e)
+            emptyList()
+        }
+    }
+
     // Override getTraktRatings to handle movie-specific API calls
     suspend override fun getTraktRatings(traktId: Int): TraktRatingsEntity? {
         val cached = super.getTraktRatings(traktId)

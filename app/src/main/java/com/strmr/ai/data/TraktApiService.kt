@@ -90,6 +90,14 @@ interface TraktApiService {
         @Query("query") query: String,
         @Query("limit") limit: Int = 20
     ): List<TraktSearchResult>
+
+    @Headers("Content-Type: application/json")
+    @GET("users/{username}/lists/{list_slug}/items")
+    suspend fun getUserListItems(
+        @Path("username") username: String,
+        @Path("list_slug") listSlug: String,
+        @Query("extended") extended: String = "full"
+    ): List<TraktListItem>
 }
 
 // Separate interface for authenticated user endpoints

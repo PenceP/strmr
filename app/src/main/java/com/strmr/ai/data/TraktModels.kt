@@ -175,4 +175,13 @@ data class CollectionMovie(
     val video: Boolean,
     val vote_average: Double,
     val vote_count: Int
+)
+
+// Trakt List models
+data class TraktListItem(
+    val rank: Int?,
+    val listed_at: String,
+    val type: String,
+    val movie: Movie?,
+    val show: Show?
 ) 
