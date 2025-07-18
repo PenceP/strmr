@@ -44,7 +44,7 @@
         {
           "id": "movie_collection",
           "name": "Movie Collection",
-          "backgroundImageUrl": "https://user-images.githubusercontent.com/62456796/170290527-fd8bd058-8414-43b8-be11-d01397ff697f.png",
+          "backgroundImageUrl": "https://raw.githubusercontent.com/jurialmunkey/plugin.video.themoviedb.helper/refs/heads/nexus/resources/icons/trakt/likedlist.png",
           "nameDisplayMode": "Visible",
           "dataUrl": "https://api.trakt.tv/sync/collection/movies",
           "type": "movies"
@@ -52,7 +52,7 @@
         {
           "id": "movie_watchlist",
           "name": "Movie Watchlist",
-          "backgroundImageUrl": "https://user-images.githubusercontent.com/62456796/170290527-fd8bd058-8414-43b8-be11-d01397ff697f.png",
+          "backgroundImageUrl": "https://raw.githubusercontent.com/jurialmunkey/plugin.video.themoviedb.helper/refs/heads/nexus/resources/icons/trakt/watchlist.png",
           "nameDisplayMode": "Visible",
           "dataUrl": "https://api.trakt.tv/sync/watchlist/movies",
           "type": "movies"
@@ -60,7 +60,7 @@
         {
           "id": "tv_collection",
           "name": "TV Collection",
-          "backgroundImageUrl": "https://user-images.githubusercontent.com/62456796/170290527-fd8bd058-8414-43b8-be11-d01397ff697f.png",
+          "backgroundImageUrl": "https://raw.githubusercontent.com/jurialmunkey/plugin.video.themoviedb.helper/refs/heads/nexus/resources/icons/trakt/likedlist.png",
           "nameDisplayMode": "Visible",
           "dataUrl": "https://api.trakt.tv/sync/collection/shows",
           "type": "shows"
@@ -68,7 +68,7 @@
         {
           "id": "tv_watchlist",
           "name": "TV Watchlist",
-          "backgroundImageUrl": "https://user-images.githubusercontent.com/62456796/170290527-fd8bd058-8414-43b8-be11-d01397ff697f.png",
+          "backgroundImageUrl": "https://raw.githubusercontent.com/jurialmunkey/plugin.video.themoviedb.helper/refs/heads/nexus/resources/icons/trakt/watchlist.png",
           "nameDisplayMode": "Visible",
           "dataUrl": "https://api.trakt.tv/sync/watchlist/shows",
           "type": "shows"
