@@ -26,6 +26,7 @@ import com.strmr.ai.ui.screens.DebridCloudPage
 import com.strmr.ai.ui.screens.HomePage
 import com.strmr.ai.ui.screens.MoviesPage
 import com.strmr.ai.ui.screens.PlaceholderPage
+import com.strmr.ai.ui.screens.SearchPage
 import com.strmr.ai.ui.screens.SettingsPage
 import com.strmr.ai.ui.screens.TvShowsPage
 import com.strmr.ai.ui.screens.TraktSettingsPage
@@ -139,7 +140,11 @@ fun MainScreen() {
                 startDestination = "home"
             ) {
                 composable("search") {
-                    PlaceholderPage("Search")
+                    SearchPage(
+                        onNavigateToDetails = { mediaType, tmdbId ->
+                            navController.navigate("details/$mediaType/$tmdbId")
+                        }
+                    )
                 }
                 composable("home") {
                     val homeViewModel: HomeViewModel = hiltViewModel()

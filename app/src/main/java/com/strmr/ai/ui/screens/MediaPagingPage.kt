@@ -37,6 +37,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Icon
+import com.strmr.ai.ui.components.MediaHeroSkeleton
+import com.strmr.ai.ui.components.MediaRowSkeleton
+import com.strmr.ai.ui.components.SkeletonCardType
 
 @Composable
 fun <T : Any> MediaPagingPage(
@@ -170,25 +173,29 @@ fun <T : Any> MediaPagingPage(
                     .fillMaxWidth()
                     .weight(0.49f)
             ) {
-                MediaHero(
-                    mediaDetails = {
-                        selectedItem?.let { item ->
-                            val details = item.getMediaDetails()
-                            MediaDetails(
-                                title = details.title,
-                                logoUrl = details.logoUrl,
-                                year = details.year,
-                                formattedDate = details.releaseDate,
-                                runtime = details.runtime,
-                                genres = details.genres,
-                                rating = details.rating,
-                                overview = details.overview,
-                                cast = details.cast,
-                                omdbRatings = omdbRatings
-                            )
+                if (selectedItem != null) {
+                    MediaHero(
+                        mediaDetails = {
+                            selectedItem?.let { item ->
+                                val details = item.getMediaDetails()
+                                MediaDetails(
+                                    title = details.title,
+                                    logoUrl = details.logoUrl,
+                                    year = details.year,
+                                    formattedDate = details.releaseDate,
+                                    runtime = details.runtime,
+                                    genres = details.genres,
+                                    rating = details.rating,
+                                    overview = details.overview,
+                                    cast = details.cast,
+                                    omdbRatings = omdbRatings
+                                )
+                            }
                         }
-                    }
-                )
+                    )
+                } else {
+                    MediaHeroSkeleton()
+                }
             }
 
             // Active row section with indicators
@@ -238,6 +245,14 @@ fun <T : Any> MediaPagingPage(
                             isContentFocused = isContentFocused && rowIdx == selectedRowIndex,
                             onContentFocusChanged = onContentFocusChanged,
                             onItemClick = onItemClick
+                        )
+                    } else {
+                        // Show skeleton when no items loaded yet
+                        MediaRowSkeleton(
+                            title = rowTitle,
+                            cardCount = 8,
+                            cardType = SkeletonCardType.PORTRAIT,
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }

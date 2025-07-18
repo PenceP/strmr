@@ -2,6 +2,7 @@ package com.strmr.ai.data
 
 import retrofit2.http.GET
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface TmdbApiService {
     @GET("movie/{movie_id}")
@@ -49,6 +50,24 @@ interface TmdbApiService {
     suspend fun getCollectionDetails(
         @Path("collection_id") collectionId: Int
     ): Collection
+
+    @GET("search/movie")
+    suspend fun searchMovies(
+        @Query("query") query: String,
+        @Query("page") page: Int = 1
+    ): TmdbSearchResponse
+
+    @GET("search/tv")
+    suspend fun searchTvShows(
+        @Query("query") query: String,
+        @Query("page") page: Int = 1
+    ): TmdbSearchResponse
+
+    @GET("search/person")
+    suspend fun searchPeople(
+        @Query("query") query: String,
+        @Query("page") page: Int = 1
+    ): TmdbSearchResponse
 }
 
 data class TmdbMovieDetails(
@@ -151,4 +170,35 @@ data class TmdbSimilarItem(
     val release_date: String?, // For movies
     val first_air_date: String?, // For TV shows
     val media_type: String? = null
+)
+
+data class TmdbSearchResponse(
+    val page: Int,
+    val results: List<TmdbSearchResult>,
+    val total_pages: Int,
+    val total_results: Int
+)
+
+data class TmdbSearchResult(
+    val id: Int,
+    val media_type: String?, // "movie", "tv", "person"
+    val title: String?, // For movies
+    val name: String?, // For TV shows and people
+    val poster_path: String?,
+    val backdrop_path: String?,
+    val profile_path: String?, // For people
+    val vote_average: Float?,
+    val release_date: String?, // For movies
+    val first_air_date: String?, // For TV shows
+    val overview: String?,
+    val known_for_department: String?, // For people
+    val known_for: List<TmdbKnownFor>? // For people
+)
+
+data class TmdbKnownFor(
+    val id: Int,
+    val media_type: String,
+    val title: String?,
+    val name: String?,
+    val poster_path: String?
 ) 

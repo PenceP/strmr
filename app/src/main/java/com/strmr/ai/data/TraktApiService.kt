@@ -69,6 +69,27 @@ interface TraktApiService {
 
     @GET("users/me/stats")
     suspend fun getUserStats(@Header("Authorization") token: String): TraktUserStats
+
+    @Headers("Content-Type: application/json")
+    @GET("search/movie")
+    suspend fun searchMovies(
+        @Query("query") query: String,
+        @Query("limit") limit: Int = 20
+    ): List<TraktSearchResult>
+
+    @Headers("Content-Type: application/json")
+    @GET("search/show")
+    suspend fun searchTvShows(
+        @Query("query") query: String,
+        @Query("limit") limit: Int = 20
+    ): List<TraktSearchResult>
+
+    @Headers("Content-Type: application/json")
+    @GET("search/person")
+    suspend fun searchPeople(
+        @Query("query") query: String,
+        @Query("limit") limit: Int = 20
+    ): List<TraktSearchResult>
 }
 
 // Separate interface for authenticated user endpoints
@@ -110,6 +131,26 @@ data class TraktTokenResponse(
     val refresh_token: String,
     val scope: String,
     val created_at: Int
+)
+
+data class TraktSearchResult(
+    val type: String, // "movie", "show", "person"
+    val score: Float,
+    val movie: Movie?,
+    val show: Show?,
+    val person: TraktPerson?
+)
+
+data class TraktPerson(
+    val name: String,
+    val ids: TraktPersonIds
+)
+
+data class TraktPersonIds(
+    val trakt: Int?,
+    val slug: String?,
+    val imdb: String?,
+    val tmdb: Int?
 )
 
 private fun getTraktOkHttpClient(context: Context): OkHttpClient {

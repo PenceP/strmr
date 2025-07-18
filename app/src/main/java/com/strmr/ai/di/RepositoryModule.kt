@@ -79,4 +79,13 @@ object RepositoryModule {
     ): FetchLogoUseCase {
         return FetchLogoUseCase(tmdbApiService)
     }
+    
+    @Provides
+    @Singleton
+    fun provideSearchRepository(
+        traktApiService: TraktApiService,
+        tmdbApiService: TmdbApiService
+    ): SearchRepository {
+        return SearchRepository(traktApiService, tmdbApiService)
+    }
 } 

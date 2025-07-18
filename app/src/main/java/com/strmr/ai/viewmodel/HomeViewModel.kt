@@ -26,6 +26,12 @@ class HomeViewModel @Inject constructor(
     private val _networks = MutableStateFlow<List<NetworkInfo>>(emptyList())
     val networks = _networks.asStateFlow()
 
+    private val _isContinueWatchingLoading = MutableStateFlow(true)
+    val isContinueWatchingLoading = _isContinueWatchingLoading.asStateFlow()
+
+    private val _isNetworksLoading = MutableStateFlow(true)
+    val isNetworksLoading = _isNetworksLoading.asStateFlow()
+
     init {
         observeContinueWatching()
         refreshContinueWatching()
@@ -35,6 +41,7 @@ class HomeViewModel @Inject constructor(
     private fun observeContinueWatching() {
         viewModelScope.launch {
             homeRepository.getContinueWatching().collectLatest { playbackEntities ->
+                _isContinueWatchingLoading.value = false
                 val mappedItems = playbackEntities
                     .filter { it.progress in 1f..95f }
                     .mapNotNull { playbackEntity ->
@@ -106,6 +113,7 @@ class HomeViewModel @Inject constructor(
         val config = homeRepository.getHomeConfig()
         val networkSection = config?.homePage?.rows?.find { it.id == "networks" }
         _networks.value = networkSection?.networks ?: emptyList()
+        _isNetworksLoading.value = false
     }
 
     suspend fun fetchAndCacheMovieLogo(tmdbId: Int): Boolean {

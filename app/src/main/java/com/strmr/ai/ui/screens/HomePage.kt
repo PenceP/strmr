@@ -52,6 +52,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import coil.compose.rememberAsyncImagePainter
 import com.strmr.ai.ui.components.MediaCard
+import com.strmr.ai.ui.components.MediaRowSkeleton
+import com.strmr.ai.ui.components.SkeletonCardType
 import com.strmr.ai.data.OmdbRepository
 import com.strmr.ai.data.OmdbResponse
 import kotlinx.coroutines.Dispatchers
@@ -324,6 +326,8 @@ fun HomePage(
 ) {
     val continueWatching by viewModel.continueWatching.collectAsState()
     val networks by viewModel.networks.collectAsState()
+    val isContinueWatchingLoading by viewModel.isContinueWatchingLoading.collectAsState()
+    val isNetworksLoading by viewModel.isNetworksLoading.collectAsState()
     
     // Use the new SelectionManager
     val selectionManager = rememberSelectionManager()
@@ -570,42 +574,62 @@ fun HomePage(
                     val rowItems = rows.getOrNull(rowIndex) ?: emptyList()
                     val isPosterRow = rowItems.firstOrNull() is HomeMediaItem.Collection
                     val rowHeight = if (isPosterRow) 200.dp else 140.dp
-                    Log.d("HomePage", "🎬 Rendering row $rowIndex: '$rowTitle' with ${rowItems.size} items")
-                    HomeMediaRow(
-                        modifier = Modifier.padding(bottom = 16.dp),
-                        title = rowTitle,
-                        mediaItems = rowItems,
-                        selectedIndex = if (rowIndex == validRowIndex) selectionManager.selectedItemIndex else 0,
-                        isRowSelected = rowIndex == validRowIndex,
-                        onSelectionChanged = { newIndex ->
-                            if (rowIndex == validRowIndex) {
-                                selectionManager.updateSelection(validRowIndex, newIndex)
-                            }
-                        },
-                        focusRequester = if (rowIndex == validRowIndex) focusRequesters.getOrNull(rowIndex) else null,
-                        onUpDown = { direction ->
-                            val newRowIndex = validRowIndex + direction
-                            if (newRowIndex >= 0 && newRowIndex < rows.size) {
-                                selectionManager.updateSelection(newRowIndex, 0)
-                            }
-                        },
-                        isContentFocused = selectionManager.isContentFocused,
-                        onContentFocusChanged = { focused ->
-                            selectionManager.updateContentFocus(focused)
-                            onContentFocusChanged?.invoke(focused)
-                        },
-                        showOverlays = rowIndex == 0 && rowTitle == "Continue Watching",
-                        rowHeight = rowHeight,
-                        onItemClick = if (rowTitle == "Continue Watching") { item ->
-                            when (item) {
-                                is HomeMediaItem.Movie -> onNavigateToDetails?.invoke("movie", item.movie.tmdbId, null, null)
-                                is HomeMediaItem.TvShow -> {
-                                    Log.d("HomePage", "🎯 DEBUG: Navigating to TvShow details - show: ${item.show.title}, season: ${item.season}, episode: ${item.episode}")
-                                    onNavigateToDetails?.invoke("tvshow", item.show.tmdbId, item.season, item.episode)
+                    
+                    // Check if this row should show loading state
+                    val isLoading = when (rowTitle) {
+                        "Continue Watching" -> isContinueWatchingLoading
+                        "Networks" -> isNetworksLoading
+                        else -> false
+                    }
+                    
+                    Log.d("HomePage", "🎬 Rendering row $rowIndex: '$rowTitle' with ${rowItems.size} items, loading: $isLoading")
+                    
+                    if (isLoading) {
+                        // Show skeleton loading state
+                        MediaRowSkeleton(
+                            title = rowTitle,
+                            cardCount = 6,
+                            cardType = if (rowTitle == "Continue Watching") SkeletonCardType.LANDSCAPE else SkeletonCardType.PORTRAIT,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+                    } else {
+                        // Show actual content
+                        HomeMediaRow(
+                            modifier = Modifier.padding(bottom = 16.dp),
+                            title = rowTitle,
+                            mediaItems = rowItems,
+                            selectedIndex = if (rowIndex == validRowIndex) selectionManager.selectedItemIndex else 0,
+                            isRowSelected = rowIndex == validRowIndex,
+                            onSelectionChanged = { newIndex ->
+                                if (rowIndex == validRowIndex) {
+                                    selectionManager.updateSelection(validRowIndex, newIndex)
                                 }
-                            }
-                        } else null
-                    )
+                            },
+                            focusRequester = if (rowIndex == validRowIndex) focusRequesters.getOrNull(rowIndex) else null,
+                            onUpDown = { direction ->
+                                val newRowIndex = validRowIndex + direction
+                                if (newRowIndex >= 0 && newRowIndex < rows.size) {
+                                    selectionManager.updateSelection(newRowIndex, 0)
+                                }
+                            },
+                            isContentFocused = selectionManager.isContentFocused,
+                            onContentFocusChanged = { focused ->
+                                selectionManager.updateContentFocus(focused)
+                                onContentFocusChanged?.invoke(focused)
+                            },
+                            showOverlays = rowIndex == 0 && rowTitle == "Continue Watching",
+                            rowHeight = rowHeight,
+                            onItemClick = if (rowTitle == "Continue Watching") { item ->
+                                when (item) {
+                                    is HomeMediaItem.Movie -> onNavigateToDetails?.invoke("movie", item.movie.tmdbId, null, null)
+                                    is HomeMediaItem.TvShow -> {
+                                        Log.d("HomePage", "🎯 DEBUG: Navigating to TvShow details - show: ${item.show.title}, season: ${item.season}, episode: ${item.episode}")
+                                        onNavigateToDetails?.invoke("tvshow", item.show.tmdbId, item.season, item.episode)
+                                    }
+                                }
+                            } else null
+                        )
+                    }
                 }
             }
         }
