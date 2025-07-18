@@ -41,14 +41,14 @@
 
 ### 6. Testing
 - [x] Test on Android TV emulator
-- [ ] Test on real Android TV device
+- [x] Test on real Android TV device
 
 ### 7. (Optional/Future)
 - [ ] Add more rows (e.g., Popular, Top Rated)
-- [ ] Implement search functionality
+- [x] Implement search functionality
 - [x] Add TV shows section
-- [] User authentication with Trakt
-- [ ] Display ratings from IMDb, Rotten Tomatoes, and Trakt in the details area (alongside or instead of current ratings)
+- [x] User authentication with Trakt
+- [x] Display ratings from IMDb, Rotten Tomatoes, and Trakt in the details area (alongside or instead of current ratings)
 - [x] Display genre info in the details area 
 
 ## Upcoming Major Tasks

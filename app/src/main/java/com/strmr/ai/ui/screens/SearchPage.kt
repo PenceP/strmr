@@ -262,12 +262,12 @@ private fun SearchBar(
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = "Search",
-                tint = Color.White.copy(alpha = 0.9f),
-                modifier = Modifier.size(24.dp)
-            )
+            //Icon(
+            //    imageVector = Icons.Default.Search,
+            //    contentDescription = "Search",
+            //    tint = Color.White.copy(alpha = 0.9f),
+            //    modifier = Modifier.size(24.dp)
+            //)
             
             Spacer(modifier = Modifier.width(12.dp))
             
