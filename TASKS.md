@@ -33,82 +33,104 @@
 
 ### 5. Polish & UX
 - [x] Add smooth focus animations and transitions
-- [ ] Handle loading and error states
 - [x] Schedule and cache into db lists (ex Trending) updates, use previous list order in db for load speed
 - [x] Ensure TV remote navigation works seamlessly
-- [] Responsive layout for different TV sizes
-- [x] Backdrop image should go to top and right of screen  (remove padding)
+- [x] Backdrop image should go to top and right of screen (remove padding)
+- [ ] Handle loading and error states
+- [ ] Responsive layout for different TV sizes
 
 ### 6. Testing
 - [x] Test on Android TV emulator
 - [x] Test on real Android TV device
 
-### 7. (Optional/Future)
-- [ ] Add more rows (e.g., Popular, Top Rated)
+### 7. Additional Features
+- [x] Add more rows (e.g., Popular, Top Rated)
 - [x] Implement search functionality
 - [x] Add TV shows section
 - [x] User authentication with Trakt
 - [x] Display ratings from IMDb, Rotten Tomatoes, and Trakt in the details area (alongside or instead of current ratings)
-- [x] Display genre info in the details area 
+- [x] Display genre info in the details area
 
-## Upcoming Major Tasks
+### 8. MediaDetails Page Implementation
+- [x] Create dedicated details page for movies and TV shows (shown when poster is clicked)
+- [x] Large backdrop image with title, logo, year, runtime, genres, rating, summary/overview
+- [x] Trakt actions: add/remove from watchlist, add/remove from collections (show correct state if already added)
+- [x] Actor list (cast)
+- [x] Similar movies/TV shows (horizontal row, context-aware)
+- [x] TV show specific features:
+    - [x] Season selector (dropdown or horizontal row)
+    - [x] Scrollable list of episode images for the selected season
+    - [x] Episode details (title, air date, overview, etc.)
+- [x] Ratings integration:
+    - [x] Integrate OMDb API to fetch IMDb, Rotten Tomatoes, and Metacritic ratings
+    - [x] Create Retrofit interface for OMDb (apikey=a8787305, for local/dev use only, do not commit)
+    - [x] Add data models for OMDb responses (ratings, votes, etc.)
+    - [x] Fetch ratings by IMDb ID (or title/year fallback)
+    - [x] Display ratings row with IMDb, Trakt, Rotten Tomatoes, Metacritic (show/hide as available)
+    - [x] Cache/store ratings to avoid excessive API calls
+- [x] Integrate with navigation so clicking a poster opens this page
+- [x] Ensure smooth focus/TV navigation and visual polish
 
-### 1. Implement MediaDetails Page (NEXT)
-- Create a dedicated details page for movies and TV shows, shown when a poster is clicked.
-- Features:
-  - Large backdrop image
-  - Title, logo, year, runtime, genres, rating, summary/overview
-  - Trakt actions: add/remove from watchlist, add/remove from collections (show correct state if already added)
-  - Actor list (cast)
-  - Similar movies/TV shows (horizontal row, context-aware)
-  - **For TV shows:**
-    - Season selector (dropdown or horizontal row)
-    - Scrollable list of episode images for the selected season
-    - Episode details (title, air date, overview, etc.)
-  - **Ratings integration:**
-    - Integrate OMDb API to fetch IMDb, Rotten Tomatoes, and Metacritic ratings.
-    - Create Retrofit interface for OMDb (apikey=a8787305, for local/dev use only, do not commit).
-    - Add data models for OMDb responses (ratings, votes, etc.).
-    - Fetch ratings by IMDb ID (or title/year fallback).
-    - Display ratings row with IMDb, Trakt, Rotten Tomatoes, Metacritic (show/hide as available).
-    - Cache/store ratings to avoid excessive API calls.
-- Integrate with navigation so clicking a poster opens this page.
-- Ensure smooth focus/TV navigation and visual polish.
+### 9. Row Configuration Refactor
+- [x] Move all row configuration (order, type, data source) out of HomePage.kt and into JSON files
+- [x] Create MOVIES.json and TV.json for movies and TV-specific row configs
+- [x] Ensure all rows (Continue Watching, Networks, Collections, etc.) are defined in JSON, not hardcoded
+- [x] Include all hardcoded elements like HomeMediaItem.Collection into JSON
+- [x] Support nested fields (like Networks - a row of items that each has its own logo and Trakt data source)
+- [x] Refactor code to dynamically build rows from JSON at compile time
 
-### 2. Intermediate View/Page for Networks & Collections
-- When a user clicks a network or collection, show an intermediate page with:
-  - A hero/details section at the top (like MediaPage)
-  - A single long row of posters for all movies/shows in that network/collection
-- Reuse MediaPage/MediaHero logic where possible.
-- Ensure navigation back to previous page and onward to MediaDetails.
+### 10. Bug Fixes (Post-JSON Refactor)
+- [x] Fix up/down arrows not showing on movies page
+- [x] Fix media logos not working intermittently
 
-### 3. Refactor HOME.json and Add MOVIES.json/TV.json for Row Config
-- Move all row configuration (order, type, data source) out of HomePage.kt and into JSON files.
-- Create MOVIES.json and TV.json for movies and TV-specific row configs.
-- Ensure all rows (Continue Watching, Networks, Collections, etc.) are defined in JSON, not hardcoded.
-- Think through all info needed in the JSON: row type, title, data source, display options, etc.
-- Refactor code to dynamically build rows from JSON at compile time.
-- Include Anything hardcoded into .json (HomeMediaItem.Collection for example)
-- should support nested fields (like Networks-a row of items that each has its own logo (webadress or local) and a trakt data source)
+## Current Tasks
 
-### 4. The json refactor of the rows broke some things:
- - Up/down arrows not showing up on movies page
- - Media Logos not working *sometimes*
+### 11. Video Player Integration
+- [ ] Add ExoPlayer [https://github.com/androidx/media]
+- [ ] Integrate TMDB API for trailers [api.themoviedb.org/3/movie/120/videos?language=en-US]
+- [ ] Implement trailers button functionality from MediaDetails page
+- [ ] Use videos marked as "official" and "Trailer" type
+- [ ] Create video player overlay with proper TV navigation controls
 
-### 5. Add ExoPlayer [https://github.com/androidx/media] and get trailers button working from tmdb api "official" videos [api.themoviedb.org/3/movie/120/videos?language=en-US]
-use the video that has official key=true and "Trailer" in the name key.
+### 12. Intermediate View for Networks & Collections
+- [ ] Create intermediate page for when user clicks a network or collection
+- [ ] Hero/details section at the top (similar to MediaPage layout)
+- [ ] Single long row of posters for all movies/shows in that network/collection
+- [ ] Reuse MediaPage/MediaHero logic where possible
+- [ ] Ensure proper navigation back to previous page and forward to MediaDetails
 
-### 6. Add Season/Episode View
- - Modern view that displays air date, episode summary, episode screenshot as landscape image, etc
+### 13. Season/Episode View Enhancement
+- [ ] Create modern episode view with:
+    - [ ] Air date display
+    - [ ] Episode summary/overview
+    - [ ] Episode screenshot as landscape image
+    - [ ] Episode runtime and rating info
+    - [ ] Watch status integration with Trakt
+    - [ ] Proper TV navigation between episodes
 
-### 7. Auto-update functionality
- - implement versioning and ping server on start to see if there's an updated version. if so, download and install it
+### 14. Pagination Fix
+- [ ] Investigate and fix broken paging system
+- [ ] Ensure movies and TV shows load beyond first page from API
+- [ ] Implement proper infinite scrolling for all content rows
+- [ ] Add loading indicators for pagination
 
-### 8. Implement CI/CD with Github actions. 
- - Should be done BEFORE the auto-update item above (#7)
- - Desired Stages: Build, Run Tests, Compile APK and add to artifacts (version number in filename), anything else im missing, MAYBE:  start an emulator via avdmanager and run apk and try to verify certain conditions(???)
+### 15. Auto-Update System
+- [ ] Implement app versioning system
+- [ ] Create server endpoint to check for updates
+- [ ] Add update checking on app startup
+- [ ] Implement automatic download and installation of updates
+- [ ] Add user notification system for available updates
+- [ ] **Note: Should be implemented after CI/CD system (Task 16)**
 
-### 9. Somewhere along the way paging broke, and now movies and tv shows only are getting the first page from the api. this needs to be fixed.
+### 16. CI/CD Pipeline with GitHub Actions
+- [ ] Set up build stage with proper Android SDK configuration
+- [ ] Implement automated testing stage
+- [ ] Configure APK compilation with version number in filename
+- [ ] Add artifacts upload for release builds
+- [ ] **Optional:** Set up emulator testing with basic smoke tests
+- [ ] Configure release deployment workflow
+- [ ] **Must be completed before auto-update functionality**
+
 ---
 
-**Next up: Start on Task 1 (MediaDetails Page).** 
+**Next Priority: Complete Task 11 (Video Player Integration) - Add ExoPlayer and trailer functionality to MediaDetails page**
