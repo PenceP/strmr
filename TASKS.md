@@ -94,6 +94,9 @@
 ### 4. The json refactor of the rows broke some things:
  - Up/down arrows not showing up on movies page
  - Media Logos not working *sometimes*
+
+### 5. Add ExoPlayer [https://github.com/androidx/media] and get trailers button working from tmdb api "official" videos [api.themoviedb.org/3/movie/120/videos?language=en-US]
+use the video that has official key=true and "Trailer" in the name key.
 ---
 
 **Next up: Start on Task 1 (MediaDetails Page).** 
