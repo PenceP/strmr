@@ -184,4 +184,88 @@ data class TraktListItem(
     val type: String,
     val movie: Movie?,
     val show: Show?
+)
+
+// Continue Watching models
+data class WatchedHistoryItem(
+    val id: Long,
+    val watched_at: String,
+    val action: String,
+    val type: String,
+    val movie: Movie?,
+    val show: Show?,
+    val episode: Episode?
+)
+
+data class WatchedItem(
+    val plays: Int,
+    val reset_at: String?,
+    val movie: Movie?,
+    val show: Show?,
+    val seasons: List<WatchedSeason>?
+)
+
+data class WatchedSeason(
+    val number: Int,
+    val episodes: List<WatchedEpisode>
+)
+
+data class WatchedEpisode(
+    val number: Int,
+    val plays: Int,
+    val last_watched_at: String?
+)
+
+data class ShowProgress(
+    val aired: Int,
+    val completed: Int,
+    val last_watched_at: String?,
+    val seasons: List<SeasonProgress>,
+    val hidden_seasons: List<HiddenSeason>?,
+    val next_episode: NextEpisode?
+)
+
+data class SeasonProgress(
+    val number: Int,
+    val title: String?,
+    val aired: Int,
+    val completed: Int,
+    val episodes: List<EpisodeProgress>
+)
+
+data class EpisodeProgress(
+    val number: Int,
+    val completed: Boolean?,
+    val collected: Boolean?
+)
+
+data class NextEpisode(
+    val season: Int,
+    val number: Int,
+    val title: String?,
+    val ids: EpisodeIds
+)
+
+data class HiddenSeason(
+    val number: Int,
+    val ids: SeasonIds
+)
+
+data class SeasonIds(
+    val trakt: Int,
+    val tmdb: Int?,
+    val tvdb: Int?
+)
+
+// Combined Continue Watching result
+data class ContinueWatchingItem(
+    val type: String, // "movie" or "episode"
+    val lastWatchedAt: String,
+    val progress: Float?, // for movies and in-progress episodes
+    val movie: Movie? = null,
+    val show: Show? = null,
+    val currentEpisode: Episode? = null,
+    val nextEpisode: NextEpisode? = null,
+    val season: Int? = null,
+    val episodeNumber: Int? = null
 ) 

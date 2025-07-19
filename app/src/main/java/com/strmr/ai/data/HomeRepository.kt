@@ -5,17 +5,20 @@ import android.util.Log
 import com.google.gson.Gson
 import com.strmr.ai.data.database.StrmrDatabase
 import com.strmr.ai.data.database.PlaybackDao
+import com.strmr.ai.data.database.ContinueWatchingDao
 import com.strmr.ai.data.database.TraktUserProfileDao
 import com.strmr.ai.data.database.TraktUserStatsDao
 import com.strmr.ai.data.database.TraktUserProfileEntity
 import com.strmr.ai.data.database.TraktUserStatsEntity
 import kotlinx.coroutines.flow.Flow
 import com.strmr.ai.data.database.PlaybackEntity
+import com.strmr.ai.data.database.ContinueWatchingEntity
 import kotlinx.coroutines.flow.firstOrNull
 
 class HomeRepository(
     private val context: Context,
     private val playbackDao: PlaybackDao,
+    private val continueWatchingDao: ContinueWatchingDao,
     private val traktUserProfileDao: TraktUserProfileDao,
     private val traktUserStatsDao: TraktUserStatsDao
 ) {
@@ -38,40 +41,51 @@ class HomeRepository(
         }
     }
 
-    fun getContinueWatching(): Flow<List<PlaybackEntity>> = playbackDao.getPlaybackItems()
+    fun getContinueWatching(): Flow<List<ContinueWatchingEntity>> = continueWatchingDao.getContinueWatchingItems()
 
     suspend fun refreshContinueWatching(accountRepository: AccountRepository) {
-        val playbackItems = accountRepository.getContinueWatching()
-        Log.d("HomeRepository", "🎯 DEBUG: Received ${playbackItems.size} playback items from Trakt")
+        val continueWatchingItems = accountRepository.getContinueWatching()
+        Log.d("HomeRepository", "🎬 Received ${continueWatchingItems.size} continue watching items from Trakt")
         
-        val entities = playbackItems.map { item ->
-            // Debug logging for each playback item
-            Log.d("HomeRepository", "🎯 DEBUG: PlaybackItem - type: ${item.type}, show: ${item.show?.title}, episode: ${item.episode?.title}")
-            Log.d("HomeRepository", "🎯 DEBUG: Episode data - season: ${item.episode?.season}, number: ${item.episode?.number}")
+        val entities = continueWatchingItems.mapIndexed { index, item ->
+            val id = when (item.type) {
+                "movie" -> "movie_${item.movie?.ids?.tmdb ?: index}"
+                "episode" -> {
+                    val showId = item.show?.ids?.tmdb ?: index
+                    val season = item.season ?: 0
+                    val episode = item.episodeNumber ?: 0
+                    "episode_${showId}_s${season}e${episode}"
+                }
+                else -> "item_$index"
+            }
             
-            PlaybackEntity(
-                id = item.id,
-                progress = item.progress,
-                pausedAt = item.paused_at,
+            ContinueWatchingEntity(
+                id = id,
                 type = item.type,
+                lastWatchedAt = item.lastWatchedAt,
+                progress = item.progress,
                 movieTitle = item.movie?.title,
                 movieTmdbId = item.movie?.ids?.tmdb,
+                movieTraktId = item.movie?.ids?.trakt,
+                movieYear = item.movie?.year,
                 showTitle = item.show?.title,
                 showTmdbId = item.show?.ids?.tmdb,
-                episodeTitle = item.episode?.title,
-                episodeSeason = item.episode?.season,
-                episodeNumber = item.episode?.number,
-                episodeTmdbId = item.episode?.ids?.tmdb
+                showTraktId = item.show?.ids?.trakt,
+                showYear = item.show?.year,
+                episodeTitle = item.currentEpisode?.title ?: item.nextEpisode?.title,
+                episodeSeason = item.season,
+                episodeNumber = item.episodeNumber,
+                episodeTmdbId = item.currentEpisode?.ids?.tmdb ?: item.nextEpisode?.ids?.tmdb,
+                episodeTraktId = item.currentEpisode?.ids?.trakt ?: item.nextEpisode?.ids?.trakt,
+                isNextEpisode = item.nextEpisode != null,
+                isInProgress = item.progress != null && item.progress > 0f
             )
         }
         
-        // Debug logging for created entities
-        entities.forEach { entity ->
-            Log.d("HomeRepository", "🎯 DEBUG: Created PlaybackEntity - type: ${entity.type}, show: ${entity.showTitle}, season: ${entity.episodeSeason}, episode: ${entity.episodeNumber}")
-        }
+        Log.d("HomeRepository", "✅ Created ${entities.size} continue watching entities")
         
-        playbackDao.clearPlaybackItems()
-        playbackDao.insertPlaybackItems(entities)
+        continueWatchingDao.clearContinueWatching()
+        continueWatchingDao.insertContinueWatchingItems(entities)
     }
 
     fun getUserProfile(username: String): Flow<TraktUserProfileEntity?> =

@@ -234,7 +234,7 @@ fun HomeMediaRow(
                         title = mediaItem.movie.title,
                         landscapeUrl = mediaItem.movie.backdropUrl,
                         logoUrl = mediaItem.movie.logoUrl,
-                        progress = mediaItem.progress,
+                        progress = mediaItem.progress ?: 0f, // Default to 0f for completed items
                         isSelected = isSelected,
                         onClick = {
                             // Only update selection, don't trigger navigation here
@@ -246,14 +246,17 @@ fun HomeMediaRow(
                         title = mediaItem.show.title,
                         landscapeUrl = mediaItem.episodeImageUrl ?: mediaItem.show.backdropUrl,
                         logoUrl = mediaItem.show.logoUrl,
-                        progress = mediaItem.progress,
+                        progress = mediaItem.progress ?: 0f, // Default to 0f for next episodes
                         isSelected = isSelected,
                         onClick = {
                             // Only update selection, don't trigger navigation here
                             Log.d("HomeMediaRow", "🎯 TvShow item clicked: $i")
                             onSelectionChanged(i)
                         },
-                        bottomRightLabel = if (mediaItem.season != null && mediaItem.episode != null) "S${mediaItem.season}: E${mediaItem.episode}" else null
+                        bottomRightLabel = if (mediaItem.season != null && mediaItem.episode != null) {
+                            if (mediaItem.isNextEpisode) "Next: S${mediaItem.season}: E${mediaItem.episode}" 
+                            else "S${mediaItem.season}: E${mediaItem.episode}"
+                        } else null
                     )
                     is com.strmr.ai.data.NetworkInfo -> LandscapeMediaCard(
                         title = mediaItem.name,

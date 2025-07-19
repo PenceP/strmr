@@ -202,7 +202,7 @@ fun MovieDetailsView(
             Log.d("MovieDetailsView", "📡 Fetching similar movies for: ${movie.title}")
             similarContent = withContext(Dispatchers.IO) {
                 val similar = viewModel.getSimilarMovies(movie.tmdbId)
-                                    Log.d("MovieDetailsView", "✅ Similar movies fetched: ${similar.size} items")
+                Log.d("MovieDetailsView", "✅ Similar movies fetched: ${similar.size} items")
                 similar
             }
         } catch (e: Exception) {

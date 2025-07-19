@@ -57,10 +57,11 @@ object RepositoryModule {
     fun provideHomeRepository(
         @ApplicationContext context: Context,
         playbackDao: PlaybackDao,
+        continueWatchingDao: ContinueWatchingDao,
         traktUserProfileDao: TraktUserProfileDao,
         traktUserStatsDao: TraktUserStatsDao
     ): HomeRepository {
-        return HomeRepository(context, playbackDao, traktUserProfileDao, traktUserStatsDao)
+        return HomeRepository(context, playbackDao, continueWatchingDao, traktUserProfileDao, traktUserStatsDao)
     }
     
     @Provides

@@ -47,6 +47,9 @@ object DatabaseModule {
     fun providePlaybackDao(database: StrmrDatabase): PlaybackDao = database.playbackDao()
     
     @Provides
+    fun provideContinueWatchingDao(database: StrmrDatabase): ContinueWatchingDao = database.continueWatchingDao()
+    
+    @Provides
     fun provideOmdbRatingsDao(database: StrmrDatabase): OmdbRatingsDao = database.omdbRatingsDao()
 
     @Provides

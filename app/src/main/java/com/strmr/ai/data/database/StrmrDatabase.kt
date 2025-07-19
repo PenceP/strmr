@@ -9,9 +9,11 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.strmr.ai.data.database.converters.ListConverter
 import com.strmr.ai.data.database.PlaybackEntity
+import com.strmr.ai.data.database.ContinueWatchingEntity
 import com.strmr.ai.data.database.TraktUserProfileEntity
 import com.strmr.ai.data.database.TraktUserStatsEntity
 import com.strmr.ai.data.database.PlaybackDao
+import com.strmr.ai.data.database.ContinueWatchingDao
 import com.strmr.ai.data.database.TraktUserProfileDao
 import com.strmr.ai.data.database.TraktUserStatsDao
 import com.strmr.ai.data.database.OmdbRatingsEntity
@@ -29,6 +31,7 @@ import com.strmr.ai.data.database.TraktRatingsDao
         TvShowEntity::class,
         AccountEntity::class,
         PlaybackEntity::class,
+        ContinueWatchingEntity::class,
         TraktUserProfileEntity::class,
         TraktUserStatsEntity::class,
         OmdbRatingsEntity::class,
@@ -37,7 +40,7 @@ import com.strmr.ai.data.database.TraktRatingsDao
         CollectionEntity::class,
         TraktRatingsEntity::class
     ],
-    version = 10, // bumped for schema changes - added collection field and collection table
+    version = 11, // bumped for continue watching table
     exportSchema = false
 )
 @TypeConverters(ListConverter::class)
@@ -47,6 +50,7 @@ abstract class StrmrDatabase : RoomDatabase() {
     abstract fun tvShowDao(): TvShowDao
     abstract fun accountDao(): AccountDao
     abstract fun playbackDao(): PlaybackDao
+    abstract fun continueWatchingDao(): ContinueWatchingDao
     abstract fun traktUserProfileDao(): TraktUserProfileDao
     abstract fun traktUserStatsDao(): TraktUserStatsDao
     abstract fun omdbRatingsDao(): OmdbRatingsDao
@@ -58,6 +62,36 @@ abstract class StrmrDatabase : RoomDatabase() {
     companion object {
         @Volatile
         private var INSTANCE: StrmrDatabase? = null
+
+        // Migration from version 10 to 11
+        private val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Create continue_watching table
+                database.execSQL("""
+                    CREATE TABLE continue_watching (
+                        id TEXT PRIMARY KEY NOT NULL,
+                        type TEXT NOT NULL,
+                        lastWatchedAt TEXT NOT NULL,
+                        progress REAL,
+                        movieTitle TEXT,
+                        movieTmdbId INTEGER,
+                        movieTraktId INTEGER,
+                        movieYear INTEGER,
+                        showTitle TEXT,
+                        showTmdbId INTEGER,
+                        showTraktId INTEGER,
+                        showYear INTEGER,
+                        episodeTitle TEXT,
+                        episodeSeason INTEGER,
+                        episodeNumber INTEGER,
+                        episodeTmdbId INTEGER,
+                        episodeTraktId INTEGER,
+                        isNextEpisode INTEGER NOT NULL DEFAULT 0,
+                        isInProgress INTEGER NOT NULL DEFAULT 0
+                    )
+                """)
+            }
+        }
 
         // Migration from version 9 to 10
         private val MIGRATION_9_10 = object : Migration(9, 10) {
@@ -120,7 +154,7 @@ abstract class StrmrDatabase : RoomDatabase() {
                     StrmrDatabase::class.java,
                     "strmr_database"
                 )
-                .addMigrations(MIGRATION_9_10, MIGRATION_8_9) // Add the new migrations
+                .addMigrations(MIGRATION_10_11, MIGRATION_9_10, MIGRATION_8_9) // Add the new migrations
                 .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance

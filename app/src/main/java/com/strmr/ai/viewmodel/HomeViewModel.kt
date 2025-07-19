@@ -40,14 +40,17 @@ class HomeViewModel @Inject constructor(
 
     private fun observeContinueWatching() {
         viewModelScope.launch {
-            homeRepository.getContinueWatching().collectLatest { playbackEntities ->
+            homeRepository.getContinueWatching().collectLatest { continueWatchingEntities ->
                 _isContinueWatchingLoading.value = false
-                val mappedItems = playbackEntities
-                    .filter { it.progress in 1f..95f }
-                    .mapNotNull { playbackEntity ->
-                        when (playbackEntity.type) {
+                val mappedItems = continueWatchingEntities
+                    .filter { entity ->
+                        // Include items with progress between 1-95% OR next episodes (no progress but has next episode)
+                        (entity.progress != null && entity.progress in 1f..95f) || entity.isNextEpisode
+                    }
+                    .mapNotNull { entity ->
+                        when (entity.type) {
                             "movie" -> {
-                                playbackEntity.movieTmdbId?.let { tmdbId ->
+                                entity.movieTmdbId?.let { tmdbId ->
                                     val movieEntity = movieRepository.getOrFetchMovieWithLogo(tmdbId)
                                     var altBackdropUrl: String? = null
                                     if (movieEntity != null) {
@@ -56,26 +59,21 @@ class HomeViewModel @Inject constructor(
                                             altBackdropUrl = images?.backdrops?.getOrNull(1)?.file_path?.let { path -> "https://image.tmdb.org/t/p/w780$path" }
                                         } catch (_: Exception) {}
                                     }
-                                    movieEntity?.let { entity ->
-                                        HomeMediaItem.Movie(entity, playbackEntity.progress, altBackdropUrl)
+                                    movieEntity?.let { movieEnt ->
+                                        HomeMediaItem.Movie(movieEnt, entity.progress, altBackdropUrl)
                                     }
                                 }
                             }
                             "episode" -> {
-                                playbackEntity.showTmdbId?.let { showTmdbId ->
+                                entity.showTmdbId?.let { showTmdbId ->
                                     tvShowRepository.getOrFetchTvShowWithLogo(showTmdbId)?.let { tvShowEntity ->
                                         var episodeImageUrl: String? = null
                                         var episodeOverview: String? = null
                                         var episodeAirDate: String? = null
-                                        val season = playbackEntity.episodeSeason
-                                        val episode = playbackEntity.episodeNumber
+                                        val season = entity.episodeSeason
+                                        val episode = entity.episodeNumber
                                         
-                                        // Debug logging for episode data
-                                        Log.d("HomeViewModel", "🎯 DEBUG: PlaybackEntity for ${tvShowEntity.title}: season=$season, episode=$episode")
-                                        Log.d("HomeViewModel", "🎯 DEBUG: PlaybackEntity type: ${playbackEntity.type}")
-                                        Log.d("HomeViewModel", "🎯 DEBUG: PlaybackEntity showTmdbId: ${playbackEntity.showTmdbId}")
-                                        Log.d("HomeViewModel", "🎯 DEBUG: PlaybackEntity episodeSeason: ${playbackEntity.episodeSeason}")
-                                        Log.d("HomeViewModel", "🎯 DEBUG: PlaybackEntity episodeNumber: ${playbackEntity.episodeNumber}")
+                                        Log.d("HomeViewModel", "🎬 Continue watching item: ${tvShowEntity.title} S${season}E${episode} (${if (entity.isNextEpisode) "next episode" else "in progress"})")
                                         
                                         if (season != null && episode != null) {
                                             try {
@@ -87,7 +85,16 @@ class HomeViewModel @Inject constructor(
                                                 episodeAirDate = episodeEntity?.airDate
                                             } catch (_: Exception) {}
                                         }
-                                        HomeMediaItem.TvShow(tvShowEntity, playbackEntity.progress, episodeImageUrl, season, episode, episodeOverview, episodeAirDate)
+                                        HomeMediaItem.TvShow(
+                                            show = tvShowEntity, 
+                                            progress = entity.progress, 
+                                            episodeImageUrl = episodeImageUrl, 
+                                            season = season, 
+                                            episode = episode, 
+                                            episodeOverview = episodeOverview, 
+                                            episodeAirDate = episodeAirDate,
+                                            isNextEpisode = entity.isNextEpisode
+                                        )
                                     }
                                 }
                             }

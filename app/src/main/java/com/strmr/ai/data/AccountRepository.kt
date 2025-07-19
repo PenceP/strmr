@@ -103,19 +103,17 @@ class AccountRepository(
         }
     }
 
-    suspend fun getContinueWatching(): List<PlaybackItem> {
+    suspend fun getContinueWatching(): List<ContinueWatchingItem> {
         // Always get a valid, refreshed token
         val accessToken = refreshTokenIfNeeded("trakt")?.trim()
-        Log.d("AccountRepository", "🔑 Using access token for /sync/playback: ${accessToken?.take(8)}...")
+        Log.d("AccountRepository", "🔑 Using access token for continue watching: ${accessToken?.take(8)}...")
         if (!accessToken.isNullOrEmpty()) {
             try {
-                // Create authenticated service with logging
-                val logging = HttpLoggingInterceptor().apply {
-                    level = HttpLoggingInterceptor.Level.BODY
-                }
-                val authService = RetrofitInstance.createAuthenticatedTraktServiceWithLogging(accessToken, logging)
-                val result = authService.getPlayback()
-                Log.d("AccountRepository", "✅ /sync/playback returned ${result.size} items")
+                // Create authenticated service
+                val authService = RetrofitInstance.createAuthenticatedTraktService(accessToken)
+                val continueWatchingService = ContinueWatchingService()
+                val result = continueWatchingService.getContinueWatching(authService)
+                Log.d("AccountRepository", "✅ Continue watching returned ${result.size} items")
                 return result
             } catch (e: retrofit2.HttpException) {
                 Log.e("AccountRepository", "❌ HTTP error fetching continue watching: ${e.code()} ${e.message()}")

@@ -57,12 +57,27 @@ interface TraktApiService {
     @Headers("Content-Type: application/json")
     @GET("sync/history")
     suspend fun getHistory(
-        @Header("Authorization") token: String
-    ): List<Map<String, Any>>
+        @Header("Authorization") token: String,
+        @Query("limit") limit: Int = 50
+    ): List<WatchedHistoryItem>
 
     @Headers("Content-Type: application/json")
     @GET("sync/playback")
     suspend fun getPlayback(@Header("Authorization") token: String): List<PlaybackItem>
+
+    @Headers("Content-Type: application/json")
+    @GET("sync/watched")
+    suspend fun getWatched(
+        @Header("Authorization") token: String,
+        @Query("extended") extended: String = "full"
+    ): List<WatchedItem>
+
+    @Headers("Content-Type: application/json")
+    @GET("shows/{id}/progress/watched")
+    suspend fun getShowProgress(
+        @Header("Authorization") token: String,
+        @Path("id") showId: Int
+    ): ShowProgress
 
     @GET("users/me")
     suspend fun getUserProfile(@Header("Authorization") token: String): TraktUserProfile
@@ -122,6 +137,27 @@ interface TraktAuthenticatedApiService {
     )
     @GET("sync/playback")
     suspend fun getPlayback(): List<PlaybackItem>
+
+    @Headers(
+        "Content-Type: application/json",
+        "trakt-api-version: 2"
+    )
+    @GET("sync/history")
+    suspend fun getHistory(@Query("limit") limit: Int = 50): List<WatchedHistoryItem>
+
+    @Headers(
+        "Content-Type: application/json",
+        "trakt-api-version: 2"
+    )
+    @GET("sync/watched")
+    suspend fun getWatched(@Query("extended") extended: String = "full"): List<WatchedItem>
+
+    @Headers(
+        "Content-Type: application/json",
+        "trakt-api-version: 2"
+    )
+    @GET("shows/{id}/progress/watched")
+    suspend fun getShowProgress(@Path("id") showId: Int): ShowProgress
 }
 
 data class TraktTokenRequest(
