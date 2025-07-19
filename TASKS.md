@@ -142,6 +142,7 @@
 - [ ] Mark Watched/unwatched (this should work on posters, season buttons, episodes)
 - [ ] Possibly any more I missed
 
+
 ### 19. Performance Optimization Round
 #### Phase 1: Systematic Performance Analysis
 - [ ] **Profiling Setup**
@@ -239,3 +240,183 @@
     - [ ] Document performance optimization guidelines for future development
 
 **Priority:** High - Performance directly impacts user experience on Android TV devices with limited resources. Focus on startup time and navigation smoothness first, then drilling down into specific bottlenecks identified through profiling.
+
+### 20. Torrent Scraper Integration
+**Reference Links:**
+- Torrentio Scraper: https://github.com/TheBeastLT/torrentio-scraper
+- Torrentio Configuration: https://torrentio.strem.fun/
+- Comet Scraper: https://github.com/g0ldyy/comet  
+- Comet Hosted Instance: comet.elfhosted.com
+
+**Sample Configuration JSONs:**
+```json
+// Torrentio Configuration
+{
+  "id": "com.stremio.torrentio.addon",
+  "version": "0.0.15",
+  "name": "Torrentio PM",
+  "description": "Provides torrent streams from scraped torrent providers. Currently supports YTS(+), EZTV(+), RARBG(+), 1337x(+), ThePirateBay(+), KickassTorrents(+), TorrentGalaxy(+), MagnetDL(+), HorribleSubs(+), NyaaSi(+), TokyoTosho(+), AniDex(+), Rutor(+), Rutracker(+), Comando(+), BluDV(+), Torrent9(+), ilCorSaRoNeRo(+), MejorTorrent(+), Wolfmax4k(+), Cinecalidad(+), BestTorrents(+) and Premiumize enabled. To configure providers, RealDebrid/Premiumize/AllDebrid/DebridLink/EasyDebrid/Offcloud/TorBox/Put.io support and other settings visit https://torrentio.strem.fun",
+  "catalogs": [
+    {
+      "id": "torrentio-premiumize",
+      "name": "Premiumize",
+      "type": "other",
+      "extra": [{"name": "skip"}]
+    }
+  ],
+  "resources": [
+    {
+      "name": "stream",
+      "types": ["movie", "series", "anime"],
+      "idPrefixes": ["tt", "kitsu"]
+    },
+    {
+      "name": "meta",
+      "types": ["other"],
+      "idPrefixes": ["premiumize"]
+    }
+  ],
+  "types": ["movie", "series", "anime", "other"],
+  "background": "https://torrentio.strem.fun/images/background_v1.jpg",
+  "logo": "https://torrentio.strem.fun/images/logo_v1.png",
+  "behaviorHints": {
+    "configurable": true,
+    "configurationRequired": false
+  }
+}
+
+// Comet Configuration  
+{
+  "id": "comet.elfhosted.com.VZwT",
+  "description": "Stremio's fastest torrent/debrid search add-on.",
+  "version": "2.0.0",
+  "catalogs": [],
+  "resources": [
+    {
+      "name": "stream",
+      "types": ["movie", "series"],
+      "idPrefixes": ["tt", "kitsu"]
+    }
+  ],
+  "types": ["movie", "series", "anime", "other"],
+  "logo": "https://i.imgur.com/jmVoVMu.jpeg",
+  "background": "https://i.imgur.com/WwnXB3k.jpeg",
+  "behaviorHints": {
+    "configurable": true,
+    "configurationRequired": false
+  },
+  "name": "Comet | ElfHosted | PM"
+}
+```
+
+#### Phase 1: Research & Architecture Planning
+- [ ] **Scraper Service Investigation**
+    - [ ] Research Torrentio scraper API endpoints and request/response format
+    - [ ] Investigate Comet scraper API at comet.elfhosted.com for comparison
+    - [ ] Document API differences, reliability, and performance characteristics
+    - [ ] Test both scrapers manually with sample IMDb IDs to understand data structure
+    - [ ] Analyze which scraper provides better quality/speed for our use case
+
+- [ ] **Authentication & Configuration Analysis**
+    - [ ] Reverse engineer Torrentio configuration URL structure at https://torrentio.strem.fun/
+    - [ ] Understand how user configurations (providers, debrid services) are encoded
+    - [ ] Map Premiumize API key integration into configuration payload
+    - [ ] Research Comet configuration requirements and API key handling
+    - [ ] Plan secure storage of user debrid service credentials
+
+#### Phase 2: Debrid Service Integration
+- [ ] **Premiumize Integration**
+    - [ ] Implement OAuth flow for Premiumize authentication
+    - [ ] Create Retrofit service for Premiumize API endpoints
+    - [ ] Add secure storage for Premiumize API keys using EncryptedSharedPreferences
+    - [ ] Implement API key validation and refresh mechanisms
+    - [ ] Add user settings screen for debrid service configuration
+
+- [ ] **Alternative Debrid Services Support**
+    - [ ] Research and document Real-Debrid API integration
+    - [ ] Plan AllDebrid, DebridLink, TorBox integration for future expansion
+    - [ ] Create abstracted debrid service interface for multiple providers
+    - [ ] Implement debrid service selection in user settings
+
+#### Phase 3: Scraper Service Implementation
+- [ ] **Primary Scraper Integration (Torrentio vs Comet Decision)**
+    - [ ] Implement chosen scraper's API client using Retrofit
+    - [ ] Create data models for scraper responses (stream links, quality, size, etc.)
+    - [ ] Map IMDb IDs from TMDB/Trakt data to scraper requests
+    - [ ] Handle scraper rate limiting and error responses gracefully
+    - [ ] Implement caching strategy for scraper results to avoid redundant requests
+
+- [ ] **Stream Resolution & Quality Management**
+    - [ ] Parse scraper responses for available stream qualities (4K, 1080p, 720p, etc.)
+    - [ ] Implement quality filtering based on user preferences
+    - [ ] Sort streams by quality, file size, and seeders/peers count
+    - [ ] Add user preference system for preferred quality and file size limits
+    - [ ] Handle multi-part files and season packs for TV shows
+
+#### Phase 4: UI Integration for Stream Selection
+- [ ] **MediaDetails Page Stream Integration**
+    - [ ] Add "Watch Now" button to MediaDetails page
+    - [ ] Create stream selection dialog/page showing available options
+    - [ ] Display stream information: quality, file size, provider, seeds/peers
+    - [ ] Implement stream quality badges and provider icons
+    - [ ] Add fallback messaging when no streams are available
+
+- [ ] **Episode-Level Stream Handling**
+    - [ ] Integrate scraper calls for individual TV episodes
+    - [ ] Handle season pack detection and episode extraction
+    - [ ] Map episode numbers to correct files in multi-episode torrents
+    - [ ] Add "Watch Episode" functionality to episode list items
+    - [ ] Implement next episode auto-progression with stream continuity
+
+#### Phase 5: Advanced Stream Features
+- [ ] **Stream Processing & Preparation**
+    - [ ] Implement magnet link handling and torrent file processing
+    - [ ] Add support for direct debrid service streaming URLs
+    - [ ] Create stream health checking (verify links before playback)
+    - [ ] Implement subtitle detection and integration from stream metadata
+    - [ ] Add torrent progress monitoring for real-time downloads
+
+- [ ] **Smart Stream Selection**
+    - [ ] Implement automatic quality selection based on device capabilities
+    - [ ] Add bandwidth-aware stream selection for slower connections
+    - [ ] Create user viewing history to improve automatic selections
+    - [ ] Implement fallback stream selection when primary choice fails
+    - [ ] Add manual stream switching during playback
+
+#### Phase 6: Performance & Reliability
+- [ ] **Caching & Optimization**
+    - [ ] Implement intelligent stream result caching with TTL
+    - [ ] Add background prefetching for likely-to-be-watched content
+    - [ ] Create stream availability checking without full scraper calls
+    - [ ] Optimize scraper request batching for multi-episode content
+    - [ ] Add offline capability for previously cached stream data
+
+- [ ] **Error Handling & Fallbacks**
+    - [ ] Implement graceful degradation when scrapers are unavailable
+    - [ ] Add automatic failover between Torrentio and Comet
+    - [ ] Create comprehensive error messaging for failed stream attempts
+    - [ ] Implement retry logic with exponential backoff for failed requests
+    - [ ] Add network status monitoring and offline mode handling
+
+#### Phase 7: User Experience & Settings
+- [ ] **Stream Preferences Configuration**
+    - [ ] Create comprehensive settings page for stream preferences
+    - [ ] Add provider priority configuration (YTS, EZTV, 1337x, etc.)
+    - [ ] Implement quality preference sliders and bandwidth settings
+    - [ ] Add language and subtitle preference configuration
+    - [ ] Create debrid service management interface
+
+- [ ] **Stream History & Analytics**
+    - [ ] Implement watch history with stream source tracking
+    - [ ] Add stream quality analytics and user preference learning
+    - [ ] Create "Recently Watched" integration with stream continuity
+    - [ ] Implement stream source reliability scoring based on success rates
+    - [ ] Add usage analytics for scraper performance optimization
+
+**Implementation Priority:** High - This is a core feature that differentiates the app from standard streaming services. Start with Phase 1 research, then implement Premiumize integration before choosing primary scraper service.
+
+**Technical Notes:**
+- Consider implementing both Torrentio and Comet with automatic failover for maximum reliability
+- Ensure all debrid service API keys are stored securely and never logged
+- Plan for legal compliance and appropriate content warnings
+- Design with scalability in mind for adding more scraper services in the future
