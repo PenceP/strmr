@@ -46,4 +46,8 @@ class DetailsViewModel @Inject constructor(
     suspend fun getSeasons(tmdbId: Int) = tvShowRepository.getOrFetchSeasons(tmdbId)
     
     suspend fun getEpisodes(tmdbId: Int, season: Int) = tvShowRepository.getOrFetchEpisodes(tmdbId, season)
+    
+    suspend fun getMovieTrailer(tmdbId: Int): String? = movieRepository.getMovieTrailer(tmdbId)
+    
+    suspend fun getTvShowTrailer(tmdbId: Int): String? = tvShowRepository.getTvShowTrailer(tmdbId)
 } 

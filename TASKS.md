@@ -106,7 +106,7 @@ use the video that has official key=true and "Trailer" in the name key.
 
 ### 8. Implement CI/CD with Github actions. 
  - Should be done BEFORE the auto-update item above (#7)
- - Desired Stages: Build, Run Tests, Compile APK and add to artifacts, anything else im missing, MAYBE: run apk and try to verify certain conditions(???)
+ - Desired Stages: Build, Run Tests, Compile APK and add to artifacts (version number in filename), anything else im missing, MAYBE:  start an emulator via avdmanager and run apk and try to verify certain conditions(???)
 ---
 
 **Next up: Start on Task 1 (MediaDetails Page).** 

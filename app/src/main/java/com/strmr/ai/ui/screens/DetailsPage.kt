@@ -86,6 +86,7 @@ import com.strmr.ai.utils.DateFormatter
 import androidx.compose.material.icons.filled.Visibility
 import com.strmr.ai.data.MovieRepository
 import com.strmr.ai.data.SimilarContent
+import androidx.lifecycle.viewModelScope
 
 sealed class MediaDetailsType {
     data class Movie(val movie: MovieEntity) : MediaDetailsType()
@@ -99,6 +100,7 @@ fun DetailsPage(
     onPlay: (season: Int?, episode: Int?) -> Unit = { _, _ -> },
     onAddToCollection: () -> Unit = {},
     onNavigateToSimilar: (String, Int) -> Unit = { _, _ -> }, // New navigation callback
+    onTrailer: (String, String) -> Unit = { _, _ -> }, // Trailer navigation callback
     cachedSeason: Int? = null,
     cachedEpisode: Int? = null
 ) {
@@ -109,9 +111,9 @@ fun DetailsPage(
         return
     }
     when (mediaDetails) {
-        is MediaDetailsType.Movie -> MovieDetailsView(mediaDetails.movie, viewModel, onPlay, onAddToCollection, onNavigateToSimilar)
+        is MediaDetailsType.Movie -> MovieDetailsView(mediaDetails.movie, viewModel, onPlay, onAddToCollection, onNavigateToSimilar, onTrailer)
         is MediaDetailsType.TvShow -> {
-            TvShowDetailsView(mediaDetails.show, viewModel, onPlay, onAddToCollection, onNavigateToSimilar, cachedSeason, cachedEpisode)
+            TvShowDetailsView(mediaDetails.show, viewModel, onPlay, onAddToCollection, onNavigateToSimilar, onTrailer, cachedSeason, cachedEpisode)
         }
     }
 }
@@ -122,7 +124,8 @@ fun MovieDetailsView(
     viewModel: com.strmr.ai.viewmodel.DetailsViewModel,
     onPlay: (season: Int?, episode: Int?) -> Unit,
     onAddToCollection: () -> Unit,
-    onNavigateToSimilar: (String, Int) -> Unit
+    onNavigateToSimilar: (String, Int) -> Unit,
+    onTrailer: (String, String) -> Unit
 ) {
     val playButtonFocusRequester = remember { FocusRequester() }
     var omdbRatings by remember(movie.imdbId) { mutableStateOf<OmdbResponse?>(null) }
@@ -290,7 +293,18 @@ fun MovieDetailsView(
                             val trailerButtonInteractionSource = remember { MutableInteractionSource() }
                             val trailerButtonIsFocused by trailerButtonInteractionSource.collectIsFocusedAsState()
                             FrostedGlassButton(
-                                onClick = { /* TODO: Trailer */ },
+                                onClick = {
+                                    viewModel.viewModelScope.launch {
+                                        try {
+                                            val trailerUrl = viewModel.getMovieTrailer(movie.tmdbId)
+                                            if (trailerUrl != null) {
+                                                onTrailer(trailerUrl, movie.title)
+                                            }
+                                        } catch (e: Exception) {
+                                            Log.e("MovieDetailsView", "❌ Error fetching trailer", e)
+                                        }
+                                    }
+                                },
                                 modifier = Modifier.weight(1f).height(48.dp),
                                 interactionSource = trailerButtonInteractionSource,
                                 isFocused = trailerButtonIsFocused,
@@ -688,6 +702,7 @@ fun TvShowDetailsView(
     onPlay: (season: Int?, episode: Int?) -> Unit,
     onAddToCollection: () -> Unit,
     onNavigateToSimilar: (String, Int) -> Unit,
+    onTrailer: (String, String) -> Unit,
     cachedSeason: Int? = null,
     cachedEpisode: Int? = null
 ) {
@@ -904,7 +919,18 @@ fun TvShowDetailsView(
                             val trailerButtonInteractionSource = remember { MutableInteractionSource() }
                             val trailerButtonIsFocused by trailerButtonInteractionSource.collectIsFocusedAsState()
                             FrostedGlassButton(
-                                onClick = { /* TODO: Trailer */ },
+                                onClick = {
+                                    viewModel.viewModelScope.launch {
+                                        try {
+                                            val trailerUrl = viewModel.getTvShowTrailer(show.tmdbId)
+                                            if (trailerUrl != null) {
+                                                onTrailer(trailerUrl, show.title)
+                                            }
+                                        } catch (e: Exception) {
+                                            Log.e("TvShowDetailsView", "❌ Error fetching trailer", e)
+                                        }
+                                    }
+                                },
                                 modifier = Modifier.weight(1f).height(48.dp),
                                 interactionSource = trailerButtonInteractionSource,
                                 isFocused = trailerButtonIsFocused,

@@ -24,7 +24,8 @@ class MovieRepository(
     traktApi: TraktApiService,
     tmdbApi: TmdbApiService,
     database: StrmrDatabase,
-    traktRatingsDao: TraktRatingsDao
+    traktRatingsDao: TraktRatingsDao,
+    private val trailerService: TrailerService
 ) : BaseMediaRepository<MovieEntity, Movie, TrendingMovie>(
     traktApi, tmdbApi, database, traktRatingsDao
 ) {
@@ -404,4 +405,11 @@ class MovieRepository(
     override suspend fun getItemByTmdbId(tmdbId: Int): MovieEntity? = movieDao.getMovieByTmdbId(tmdbId)
     override suspend fun updateItemLogo(tmdbId: Int, logoUrl: String?) = movieDao.updateMovieLogo(tmdbId, logoUrl)
     override suspend fun clearNullLogos() = movieDao.clearNullLogos()
+    
+    /**
+     * Get official trailer URL for a movie
+     */
+    suspend fun getMovieTrailer(tmdbId: Int): String? {
+        return trailerService.getMovieTrailer(tmdbId)
+    }
 } 

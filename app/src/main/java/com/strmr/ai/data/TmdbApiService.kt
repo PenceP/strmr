@@ -68,6 +68,18 @@ interface TmdbApiService {
         @Query("query") query: String,
         @Query("page") page: Int = 1
     ): TmdbSearchResponse
+
+    @GET("movie/{movie_id}/videos")
+    suspend fun getMovieVideos(
+        @Path("movie_id") movieId: Int,
+        @Query("language") language: String = "en-US"
+    ): TmdbVideosResponse
+
+    @GET("tv/{tv_id}/videos")
+    suspend fun getTvShowVideos(
+        @Path("tv_id") tvId: Int,
+        @Query("language") language: String = "en-US"
+    ): TmdbVideosResponse
 }
 
 data class TmdbMovieDetails(
@@ -201,4 +213,22 @@ data class TmdbKnownFor(
     val title: String?,
     val name: String?,
     val poster_path: String?
+)
+
+data class TmdbVideosResponse(
+    val id: Int,
+    val results: List<TmdbVideo>
+)
+
+data class TmdbVideo(
+    val id: String,
+    val iso_639_1: String?,
+    val iso_3166_1: String?,
+    val key: String,
+    val name: String,
+    val official: Boolean,
+    val published_at: String?,
+    val site: String, // e.g., "YouTube"
+    val size: Int?,
+    val type: String // e.g., "Trailer", "Teaser", "Clip", "Featurette"
 ) 

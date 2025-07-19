@@ -28,7 +28,8 @@ class TvShowRepository(
     private val seasonDao: SeasonDao,
     private val episodeDao: EpisodeDao,
     database: StrmrDatabase,
-    traktRatingsDao: TraktRatingsDao
+    traktRatingsDao: TraktRatingsDao,
+    private val trailerService: TrailerService
 ) : BaseMediaRepository<TvShowEntity, Show, TrendingShow>(
     traktApiService, tmdbApi, database, traktRatingsDao
 ) {
@@ -437,4 +438,8 @@ class TvShowRepository(
     override suspend fun getItemByTmdbId(tmdbId: Int): TvShowEntity? = tvShowDao.getTvShowByTmdbId(tmdbId)
     override suspend fun updateItemLogo(tmdbId: Int, logoUrl: String?) = tvShowDao.updateTvShowLogo(tmdbId, logoUrl)
     override suspend fun clearNullLogos() = tvShowDao.clearNullLogos()
+    
+    suspend fun getTvShowTrailer(tmdbId: Int): String? {
+        return trailerService.getTvShowTrailer(tmdbId)
+    }
 } 

@@ -24,9 +24,10 @@ object RepositoryModule {
         traktApi: TraktApiService,
         tmdbApi: TmdbApiService,
         database: StrmrDatabase,
-        traktRatingsDao: TraktRatingsDao
+        traktRatingsDao: TraktRatingsDao,
+        trailerService: TrailerService
     ): MovieRepository {
-        return MovieRepository(movieDao, collectionDao, traktApi, tmdbApi, database, traktRatingsDao)
+        return MovieRepository(movieDao, collectionDao, traktApi, tmdbApi, database, traktRatingsDao, trailerService)
     }
     
     @Provides
@@ -38,9 +39,10 @@ object RepositoryModule {
         seasonDao: SeasonDao,
         episodeDao: EpisodeDao,
         database: StrmrDatabase,
-        traktRatingsDao: TraktRatingsDao
+        traktRatingsDao: TraktRatingsDao,
+        trailerService: TrailerService
     ): TvShowRepository {
-        return TvShowRepository(tvShowDao, traktApiService, tmdbApiService, seasonDao, episodeDao, database, traktRatingsDao)
+        return TvShowRepository(tvShowDao, traktApiService, tmdbApiService, seasonDao, episodeDao, database, traktRatingsDao, trailerService)
     }
     
     @Provides
@@ -99,5 +101,14 @@ object RepositoryModule {
         fetchLogoUseCase: FetchLogoUseCase
     ): GenericTraktRepository {
         return GenericTraktRepository(database, traktApiService, tmdbApiService, fetchLogoUseCase)
+    }
+    
+    @Provides
+    @Singleton
+    fun provideTrailerService(
+        tmdbApiService: TmdbApiService,
+        youtubeExtractor: YouTubeExtractor
+    ): TrailerService {
+        return TrailerService(tmdbApiService, youtubeExtractor)
     }
 } 

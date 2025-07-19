@@ -102,6 +102,15 @@ dependencies {
     implementation("androidx.hilt:hilt-work:1.2.0")
     ksp("androidx.hilt:hilt-compiler:1.2.0")
     
+    // ExoPlayer Media3 for video playback
+    implementation("androidx.media3:media3-exoplayer:1.6.1")
+    implementation("androidx.media3:media3-exoplayer-dash:1.6.1")
+    implementation("androidx.media3:media3-ui:1.6.1")
+    implementation("androidx.media3:media3-datasource-okhttp:1.6.1")
+    
+    // NewPipeExtractor for YouTube URL extraction
+    implementation("com.github.teamnewpipe:NewPipeExtractor:0.24.6")
+    
     // Test dependencies
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.mockito:mockito-core:5.1.1")

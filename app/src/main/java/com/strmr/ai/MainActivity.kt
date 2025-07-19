@@ -43,6 +43,7 @@ import com.strmr.ai.data.database.MovieEntity
 import com.strmr.ai.data.database.TvShowEntity
 import com.strmr.ai.ui.screens.DetailsPage
 import com.strmr.ai.ui.screens.MediaDetailsType
+import com.strmr.ai.ui.screens.VideoPlayerScreen
 import android.util.Log
 import dagger.hilt.android.AndroidEntryPoint
 import com.strmr.ai.viewmodel.HomeViewModel
@@ -243,6 +244,11 @@ fun MainScreen() {
                             onNavigateToSimilar = { mediaType, tmdbId ->
                                 val route = "details/$mediaType/$tmdbId"
                                 navController.navigate(route)
+                            },
+                            onTrailer = { videoUrl, title ->
+                                val encodedUrl = java.net.URLEncoder.encode(videoUrl, "UTF-8")
+                                val encodedTitle = java.net.URLEncoder.encode(title, "UTF-8")
+                                navController.navigate("video_player/$encodedUrl/$encodedTitle")
                             }
                         )
                         "tvshow" -> DetailsPage(
@@ -251,6 +257,11 @@ fun MainScreen() {
                             onNavigateToSimilar = { mediaType, tmdbId ->
                                 val route = "details/$mediaType/$tmdbId"
                                 navController.navigate(route)
+                            },
+                            onTrailer = { videoUrl, title ->
+                                val encodedUrl = java.net.URLEncoder.encode(videoUrl, "UTF-8")
+                                val encodedTitle = java.net.URLEncoder.encode(title, "UTF-8")
+                                navController.navigate("video_player/$encodedUrl/$encodedTitle")
                             },
                             cachedSeason = season,
                             cachedEpisode = episode
@@ -291,15 +302,44 @@ fun MainScreen() {
                             onNavigateToSimilar = { mediaType, tmdbId ->
                                 val route = "details/$mediaType/$tmdbId"
                                 navController.navigate(route)
+                            },
+                            onTrailer = { videoUrl, title ->
+                                val encodedUrl = java.net.URLEncoder.encode(videoUrl, "UTF-8")
+                                val encodedTitle = java.net.URLEncoder.encode(title, "UTF-8")
+                                navController.navigate("video_player/$encodedUrl/$encodedTitle")
                             }
                         )
                         "tvshow" -> DetailsPage(
                             mediaDetails = show?.let { MediaDetailsType.TvShow(it) },
                             viewModel = detailsViewModel,
+                            onTrailer = { videoUrl, title ->
+                                val encodedUrl = java.net.URLEncoder.encode(videoUrl, "UTF-8")
+                                val encodedTitle = java.net.URLEncoder.encode(title, "UTF-8")
+                                navController.navigate("video_player/$encodedUrl/$encodedTitle")
+                            },
                             cachedSeason = season,
                             cachedEpisode = episode
                         )
                     }
+                }
+                composable(
+                    route = "video_player/{videoUrl}/{title}",
+                    arguments = listOf(
+                        navArgument("videoUrl") { type = NavType.StringType },
+                        navArgument("title") { type = NavType.StringType }
+                    )
+                ) { backStackEntry ->
+                    val videoUrl = backStackEntry.arguments?.getString("videoUrl") ?: ""
+                    val title = backStackEntry.arguments?.getString("title") ?: "Trailer"
+                    
+                    // Decode URL if needed
+                    val decodedUrl = java.net.URLDecoder.decode(videoUrl, "UTF-8")
+                    
+                    VideoPlayerScreen(
+                        videoUrl = decodedUrl,
+                        title = title,
+                        onBack = { navController.popBackStack() }
+                    )
                 }
             }
         }
