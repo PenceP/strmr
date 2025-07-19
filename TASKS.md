@@ -107,6 +107,8 @@ use the video that has official key=true and "Trailer" in the name key.
 ### 8. Implement CI/CD with Github actions. 
  - Should be done BEFORE the auto-update item above (#7)
  - Desired Stages: Build, Run Tests, Compile APK and add to artifacts (version number in filename), anything else im missing, MAYBE:  start an emulator via avdmanager and run apk and try to verify certain conditions(???)
+
+### 9. Somewhere along the way paging broke, and now movies and tv shows only are getting the first page from the api. this needs to be fixed.
 ---
 
 **Next up: Start on Task 1 (MediaDetails Page).** 
