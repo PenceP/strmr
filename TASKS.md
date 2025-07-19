@@ -103,6 +103,10 @@ use the video that has official key=true and "Trailer" in the name key.
 
 ### 7. Auto-update functionality
  - implement versioning and ping server on start to see if there's an updated version. if so, download and install it
+
+### 8. Implement CI/CD with Github actions. 
+ - Should be done BEFORE the auto-update item above (#7)
+ - Desired Stages: Build, Run Tests, Compile APK and add to artifacts, anything else im missing, MAYBE: run apk and try to verify certain conditions(???)
 ---
 
 **Next up: Start on Task 1 (MediaDetails Page).** 
