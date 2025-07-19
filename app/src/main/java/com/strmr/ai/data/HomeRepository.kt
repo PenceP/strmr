@@ -31,12 +31,12 @@ class HomeRepository(
         }
 
         return try {
-            val jsonString = context.assets.open("HOME.json").bufferedReader().use { it.readText() }
+            val jsonString = context.assets.open("config/HOME.json").bufferedReader().use { it.readText() }
             val config = Gson().fromJson(jsonString, HomeConfig::class.java)
             homeConfig = config
             config
         } catch (e: Exception) {
-            Log.e("HomeRepository", "Error reading HOME.json", e)
+            Log.e("HomeRepository", "Error reading config/HOME.json", e)
             null
         }
     }
