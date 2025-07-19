@@ -26,63 +26,9 @@
       "dataSource": "viewModel.pagingUiState.mediaRows.Popular",
       "cardType": "portrait",
       "cardHeight": 200,
-      "showHero": false,
+      "showHero": true,
       "showLoading": true,
       "order": 2,
-      "enabled": true,
-      "displayOptions": {
-        "showOverlays": false,
-        "showProgress": false,
-        "clickable": true,
-        "supportedTypes": ["tvshow"]
-      }
-    },
-    {
-      "id": "top_rated",
-      "title": "Top Rated",
-      "type": "paging",
-      "dataSource": "viewModel.pagingUiState.mediaRows.Top Rated",
-      "cardType": "portrait",
-      "cardHeight": 200,
-      "showHero": false,
-      "showLoading": true,
-      "order": 3,
-      "enabled": true,
-      "displayOptions": {
-        "showOverlays": false,
-        "showProgress": false,
-        "clickable": true,
-        "supportedTypes": ["tvshow"]
-      }
-    },
-    {
-      "id": "airing_today",
-      "title": "Airing Today",
-      "type": "paging",
-      "dataSource": "viewModel.pagingUiState.mediaRows.Airing Today",
-      "cardType": "portrait",
-      "cardHeight": 200,
-      "showHero": false,
-      "showLoading": true,
-      "order": 4,
-      "enabled": true,
-      "displayOptions": {
-        "showOverlays": false,
-        "showProgress": false,
-        "clickable": true,
-        "supportedTypes": ["tvshow"]
-      }
-    },
-    {
-      "id": "on_the_air",
-      "title": "On The Air",
-      "type": "paging",
-      "dataSource": "viewModel.pagingUiState.mediaRows.On The Air",
-      "cardType": "portrait",
-      "cardHeight": 200,
-      "showHero": false,
-      "showLoading": true,
-      "order": 5,
       "enabled": true,
       "displayOptions": {
         "showOverlays": false,

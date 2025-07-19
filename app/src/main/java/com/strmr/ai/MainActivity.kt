@@ -46,8 +46,6 @@ import com.strmr.ai.ui.screens.MediaDetailsType
 import android.util.Log
 import dagger.hilt.android.AndroidEntryPoint
 import com.strmr.ai.viewmodel.HomeViewModel
-import com.strmr.ai.viewmodel.MoviesViewModel
-import com.strmr.ai.viewmodel.TvShowsViewModel
 import com.strmr.ai.data.MovieRepository
 import com.strmr.ai.data.TvShowRepository
 import kotlinx.coroutines.launch

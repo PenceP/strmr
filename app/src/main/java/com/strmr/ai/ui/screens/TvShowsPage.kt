@@ -5,12 +5,32 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.strmr.ai.viewmodel.TvShowsViewModel
+import com.strmr.ai.viewmodel.GenericTvShowsViewModel
 import com.strmr.ai.data.database.TvShowEntity
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.runtime.collectAsState
 import android.util.Log
 import com.strmr.ai.ui.components.rememberSelectionManager
+import com.strmr.ai.config.ConfigurationLoader
+import com.strmr.ai.config.PageConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
+import com.strmr.ai.ui.components.MediaHero
+import com.strmr.ai.ui.components.MediaDetails
+import com.strmr.ai.ui.components.CenteredMediaRow
+import com.strmr.ai.ui.components.MediaRowSkeleton
+import com.strmr.ai.ui.components.SkeletonCardType
+import com.strmr.ai.ui.components.MediaCard
+import com.strmr.ai.data.OmdbResponse
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun TvShowsPage(
@@ -18,15 +38,28 @@ fun TvShowsPage(
     onContentFocusChanged: ((Boolean) -> Unit)?,
     onNavigateToDetails: ((Int) -> Unit)?
 ) {
-    val viewModel: TvShowsViewModel = hiltViewModel()
+    val context = LocalContext.current
+    val viewModel: GenericTvShowsViewModel = hiltViewModel()
     
-    val pagingUiState by viewModel.pagingUiState.collectAsState()
+    // Load configuration
+    var pageConfiguration by remember { mutableStateOf<PageConfiguration?>(null) }
+    LaunchedEffect(Unit) {
+        val configLoader = ConfigurationLoader(context)
+        pageConfiguration = configLoader.loadPageConfiguration("TV")
+        pageConfiguration?.let { config ->
+            viewModel.initializeWithConfiguration(config)
+        }
+    }
+    
+    val uiState by viewModel.uiState.collectAsState()
     
     // Use the new SelectionManager
     val selectionManager = rememberSelectionManager()
     
-    val rowTitles = pagingUiState.mediaRows.keys.toList()
-    val rowCount = rowTitles.size
+    // Get all available rows from uiState
+    val allRows = uiState.mediaRows
+    val allRowTitles = allRows.keys.toList()
+    val rowCount = allRowTitles.size
     val focusRequesters = remember(rowCount) { List(rowCount) { FocusRequester() } }
 
     // Update local content focus when external focus changes
@@ -36,46 +69,191 @@ fun TvShowsPage(
     }
 
     val navBarWidth = 56.dp
+    val navBarWidthPx = with(LocalDensity.current) { navBarWidth.toPx() }
+
+    // Get selected item for hero section
+    val validRowIndex = if (selectionManager.selectedRowIndex >= rowCount) 0 else selectionManager.selectedRowIndex
+    val currentRowTitle = allRowTitles.getOrNull(validRowIndex) ?: ""
+    val selectedRow = allRows[currentRowTitle] ?: emptyList()
+    val selectedItem = selectedRow.getOrNull(selectionManager.selectedItemIndex)
+
+    // Check if current row should show hero based on configuration
+    val shouldShowHero = pageConfiguration?.let { config ->
+        currentRowTitle.let { title ->
+            val rowConfig = config.rows.find { it.title == title }
+            rowConfig?.showHero == true
+        }
+    } ?: false
+
+    // Get backdrop URL for background
+    val backdropUrl = if (shouldShowHero) {
+        (selectedItem as? TvShowEntity)?.backdropUrl
+    } else null
+
+    // OMDb ratings for hero section
+    var omdbRatings by remember(selectedItem) { mutableStateOf<OmdbResponse?>(null) }
+    LaunchedEffect(selectedItem) {
+        if (shouldShowHero && selectedItem is TvShowEntity) {
+            val imdbId = selectedItem.imdbId
+            if (!imdbId.isNullOrBlank()) {
+                omdbRatings = withContext(Dispatchers.IO) {
+                    viewModel.getOmdbRatings(imdbId)
+                }
+            } else {
+                omdbRatings = null
+            }
+        } else {
+            omdbRatings = null
+        }
+    }
 
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        MediaPagingPage(
-            pagingUiState = pagingUiState,
-            selectedRowIndex = selectionManager.selectedRowIndex,
-            selectedItemIndex = selectionManager.selectedItemIndex,
-            onItemSelected = { rowIdx, itemIdx ->
-                selectionManager.updateSelection(rowIdx, itemIdx)
-                viewModel.onTvShowSelected(rowIdx, itemIdx)
-            },
-            onSelectionChanged = { newIndex ->
-                selectionManager.updateSelection(selectionManager.selectedRowIndex, newIndex)
-            },
-            modifier = Modifier,
-            focusRequester = if (selectionManager.selectedRowIndex < focusRequesters.size && selectionManager.isContentFocused) focusRequesters[selectionManager.selectedRowIndex] else null,
-            onUpDown = { direction ->
-                val newRowIndex = selectionManager.selectedRowIndex + direction
-                if (newRowIndex >= 0 && newRowIndex < rowCount) {
-                    Log.d("TvShowsPage", "🎯 Row navigation: ${selectionManager.selectedRowIndex} -> $newRowIndex, maintaining focus")
-                    selectionManager.updateSelection(newRowIndex, 0)
-                    // Ensure content focus is maintained during row transitions
-                    selectionManager.updateContentFocus(true)
-                }
-            },
-            isContentFocused = selectionManager.isContentFocused,
-            onContentFocusChanged = { focused ->
-                selectionManager.updateContentFocus(focused)
-                onContentFocusChanged?.invoke(focused)
-            },
-            onItemClick = { show ->
-                onNavigateToDetails?.invoke((show as TvShowEntity).tmdbId)
-            },
-            getOmdbRatings = { imdbId ->
-                viewModel.getOmdbRatings(imdbId)
-            },
-            onFetchLogo = { show ->
-                viewModel.fetchAndUpdateLogo(show as TvShowEntity)
-            }
+        // Backdrop image as the main background
+        if (shouldShowHero && !backdropUrl.isNullOrBlank()) {
+            AsyncImage(
+                model = backdropUrl,
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        scaleX = 1.1f
+                        scaleY = 1.1f
+                    },
+                contentScale = ContentScale.Crop,
+                alpha = 1f
+            )
+            
+            // Gradient overlay for readability
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.horizontalGradient(
+                            colors = listOf(
+                                Color.Black.copy(alpha = 0.7f),
+                                Color.Black.copy(alpha = 0.3f)
+                            ),
+                            startX = 0f,
+                            endX = 2200f
+                        )
+                    )
+            )
+        }
+
+        // Wide, soft horizontal gradient overlay from left edge (behind nav bar) to main area
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.horizontalGradient(
+                        colors = listOf(
+                            Color.Black,
+                            Color.Black.copy(alpha = 0.7f),
+                            Color.Black.copy(alpha = 0.3f),
+                            Color.Transparent
+                        ),
+                        startX = -navBarWidthPx,
+                        endX = 1200f
+                    )
+                )
         )
+
+        // Main content
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(start = navBarWidth)
+        ) {
+            // Hero section (based on configuration)
+            if (shouldShowHero && selectedItem is TvShowEntity) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(0.49f)
+                ) {
+                    MediaHero(
+                        mediaDetails = {
+                            MediaDetails(
+                                title = selectedItem.title,
+                                logoUrl = selectedItem.logoUrl,
+                                year = selectedItem.year,
+                                formattedDate = selectedItem.firstAirDate,
+                                runtime = null, // TV shows don't have runtime
+                                genres = selectedItem.genres,
+                                rating = selectedItem.rating,
+                                overview = selectedItem.overview,
+                                cast = selectedItem.cast.map { it.name ?: "" },
+                                omdbRatings = omdbRatings,
+                                onFetchLogo = {
+                                    viewModel.fetchAndUpdateLogo(selectedItem)
+                                }
+                            )
+                        }
+                    )
+                }
+            }
+
+            // Active row section
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(if (shouldShowHero) 0.51f else 1f)
+            ) {
+                // Render the selected row
+                val rowItems = selectedRow
+                
+                if (rowItems.isNotEmpty()) {
+                    CenteredMediaRow(
+                        title = currentRowTitle,
+                        mediaItems = rowItems,
+                        selectedIndex = selectionManager.selectedItemIndex,
+                        isRowSelected = true,
+                        onSelectionChanged = { newIndex ->
+                            selectionManager.updateSelection(validRowIndex, newIndex)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        focusRequester = if (selectionManager.isContentFocused) focusRequesters.getOrNull(validRowIndex) else null,
+                        onUpDown = { direction ->
+                            val newRowIndex = validRowIndex + direction
+                            if (newRowIndex >= 0 && newRowIndex < rowCount) {
+                                Log.d("TvShowsPage", "🎯 Row navigation: $validRowIndex -> $newRowIndex, maintaining focus")
+                                selectionManager.updateSelection(newRowIndex, 0)
+                                selectionManager.updateContentFocus(true)
+                            }
+                        },
+                        isContentFocused = selectionManager.isContentFocused,
+                        onContentFocusChanged = { focused ->
+                            selectionManager.updateContentFocus(focused)
+                            onContentFocusChanged?.invoke(focused)
+                        },
+                        currentRowIndex = validRowIndex,
+                        totalRowCount = rowCount,
+                        onItemClick = { show ->
+                            onNavigateToDetails?.invoke((show as TvShowEntity).tmdbId)
+                        },
+                        itemContent = { show, isSelected ->
+                            MediaCard(
+                                title = (show as TvShowEntity).title,
+                                posterUrl = show.posterUrl,
+                                isSelected = isSelected,
+                                onClick = {
+                                    onNavigateToDetails?.invoke(show.tmdbId)
+                                }
+                            )
+                        }
+                    )
+                } else {
+                    // Show skeleton when no items loaded yet
+                    MediaRowSkeleton(
+                        title = currentRowTitle,
+                        cardCount = 8,
+                        cardType = SkeletonCardType.PORTRAIT,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        }
     }
 } 

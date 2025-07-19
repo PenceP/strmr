@@ -88,4 +88,15 @@ object RepositoryModule {
     ): SearchRepository {
         return SearchRepository(traktApiService, tmdbApiService)
     }
+    
+    @Provides
+    @Singleton
+    fun provideGenericTraktRepository(
+        database: StrmrDatabase,
+        traktApiService: TraktApiService,
+        tmdbApiService: TmdbApiService,
+        fetchLogoUseCase: FetchLogoUseCase
+    ): GenericTraktRepository {
+        return GenericTraktRepository(database, traktApiService, tmdbApiService, fetchLogoUseCase)
+    }
 } 

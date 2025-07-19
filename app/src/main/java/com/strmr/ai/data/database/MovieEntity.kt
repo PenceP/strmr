@@ -30,5 +30,9 @@ data class MovieEntity(
     val belongsToCollection: BelongsToCollection? = null,
     val trendingOrder: Int? = null,
     val popularOrder: Int? = null,
+    val nowPlayingOrder: Int? = null,
+    val upcomingOrder: Int? = null,
+    val topRatedOrder: Int? = null,
+    val topMoviesWeekOrder: Int? = null,
     val lastUpdated: Long = 0L // for cache expiry
 ) 

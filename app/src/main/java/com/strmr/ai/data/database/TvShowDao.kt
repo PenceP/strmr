@@ -5,9 +5,11 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Update
-import kotlinx.coroutines.flow.Flow
+import androidx.room.RawQuery
 import androidx.room.Transaction
+import androidx.room.Update
+import androidx.sqlite.db.SupportSQLiteQuery
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TvShowDao {
@@ -67,4 +69,24 @@ interface TvShowDao {
     
     @Query("SELECT * FROM tv_shows WHERE popularOrder IS NOT NULL ORDER BY popularOrder ASC")
     fun getPopularTvShowsPagingSource(): PagingSource<Int, TvShowEntity>
+    
+    // === GENERIC DATA SOURCE METHODS ===
+    
+    /**
+     * Generic method to get TV shows from any data source using raw query
+     */
+    @RawQuery(observedEntities = [TvShowEntity::class])
+    fun getTvShowsFromDataSource(query: SupportSQLiteQuery): Flow<List<TvShowEntity>>
+    
+    /**
+     * Generic paging source for any data source
+     */
+    @RawQuery(observedEntities = [TvShowEntity::class])
+    fun getTvShowsPagingFromDataSource(query: SupportSQLiteQuery): PagingSource<Int, TvShowEntity>
+    
+    /**
+     * Generic method to clear any data source field
+     */
+    @RawQuery
+    suspend fun clearDataSourceField(query: SupportSQLiteQuery): Int
 } 

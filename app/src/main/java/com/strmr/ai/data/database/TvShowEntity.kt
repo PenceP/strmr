@@ -29,5 +29,8 @@ data class TvShowEntity(
     val similar: List<SimilarContent> = emptyList(),
     val trendingOrder: Int? = null,
     val popularOrder: Int? = null,
+    val topRatedOrder: Int? = null,
+    val airingTodayOrder: Int? = null,
+    val onTheAirOrder: Int? = null,
     val lastUpdated: Long = 0L // for cache expiry
 ) 

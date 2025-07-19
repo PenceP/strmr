@@ -5,7 +5,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.strmr.ai.viewmodel.MoviesViewModel
+import com.strmr.ai.viewmodel.GenericMoviesViewModel
 import com.strmr.ai.data.database.MovieEntity
 import androidx.compose.ui.focus.FocusRequester
 import android.util.Log
@@ -38,22 +38,24 @@ fun MoviesPage(
     onNavigateToDetails: ((Int) -> Unit)?
 ) {
     val context = LocalContext.current
-    val viewModel: MoviesViewModel = hiltViewModel()
+    val viewModel: GenericMoviesViewModel = hiltViewModel()
     
     // Load configuration
     var pageConfiguration by remember { mutableStateOf<PageConfiguration?>(null) }
     LaunchedEffect(Unit) {
         val configLoader = ConfigurationLoader(context)
         pageConfiguration = configLoader.loadPageConfiguration("MOVIES")
+        pageConfiguration?.let { config ->
+            viewModel.initializeWithConfiguration(config)
+        }
     }
     
-    val pagingUiState by viewModel.pagingUiState.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     
     // Use the new SelectionManager
     val selectionManager = rememberSelectionManager()
     
-    // Get all available rows from uiState (now includes all data)
+    // Get all available rows from uiState
     val allRows = uiState.mediaRows
     val allRowTitles = allRows.keys.toList()
     val rowCount = allRowTitles.size

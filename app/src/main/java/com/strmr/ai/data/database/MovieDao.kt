@@ -5,8 +5,11 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.RawQuery
 import androidx.room.Transaction
 import androidx.room.Update
+import androidx.sqlite.db.SimpleSQLiteQuery
+import androidx.sqlite.db.SupportSQLiteQuery
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -67,4 +70,24 @@ interface MovieDao {
     
     @Query("SELECT * FROM movies WHERE popularOrder IS NOT NULL ORDER BY popularOrder ASC")
     fun getPopularMoviesPagingSource(): PagingSource<Int, MovieEntity>
+    
+    // === GENERIC DATA SOURCE METHODS ===
+    
+    /**
+     * Generic method to get movies from any data source using raw query
+     */
+    @RawQuery(observedEntities = [MovieEntity::class])
+    fun getMoviesFromDataSource(query: SupportSQLiteQuery): Flow<List<MovieEntity>>
+    
+    /**
+     * Generic paging source for any data source
+     */
+    @RawQuery(observedEntities = [MovieEntity::class])
+    fun getMoviesPagingFromDataSource(query: SupportSQLiteQuery): PagingSource<Int, MovieEntity>
+    
+    /**
+     * Generic method to clear any data source field
+     */
+    @RawQuery
+    suspend fun clearDataSourceField(query: SupportSQLiteQuery): Int
 } 
