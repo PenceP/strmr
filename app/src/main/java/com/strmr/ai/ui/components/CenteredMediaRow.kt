@@ -111,17 +111,20 @@ fun <T> CenteredMediaRow(
         )
         Spacer(Modifier.height(16.dp))
         
-        // Row content with navigation indicators
+        // Larger container for row and navigation indicators
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(rowHeight)
+                .height(rowHeight + 90.dp) // Extra space for arrows
         ) {
+            // Row content centered in the container
             LazyRow(
                 state = listState,
                 horizontalArrangement = Arrangement.spacedBy(itemSpacing),
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
+                    .height(rowHeight)
+                    .align(Alignment.Center)
                     .onFocusChanged { 
                         Log.d("CenteredMediaRow", "🎯 Focus changed for '$title': ${it.isFocused}")
                         onContentFocusChanged?.invoke(it.isFocused) 
@@ -197,7 +200,7 @@ fun <T> CenteredMediaRow(
             }
         }
         
-        // Up/down navigation indicators
+        // Up/down navigation indicators positioned in the container
         if (currentRowIndex > 0 && isRowSelected) {
             Icon(
                 imageVector = Icons.Filled.KeyboardArrowUp,
