@@ -142,8 +142,100 @@
 - [ ] Mark Watched/unwatched (this should work on posters, season buttons, episodes)
 - [ ] Possibly any more I missed
 
+### 19. Performance Optimization Round
+#### Phase 1: Systematic Performance Analysis
+- [ ] **Profiling Setup**
+    - [ ] Set up Android Studio CPU Profiler for performance monitoring
+    - [ ] Install Systrace/Perfetto for system-level analysis
+    - [ ] Configure method tracing for critical user flows (app launch, page navigation, poster loading)
+    - [ ] Establish baseline performance metrics (startup time, frame drops, memory usage)
 
+- [ ] **File-by-File Performance Audit**
+    - [ ] **Activity/Fragment Analysis**
+        - [ ] Review `MainActivity.kt` for heavyweight operations on main thread
+        - [ ] Analyze `HomePage.kt` for inefficient RecyclerView operations and excessive API calls
+        - [ ] Examine `MediaDetailsActivity.kt` for blocking image loads and redundant data fetching
+        - [ ] Check navigation fragments for memory leaks and retained instances
+    
+    - [ ] **ViewModel Performance Review**
+        - [ ] Audit all ViewModels for synchronous database operations
+        - [ ] Identify ViewModels performing heavy computations on main thread
+        - [ ] Review LiveData/StateFlow usage for unnecessary emissions
+        - [ ] Check for improper coroutine usage causing thread blocking
+    
+    - [ ] **Database Layer Optimization**
+        - [ ] Profile Room database queries using Database Inspector
+        - [ ] Identify missing indices on frequently queried columns (movie IDs, timestamps)
+        - [ ] Review DAO methods for N+1 query problems
+        - [ ] Analyze cache invalidation strategies and optimization opportunities
+    
+    - [ ] **Network Layer Performance**
+        - [ ] Review Retrofit service implementations for synchronous calls
+        - [ ] Audit API response handling for unnecessary object creation
+        - [ ] Check network request batching opportunities (multiple poster requests)
+        - [ ] Identify redundant API calls across screens
+    
+    - [ ] **Image Loading Optimization**
+        - [ ] Profile Glide/Picasso usage patterns and memory consumption
+        - [ ] Review image caching strategies and cache hit rates
+        - [ ] Identify oversized image downloads (posters, backdrops)
+        - [ ] Check for memory leaks in image loading callbacks
 
----
+#### Phase 2: Targeted Speed Improvements
+- [ ] **Main Thread Optimization**
+    - [ ] Move all JSON parsing operations to background threads
+    - [ ] Offload database operations from main thread using coroutines
+    - [ ] Implement async image processing for poster transformations
+    - [ ] Remove any blocking file I/O operations from UI thread
+    
+- [ ] **RecyclerView Performance Tuning**
+    - [ ] Implement ViewHolder recycling optimizations
+    - [ ] Add item prefetching for smooth scrolling (`setItemPrefetchEnabled(true)`)
+    - [ ] Optimize adapter diffing using DiffUtil for large datasets
+    - [ ] Implement view binding caching to reduce findViewById calls
+    
+- [ ] **Memory Management**
+    - [ ] Implement object pooling for frequently created objects (movie items, view holders)
+    - [ ] Add proper cleanup in Fragment/Activity onDestroy methods
+    - [ ] Review bitmap management and implement proper recycling
+    - [ ] Optimize string concatenation using StringBuilder for loops
+    
+- [ ] **Startup Time Optimization**
+    - [ ] Implement lazy initialization for non-critical components
+    - [ ] Move heavy SDK initialization to background threads
+    - [ ] Add content providers for faster initial data loading
+    - [ ] Optimize Application class onCreate method
 
-**Next Priority: Complete Task 11 (Video Player Integration) - Add ExoPlayer and trailer functionality to MediaDetails page**
+#### Phase 3: Advanced Optimizations
+- [ ] **Code-Level Micro-optimizations**
+    - [ ] Replace Collections.forEach with enhanced for-loops in hot paths
+    - [ ] Use SparseArray instead of HashMap for integer keys
+    - [ ] Implement object reuse patterns for frequently allocated objects
+    - [ ] Add @JvmStatic annotations to frequently called Kotlin functions
+    
+- [ ] **Rendering Performance**
+    - [ ] Profile overdraw using GPU rendering tools
+    - [ ] Optimize layout hierarchies to reduce view depth
+    - [ ] Implement view flattening where possible
+    - [ ] Add hardware acceleration flags for custom views
+    
+- [ ] **Background Processing Optimization**
+    - [ ] Implement WorkManager for non-time-critical background tasks
+    - [ ] Add intelligent prefetching based on user navigation patterns
+    - [ ] Optimize coroutine dispatchers for different operation types
+    - [ ] Implement request deduplication for identical API calls
+
+#### Phase 4: Performance Testing & Validation
+- [ ] **Performance Metrics Collection**
+    - [ ] Measure and document improvement in app startup time
+    - [ ] Track frame rate improvements during scrolling and navigation
+    - [ ] Monitor memory usage reduction across all major screens
+    - [ ] Benchmark API response handling speed improvements
+    
+- [ ] **Regression Testing**
+    - [ ] Create automated performance test suite
+    - [ ] Set up continuous performance monitoring
+    - [ ] Establish performance budgets for critical user journeys
+    - [ ] Document performance optimization guidelines for future development
+
+**Priority:** High - Performance directly impacts user experience on Android TV devices with limited resources. Focus on startup time and navigation smoothness first, then drilling down into specific bottlenecks identified through profiling.
