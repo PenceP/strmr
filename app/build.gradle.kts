@@ -109,12 +109,8 @@ dependencies {
     implementation("androidx.media3:media3-ui:1.6.1")
     implementation("androidx.media3:media3-datasource-okhttp:1.6.1")
     
-    // YouTube extraction dependencies (simplified approach)
+    // OkHttp for network requests
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("org.jsoup:jsoup:1.15.3")
-    
-    // Rhino JavaScript engine for YouTube parameter transformation
-    implementation("org.mozilla:rhino:1.7.14")
     
     // DataStore for settings
     implementation("androidx.datastore:datastore-preferences:1.0.0")

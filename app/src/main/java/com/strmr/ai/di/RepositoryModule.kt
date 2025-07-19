@@ -106,9 +106,8 @@ object RepositoryModule {
     @Provides
     @Singleton
     fun provideTrailerService(
-        tmdbApiService: TmdbApiService,
-        youtubeExtractor: YouTubeExtractor
+        tmdbApiService: TmdbApiService
     ): TrailerService {
-        return TrailerService(tmdbApiService, youtubeExtractor)
+        return TrailerService(tmdbApiService)
     }
 } 

@@ -19,7 +19,6 @@ import androidx.compose.ui.unit.dp
 import com.strmr.ai.ui.components.VideoPlayer
 import com.strmr.ai.ui.components.YouTubeWebPlayer
 import com.strmr.ai.data.YouTubeExtractor
-import com.strmr.ai.data.SettingsManager
 import android.content.Intent
 import android.net.Uri
 import android.util.Log

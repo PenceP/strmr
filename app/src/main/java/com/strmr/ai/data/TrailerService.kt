@@ -9,8 +9,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class TrailerService @Inject constructor(
-    private val tmdbApiService: TmdbApiService,
-    private val youtubeExtractor: YouTubeExtractor
+    private val tmdbApiService: TmdbApiService
 ) {
     
     /**
