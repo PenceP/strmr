@@ -190,7 +190,7 @@ class MoviesViewModel @Inject constructor(
 
     suspend fun clearNullLogos() = movieRepository.clearNullLogos()
 
-    private fun fetchAndUpdateLogo(movie: MovieEntity) {
+    fun fetchAndUpdateLogo(movie: MovieEntity) {
         viewModelScope.launch {
             Log.d("MoviesViewModel", "🎯 Fetching logo for '${movie.title}' (TMDB: ${movie.tmdbId})")
             val logoUrl = fetchLogoUseCase.fetchAndExtractLogo(movie.tmdbId, MediaType.MOVIE)

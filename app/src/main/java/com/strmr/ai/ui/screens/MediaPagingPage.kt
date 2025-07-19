@@ -54,7 +54,8 @@ fun <T : Any> MediaPagingPage(
     isContentFocused: Boolean = false,
     onContentFocusChanged: ((Boolean) -> Unit)? = null,
     onItemClick: ((T) -> Unit)? = null,
-    getOmdbRatings: suspend (String) -> OmdbResponse? = { null }
+    getOmdbRatings: suspend (String) -> OmdbResponse? = { null },
+    onFetchLogo: ((T) -> Unit)? = null
 ) {
     val rowTitles = pagingUiState.mediaRows.keys.toList()
     val rowCount = rowTitles.size
@@ -188,7 +189,10 @@ fun <T : Any> MediaPagingPage(
                                     rating = details.rating,
                                     overview = details.overview,
                                     cast = details.cast,
-                                    omdbRatings = omdbRatings
+                                    omdbRatings = omdbRatings,
+                                    onFetchLogo = {
+                                        onFetchLogo?.invoke(item)
+                                    }
                                 )
                             }
                         }

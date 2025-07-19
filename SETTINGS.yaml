@@ -19,6 +19,11 @@ Accounts:
     - Username (if authorized)
     - Status (if authorized)
 
+UserInterface:
+  - Scroll Style:
+    - Middle
+    - Left
+    
 Content:
   - Home:
   - Movies:

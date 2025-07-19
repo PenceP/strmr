@@ -115,7 +115,7 @@ class TvShowsViewModel @Inject constructor(
 
     suspend fun clearNullLogos() = tvShowRepository.clearNullLogos()
 
-    private fun fetchAndUpdateLogo(show: TvShowEntity) {
+    fun fetchAndUpdateLogo(show: TvShowEntity) {
         viewModelScope.launch {
             Log.d("TvShowsViewModel", "🎯 Fetching logo for '${show.title}' (TMDB: ${show.tmdbId})")
             val logoUrl = fetchLogoUseCase.fetchAndExtractLogo(show.tmdbId, MediaType.TV_SHOW)

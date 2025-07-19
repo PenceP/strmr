@@ -17,6 +17,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.Icon
 
 @Composable
 fun <T> CenteredMediaRow(
@@ -34,6 +38,8 @@ fun <T> CenteredMediaRow(
     focusRequester: FocusRequester? = null,
     isContentFocused: Boolean = false,
     onContentFocusChanged: ((Boolean) -> Unit)? = null,
+    currentRowIndex: Int = 0,
+    totalRowCount: Int = 1,
     itemContent: @Composable (item: T, isSelected: Boolean) -> Unit
 ) where T : Any {
     val listState = rememberLazyListState()
@@ -104,19 +110,25 @@ fun <T> CenteredMediaRow(
             modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
         )
         Spacer(Modifier.height(16.dp))
-        LazyRow(
-            state = listState,
-            horizontalArrangement = Arrangement.spacedBy(itemSpacing),
+        
+        // Row content with navigation indicators
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(rowHeight)
-                .onFocusChanged { 
-                    Log.d("CenteredMediaRow", "🎯 Focus changed for '$title': ${it.isFocused}")
-                    onContentFocusChanged?.invoke(it.isFocused) 
-                }
-                .focusRequester(focusRequester ?: FocusRequester())
-                .focusable(enabled = isRowSelected)
-                .onKeyEvent { event ->
+        ) {
+            LazyRow(
+                state = listState,
+                horizontalArrangement = Arrangement.spacedBy(itemSpacing),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .onFocusChanged { 
+                        Log.d("CenteredMediaRow", "🎯 Focus changed for '$title': ${it.isFocused}")
+                        onContentFocusChanged?.invoke(it.isFocused) 
+                    }
+                    .focusRequester(focusRequester ?: FocusRequester())
+                    .focusable(enabled = isRowSelected)
+                    .onKeyEvent { event ->
                     if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN && isRowSelected) {
                         when (event.nativeKeyEvent.keyCode) {
                             android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
@@ -184,5 +196,28 @@ fun <T> CenteredMediaRow(
                 }
             }
         }
+        
+        // Up/down navigation indicators
+        if (currentRowIndex > 0 && isRowSelected) {
+            Icon(
+                imageVector = Icons.Filled.KeyboardArrowUp,
+                contentDescription = "Up",
+                tint = Color.White,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .size(32.dp)
+            )
+        }
+        if (currentRowIndex < totalRowCount - 1 && isRowSelected) {
+            Icon(
+                imageVector = Icons.Filled.KeyboardArrowDown,
+                contentDescription = "Down",
+                tint = Color.White,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .size(32.dp)
+            )
+        }
+    }
     }
 } 

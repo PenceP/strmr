@@ -88,7 +88,12 @@
 - Ensure all rows (Continue Watching, Networks, Collections, etc.) are defined in JSON, not hardcoded.
 - Think through all info needed in the JSON: row type, title, data source, display options, etc.
 - Refactor code to dynamically build rows from JSON at compile time.
+- Include Anything hardcoded into .json (HomeMediaItem.Collection for example)
+- should support nested fields (like Networks-a row of items that each has its own logo (webadress or local) and a trakt data source)
 
+### 4. The json refactor of the rows broke some things:
+ - Up/down arrows not showing up on movies page
+ - Media Logos not working *sometimes*
 ---
 
 **Next up: Start on Task 1 (MediaDetails Page).** 

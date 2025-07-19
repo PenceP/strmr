@@ -72,6 +72,9 @@ fun TvShowsPage(
             },
             getOmdbRatings = { imdbId ->
                 viewModel.getOmdbRatings(imdbId)
+            },
+            onFetchLogo = { show ->
+                viewModel.fetchAndUpdateLogo(show as TvShowEntity)
             }
         )
     }

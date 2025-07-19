@@ -16,6 +16,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.Image
 import com.strmr.ai.R
 import com.strmr.ai.utils.DateFormatter
+import androidx.compose.runtime.LaunchedEffect
 
 @Composable
 fun MediaDetails(
@@ -30,8 +31,16 @@ fun MediaDetails(
     cast: List<String>?,
     omdbRatings: com.strmr.ai.data.OmdbResponse? = null,
     modifier: Modifier = Modifier,
-    extraContent: @Composable (() -> Unit)? = null
+    extraContent: @Composable (() -> Unit)? = null,
+    onFetchLogo: (() -> Unit)? = null // Callback to fetch logo when missing
 ) {
+    // Trigger logo fetching when logo is missing
+    LaunchedEffect(logoUrl, title) {
+        if (logoUrl.isNullOrBlank() && !title.isNullOrBlank()) {
+            onFetchLogo?.invoke()
+        }
+    }
+    
     Column(
         modifier = modifier
             .padding(8.dp)

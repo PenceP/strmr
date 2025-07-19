@@ -4,15 +4,21 @@ import android.util.Log
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -33,201 +39,593 @@ fun SettingsPage(
     val traktAuthState by viewModel.traktAuthState.collectAsState()
     val traktUserState by viewModel.traktUserState.collectAsState()
     
+    // Settings state - these would be hooked up to actual preferences
+    var syncOnLaunch by remember { mutableStateOf(true) }
+    var syncAfterPlayback by remember { mutableStateOf(false) }
+    var scrollStyle by remember { mutableStateOf("Middle") }
+    var autoPlay by remember { mutableStateOf(true) }
+    var nextEpisodeTime by remember { mutableStateOf("5") }
+    
     val navBarWidth = 56.dp
     
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(
-                Brush.horizontalGradient(
+                Brush.verticalGradient(
                     colors = listOf(
-                        Color.Black,
-                        Color(0xFF1a1a1a)
+                        Color(0xFF0a0a0a),
+                        Color(0xFF1a1a1a),
+                        Color(0xFF0f0f0f)
                     )
                 )
             )
             .padding(start = navBarWidth)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(32.dp)
-                .verticalScroll(rememberScrollState())
+        Row(
+            modifier = Modifier.fillMaxSize()
         ) {
-            // Header
-            Text(
-                text = "Settings",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                modifier = Modifier.padding(bottom = 32.dp)
-            )
-            
-            // Accounts Section
-            SettingsSection(
-                title = "Accounts",
-                modifier = Modifier.padding(bottom = 32.dp)
+            // Left Panel - Settings Navigation
+            Column(
+                modifier = Modifier
+                    .width(320.dp)
+                    .fillMaxHeight()
+                    .background(
+                        Color(0xFF151515),
+                        RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp)
+                    )
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState())
             ) {
-                // Trakt Account
-                SettingsCard(
-                    title = "Trakt",
-                    subtitle = if (traktAuthState.isAuthorized) {
-                        traktUserState.profile?.username ?: "Connected"
-                    } else {
-                        "Sync your watch history and ratings"
-                    },
-                    icon = "🎬",
-                    onClick = onNavigateToTraktSettings,
-                    modifier = Modifier.padding(bottom = 16.dp),
-                    statusIndicator = if (traktAuthState.isAuthorized) Color(0xFF00ff88) else Color.Gray
+                // Header
+                Text(
+                    text = "Settings",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    modifier = Modifier.padding(bottom = 32.dp)
                 )
                 
-                // Premiumize Account
-                SettingsCard(
-                    title = "Premiumize",
-                    subtitle = "Access your cloud storage",
-                    icon = "☁️",
-                    onClick = onNavigateToPremiumizeSettings,
-                    modifier = Modifier.padding(bottom = 16.dp),
-                    statusIndicator = Color.Gray
+                // Navigation Sections
+                SettingsNavSection(
+                    title = "Accounts",
+                    items = listOf(
+                        SettingsNavItem("Trakt", Icons.Default.AccountCircle, isConnected = traktAuthState.isAuthorized),
+                        SettingsNavItem("Premiumize", Icons.Default.Cloud, isConnected = false),
+                        SettingsNavItem("RealDebrid", Icons.Default.Link, isConnected = false)
+                    )
                 )
                 
-                // RealDebrid Account
-                SettingsCard(
-                    title = "RealDebrid",
-                    subtitle = "Access your cloud storage",
-                    icon = "🔗",
-                    onClick = onNavigateToRealDebridSettings,
-                    modifier = Modifier.padding(bottom = 16.dp),
-                    statusIndicator = Color.Gray
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                SettingsNavSection(
+                    title = "User Interface",
+                    items = listOf(
+                        SettingsNavItem("Scroll Style", Icons.Default.TouchApp, showArrow = false)
+                    )
+                )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                SettingsNavSection(
+                    title = "Content",
+                    items = listOf(
+                        SettingsNavItem("Home", Icons.Default.Home),
+                        SettingsNavItem("Movies", Icons.Default.Movie),
+                        SettingsNavItem("TV Shows", Icons.Default.Tv),
+                        SettingsNavItem("Debrid Cloud", Icons.Default.CloudQueue)
+                    )
+                )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                SettingsNavSection(
+                    title = "Playback",
+                    items = listOf(
+                        SettingsNavItem("Auto Play", Icons.Default.PlayArrow, showArrow = false)
+                    )
                 )
             }
             
-            // Content Section
-            SettingsSection(
-                title = "Content",
-                modifier = Modifier.padding(bottom = 32.dp)
+            // Right Panel - Settings Content
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(32.dp)
+                    .verticalScroll(rememberScrollState())
             ) {
-                SettingsCard(
-                    title = "Home",
-                    subtitle = "Customize your home screen",
-                    icon = "🏠",
-                    onClick = { /* TODO */ },
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
+                // Account Settings Section
+                SettingsContentSection(
+                    title = "Account Settings",
+                    subtitle = "Manage your streaming and tracking accounts"
+                ) {
+                    // Trakt Account
+                    ModernSettingsCard(
+                        title = "Trakt",
+                        subtitle = if (traktAuthState.isAuthorized) {
+                            "Connected as ${traktUserState.profile?.username ?: "User"}"
+                        } else {
+                            "Connect to sync your watch history and ratings"
+                        },
+                        icon = Icons.Default.AccountCircle,
+                        isConnected = traktAuthState.isAuthorized,
+                        onClick = onNavigateToTraktSettings
+                    ) {
+                        if (traktAuthState.isAuthorized) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 16.dp)
+                            ) {
+                                SettingsToggleRow(
+                                    label = "Sync on app launch",
+                                    subtitle = "Automatically sync when opening the app",
+                                    checked = syncOnLaunch,
+                                    onCheckedChange = { syncOnLaunch = it }
+                                )
+                                
+                                Spacer(modifier = Modifier.height(12.dp))
+                                
+                                SettingsToggleRow(
+                                    label = "Sync after playback",
+                                    subtitle = "Update watch status after finishing content",
+                                    checked = syncAfterPlayback,
+                                    onCheckedChange = { syncAfterPlayback = it }
+                                )
+                                
+                                if (traktUserState.stats != null) {
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    StatsDisplay(
+                                        movies = traktUserState.stats?.movies?.watched ?: 0,
+                                        shows = traktUserState.stats?.shows?.watched ?: 0,
+                                        lastSync = "2 hours ago" // This would be actual timestamp
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Premiumize Account
+                    ModernSettingsCard(
+                        title = "Premiumize",
+                        subtitle = "Connect to access your cloud storage",
+                        icon = Icons.Default.Cloud,
+                        isConnected = false,
+                        onClick = onNavigateToPremiumizeSettings
+                    )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // RealDebrid Account
+                    ModernSettingsCard(
+                        title = "RealDebrid",
+                        subtitle = "Connect to access your cloud storage",
+                        icon = Icons.Default.Link,
+                        isConnected = false,
+                        onClick = onNavigateToRealDebridSettings
+                    )
+                }
                 
-                SettingsCard(
-                    title = "Movies",
-                    subtitle = "Movie preferences and filters",
-                    icon = "🎬",
-                    onClick = { /* TODO */ },
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
+                Spacer(modifier = Modifier.height(32.dp))
                 
-                SettingsCard(
-                    title = "TV Shows",
-                    subtitle = "TV show preferences and filters",
-                    icon = "📺",
-                    onClick = { /* TODO */ },
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
+                // User Interface Settings
+                SettingsContentSection(
+                    title = "User Interface",
+                    subtitle = "Customize your viewing experience"
+                ) {
+                    ModernSettingsCard(
+                        title = "Scroll Style",
+                        subtitle = "Choose how content scrolls",
+                        icon = Icons.Default.TouchApp,
+                        showArrow = false
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp)
+                        ) {
+                            SettingsRadioGroup(
+                                title = "Content Alignment",
+                                options = listOf("Middle", "Left"),
+                                selectedOption = scrollStyle,
+                                onOptionSelected = { scrollStyle = it },
+                                descriptions = mapOf(
+                                    "Middle" to "Center content on screen",
+                                    "Left" to "Align content to the left"
+                                )
+                            )
+                        }
+                    }
+                }
                 
-                SettingsCard(
-                    title = "Debrid Cloud",
-                    subtitle = "Cloud storage settings",
-                    icon = "☁️",
-                    onClick = { /* TODO */ },
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
+                Spacer(modifier = Modifier.height(32.dp))
+                
+                // Playback Settings
+                SettingsContentSection(
+                    title = "Playback Settings",
+                    subtitle = "Control how content plays"
+                ) {
+                    ModernSettingsCard(
+                        title = "Auto Play",
+                        subtitle = "Automatically play next episode",
+                        icon = Icons.Default.PlayArrow,
+                        showArrow = false
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp)
+                        ) {
+                            SettingsToggleRow(
+                                label = "Enable Auto Play",
+                                subtitle = "Automatically play the next episode",
+                                checked = autoPlay,
+                                onCheckedChange = { autoPlay = it }
+                            )
+                            
+                            if (autoPlay) {
+                                Spacer(modifier = Modifier.height(16.dp))
+                                SettingsRadioGroup(
+                                    title = "Next Episode Countdown",
+                                    options = listOf("3", "5", "10", "15"),
+                                    selectedOption = nextEpisodeTime,
+                                    onOptionSelected = { nextEpisodeTime = it },
+                                    descriptions = mapOf(
+                                        "3" to "3 seconds",
+                                        "5" to "5 seconds",
+                                        "10" to "10 seconds",
+                                        "15" to "15 seconds"
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-fun SettingsSection(
+fun SettingsNavSection(
     title: String,
-    modifier: Modifier = Modifier,
+    items: List<SettingsNavItem>
+) {
+    Text(
+        text = title,
+        fontSize = 14.sp,
+        fontWeight = FontWeight.SemiBold,
+        color = Color(0xFF888888),
+        modifier = Modifier.padding(bottom = 12.dp)
+    )
+    
+    items.forEach { item ->
+        SettingsNavItemRow(item)
+        Spacer(modifier = Modifier.height(8.dp))
+    }
+}
+
+@Composable
+fun SettingsNavItemRow(item: SettingsNavItem) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color(0xFF1f1f1f))
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = item.icon,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(20.dp)
+        )
+        
+        Spacer(modifier = Modifier.width(12.dp))
+        
+        Text(
+            text = item.title,
+            color = Color.White,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.weight(1f)
+        )
+        
+        if (item.isConnected != null) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .background(
+                        color = if (item.isConnected) Color(0xFF007AFF) else Color.Gray,
+                        shape = androidx.compose.foundation.shape.CircleShape
+                    )
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+        
+        if (item.showArrow) {
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = Color(0xFF666666),
+                modifier = Modifier.size(16.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun SettingsContentSection(
+    title: String,
+    subtitle: String,
     content: @Composable () -> Unit
 ) {
-    Column(modifier = modifier) {
+    Column {
         Text(
             text = title,
-            fontSize = 24.sp,
-            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
             color = Color.White,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 4.dp)
         )
+        
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color(0xFF888888),
+            modifier = Modifier.padding(bottom = 20.dp)
+        )
+        
         content()
     }
 }
 
 @Composable
-fun SettingsCard(
+fun ModernSettingsCard(
     title: String,
     subtitle: String,
-    icon: String,
-    onClick: () -> Unit,
+    icon: ImageVector,
     modifier: Modifier = Modifier,
-    statusIndicator: Color? = null
+    isConnected: Boolean? = null,
+    showArrow: Boolean = true,
+    onClick: (() -> Unit)? = null,
+    content: (@Composable () -> Unit)? = null
 ) {
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(80.dp),
+        modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF2a2a2a)
+            containerColor = Color(0xFF1a1a1a)
         ),
-        onClick = onClick
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(20.dp)
         ) {
-            Text(
-                text = icon,
-                fontSize = 24.sp,
-                modifier = Modifier.padding(end = 16.dp)
-            )
-            
-            Column(
-                modifier = Modifier.weight(1f)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (onClick != null) {
+                            Modifier.clickable { onClick() }
+                        } else Modifier
+                    ),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = Color.White
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
                 )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
+                
+                Spacer(modifier = Modifier.width(16.dp))
+                
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White
+                    )
+                    
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color(0xFF888888),
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+                
+                if (isConnected != null) {
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .background(
+                                color = if (isConnected) Color(0xFF007AFF) else Color.Gray,
+                                shape = androidx.compose.foundation.shape.CircleShape
+                            )
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                }
+                
+                if (showArrow && onClick != null) {
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = null,
+                        tint = Color(0xFF666666),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
             
-            // Status indicator
-            statusIndicator?.let { color ->
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .background(
-                            color = color,
-                            shape = androidx.compose.foundation.shape.CircleShape
-                        )
-                        .padding(end = 8.dp)
-                )
-            }
-            
-            Text(
-                text = "›",
-                style = MaterialTheme.typography.titleLarge,
-                color = Color.Gray,
-                fontWeight = FontWeight.Bold
-            )
+            content?.invoke()
         }
     }
-} 
+}
+
+@Composable
+fun SettingsToggleRow(
+    label: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                color = Color.White
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFF888888),
+                modifier = Modifier.padding(top = 2.dp)
+            )
+        }
+        
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = Color(0xFF007AFF),
+                uncheckedThumbColor = Color.Gray,
+                uncheckedTrackColor = Color(0xFF333333)
+            )
+        )
+    }
+}
+
+@Composable
+fun SettingsRadioGroup(
+    title: String,
+    options: List<String>,
+    selectedOption: String,
+    onOptionSelected: (String) -> Unit,
+    descriptions: Map<String, String> = emptyMap()
+) {
+    Column {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Medium,
+            color = Color.White,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+        
+        options.forEach { option ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { onOptionSelected(option) }
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                RadioButton(
+                    selected = option == selectedOption,
+                    onClick = { onOptionSelected(option) },
+                    colors = RadioButtonDefaults.colors(
+                        selectedColor = Color(0xFF007AFF),
+                        unselectedColor = Color.Gray
+                    )
+                )
+                
+                Spacer(modifier = Modifier.width(12.dp))
+                
+                Column {
+                    Text(
+                        text = option,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White
+                    )
+                    
+                    descriptions[option]?.let { description ->
+                        Text(
+                            text = description,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF888888),
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun StatsDisplay(
+    movies: Int,
+    shows: Int,
+    lastSync: String
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                Color(0xFF222222),
+                RoundedCornerShape(8.dp)
+            )
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Statistics",
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = Color.White,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            StatItem("Movies", movies.toString())
+            StatItem("Shows", shows.toString())
+        }
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Text(
+            text = "Last sync: $lastSync",
+            style = MaterialTheme.typography.bodySmall,
+            color = Color(0xFF888888)
+        )
+    }
+}
+
+@Composable
+fun StatItem(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF007AFF)
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = Color(0xFF888888)
+        )
+    }
+}
+
+data class SettingsNavItem(
+    val title: String,
+    val icon: ImageVector,
+    val isConnected: Boolean? = null,
+    val showArrow: Boolean = true
+)

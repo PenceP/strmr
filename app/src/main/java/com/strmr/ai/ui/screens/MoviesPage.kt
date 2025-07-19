@@ -182,7 +182,10 @@ fun MoviesPage(
                                 rating = selectedItem.rating,
                                 overview = selectedItem.overview,
                                 cast = selectedItem.cast.map { it.name ?: "" },
-                                omdbRatings = omdbRatings
+                                omdbRatings = omdbRatings,
+                                onFetchLogo = {
+                                    viewModel.fetchAndUpdateLogo(selectedItem)
+                                }
                             )
                         }
                     )
@@ -222,6 +225,8 @@ fun MoviesPage(
                             selectionManager.updateContentFocus(focused)
                             onContentFocusChanged?.invoke(focused)
                         },
+                        currentRowIndex = validRowIndex,
+                        totalRowCount = rowCount,
                         onItemClick = { movie ->
                             onNavigateToDetails?.invoke((movie as MovieEntity).tmdbId)
                         },
