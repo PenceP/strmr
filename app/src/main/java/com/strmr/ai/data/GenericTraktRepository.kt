@@ -35,8 +35,7 @@ class GenericTraktRepository @Inject constructor(
      * Get movies from any data source using generic queries
      */
     fun getMoviesFromDataSource(config: DataSourceConfig): Flow<List<MovieEntity>> {
-        val fieldName = DataSourceQueryBuilder.getDataSourceField(config.id)
-        val query = DataSourceQueryBuilder.buildDataSourceQuery("movies", fieldName)
+        val query = DataSourceQueryBuilder.buildDataSourceQuery("movies", config.id)
         val sqlQuery = SimpleSQLiteQuery(query)
         
         return database.movieDao().getMoviesFromDataSource(sqlQuery)
@@ -46,8 +45,7 @@ class GenericTraktRepository @Inject constructor(
      * Get TV shows from any data source using generic queries
      */
     fun getTvShowsFromDataSource(config: DataSourceConfig): Flow<List<TvShowEntity>> {
-        val fieldName = DataSourceQueryBuilder.getDataSourceField(config.id)
-        val query = DataSourceQueryBuilder.buildDataSourceQuery("tv_shows", fieldName)
+        val query = DataSourceQueryBuilder.buildDataSourceQuery("tv_shows", config.id)
         val sqlQuery = SimpleSQLiteQuery(query)
         
         return database.tvShowDao().getTvShowsFromDataSource(sqlQuery)
@@ -57,8 +55,7 @@ class GenericTraktRepository @Inject constructor(
      * Get paging source for movies from any data source
      */
     fun getMoviesPagingFromDataSource(config: DataSourceConfig): PagingSource<Int, MovieEntity> {
-        val fieldName = DataSourceQueryBuilder.getDataSourceField(config.id)
-        val query = DataSourceQueryBuilder.buildDataSourceQuery("movies", fieldName)
+        val query = DataSourceQueryBuilder.buildDataSourceQuery("movies", config.id)
         val sqlQuery = SimpleSQLiteQuery(query)
         
         return database.movieDao().getMoviesPagingFromDataSource(sqlQuery)
@@ -68,8 +65,7 @@ class GenericTraktRepository @Inject constructor(
      * Get paging source for TV shows from any data source
      */
     fun getTvShowsPagingFromDataSource(config: DataSourceConfig): PagingSource<Int, TvShowEntity> {
-        val fieldName = DataSourceQueryBuilder.getDataSourceField(config.id)
-        val query = DataSourceQueryBuilder.buildDataSourceQuery("tv_shows", fieldName)
+        val query = DataSourceQueryBuilder.buildDataSourceQuery("tv_shows", config.id)
         val sqlQuery = SimpleSQLiteQuery(query)
         
         return database.tvShowDao().getTvShowsPagingFromDataSource(sqlQuery)
@@ -133,8 +129,7 @@ class GenericTraktRepository @Inject constructor(
             }
             
             // Clear existing data for this source
-            val fieldName = DataSourceQueryBuilder.getDataSourceField(config.id)
-            val clearQuery = DataSourceQueryBuilder.buildClearDataSourceQuery("movies", fieldName)
+            val clearQuery = DataSourceQueryBuilder.buildClearDataSourceQuery("movies", config.id)
             database.movieDao().clearDataSourceField(SimpleSQLiteQuery(clearQuery))
             
             // Transform and insert new data with TMDB enrichment  
@@ -186,20 +181,19 @@ class GenericTraktRepository @Inject constructor(
             }
             
             // Clear existing data for this source
-            val fieldName = DataSourceQueryBuilder.getDataSourceField(config.id)
-            val clearQuery = DataSourceQueryBuilder.buildClearDataSourceQuery("tv_shows", fieldName)
+            val clearQuery = DataSourceQueryBuilder.buildClearDataSourceQuery("tv_shows", config.id)
             database.tvShowDao().clearDataSourceField(SimpleSQLiteQuery(clearQuery))
             
             // Transform and insert new data with TMDB enrichment
             val entities = when (config.endpoint) {
                 "shows/trending" -> {
                     (response as List<TrendingShow>).mapIndexedNotNull { index, item ->
-                        enrichTvShowWithTmdbData(item.show, trendingOrder = index + 1)
+                        enrichTvShowWithTmdbData(item.show, config.id, index + 1)
                     }
                 }
                 "shows/popular" -> {
                     (response as List<Show>).mapIndexedNotNull { index, item ->
-                        enrichTvShowWithTmdbData(item, popularOrder = index + 1)
+                        enrichTvShowWithTmdbData(item, config.id, index + 1)
                     }
                 }
                 else -> emptyList()
@@ -253,6 +247,8 @@ class GenericTraktRepository @Inject constructor(
                 upcomingOrder = if (dataSourceId == "upcoming") order else null,
                 topRatedOrder = if (dataSourceId == "top_rated") order else null,
                 topMoviesWeekOrder = if (dataSourceId == "top_movies_week") order else null,
+                // Generic data source ordering (for future use)
+                dataSourceOrders = mapOf(dataSourceId to order),
                 // Additional fields with logo
                 logoUrl = logoUrl,
                 traktRating = null,
@@ -273,11 +269,8 @@ class GenericTraktRepository @Inject constructor(
      */
     private suspend fun enrichTvShowWithTmdbData(
         show: Show,
-        trendingOrder: Int? = null,
-        popularOrder: Int? = null,
-        topRatedOrder: Int? = null,
-        airingTodayOrder: Int? = null,
-        onTheAirOrder: Int? = null
+        dataSourceId: String,
+        order: Int
     ): TvShowEntity? {
         val tmdbId = show.ids.tmdb ?: return null
         return try {
@@ -303,11 +296,14 @@ class GenericTraktRepository @Inject constructor(
                 cast = credits.cast?.take(10)?.map { 
                     Actor(id = it.id, name = it.name, character = it.character, profilePath = it.profile_path)
                 } ?: emptyList(),
-                trendingOrder = trendingOrder,
-                popularOrder = popularOrder,
-                topRatedOrder = topRatedOrder,
-                airingTodayOrder = airingTodayOrder,
-                onTheAirOrder = onTheAirOrder,
+                // Dynamic order assignment based on data source
+                trendingOrder = if (dataSourceId == "trending") order else null,
+                popularOrder = if (dataSourceId == "popular") order else null,
+                topRatedOrder = if (dataSourceId == "top_rated") order else null,
+                airingTodayOrder = if (dataSourceId == "airing_today") order else null,
+                onTheAirOrder = if (dataSourceId == "on_the_air") order else null,
+                // Generic data source ordering (for future use)
+                dataSourceOrders = mapOf(dataSourceId to order),
                 // Additional fields with logo
                 logoUrl = logoUrl,
                 traktRating = null,

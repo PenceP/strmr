@@ -34,5 +34,6 @@ data class MovieEntity(
     val upcomingOrder: Int? = null,
     val topRatedOrder: Int? = null,
     val topMoviesWeekOrder: Int? = null,
+    val dataSourceOrders: Map<String, Int?> = emptyMap(), // Generic data source ordering (future use)
     val lastUpdated: Long = 0L // for cache expiry
 ) 

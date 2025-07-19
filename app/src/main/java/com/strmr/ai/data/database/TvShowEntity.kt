@@ -32,5 +32,6 @@ data class TvShowEntity(
     val topRatedOrder: Int? = null,
     val airingTodayOrder: Int? = null,
     val onTheAirOrder: Int? = null,
+    val dataSourceOrders: Map<String, Int?> = emptyMap(), // Generic data source ordering (future use)
     val lastUpdated: Long = 0L // for cache expiry
 ) 

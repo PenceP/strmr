@@ -10,13 +10,14 @@ object DataSourceQueryBuilder {
      */
     fun buildDataSourceQuery(
         tableName: String,
-        dataSourceField: String,
+        dataSourceId: String,
         orderBy: String = "ASC"
     ): String {
+        val fieldName = getDataSourceField(dataSourceId)
         return """
             SELECT * FROM $tableName 
-            WHERE $dataSourceField IS NOT NULL 
-            ORDER BY $dataSourceField $orderBy
+            WHERE $fieldName IS NOT NULL 
+            ORDER BY $fieldName $orderBy
         """.trimIndent()
     }
     
@@ -25,12 +26,13 @@ object DataSourceQueryBuilder {
      */
     fun buildClearDataSourceQuery(
         tableName: String,
-        dataSourceField: String
+        dataSourceId: String
     ): String {
+        val fieldName = getDataSourceField(dataSourceId)
         return """
             UPDATE $tableName 
-            SET $dataSourceField = NULL 
-            WHERE $dataSourceField IS NOT NULL
+            SET $fieldName = NULL 
+            WHERE $fieldName IS NOT NULL
         """.trimIndent()
     }
     

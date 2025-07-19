@@ -5,13 +5,15 @@
       "id": "trending",
       "title": "Trending",
       "type": "paging",
-      "dataSource": "viewModel.pagingUiState.mediaRows.Trending",
       "cardType": "portrait",
       "cardHeight": 200,
       "showHero": true,
       "showLoading": true,
       "order": 1,
       "enabled": true,
+      "endpoint": "movies/trending",
+      "mediaType": "movie",
+      "cacheKey": "trending_movies",
       "displayOptions": {
         "showOverlays": false,
         "showProgress": false,
@@ -23,13 +25,15 @@
       "id": "popular",
       "title": "Popular",
       "type": "paging",
-      "dataSource": "viewModel.pagingUiState.mediaRows.Popular",
       "cardType": "portrait",
       "cardHeight": 200,
       "showHero": true,
       "showLoading": true,
       "order": 2,
       "enabled": true,
+      "endpoint": "movies/popular",
+      "mediaType": "movie",
+      "cacheKey": "popular_movies",
       "displayOptions": {
         "showOverlays": false,
         "showProgress": false,
@@ -40,26 +44,21 @@
     {
       "id": "top_movies_week",
       "title": "Top Movies of the Week",
-      "type": "trakt_list",
-      "dataSource": "trakt://users/garycrawfordgc/lists/top-movies-of-the-week",
+      "type": "list",
       "cardType": "portrait",
       "cardHeight": 200,
       "showHero": true,
       "showLoading": true,
       "order": 3,
       "enabled": true,
+      "endpoint": "users/garycrawfordgc/lists/top-movies-of-the-week/items",
+      "mediaType": "movie",
+      "cacheKey": "top_movies_week",
       "displayOptions": {
         "showOverlays": false,
         "showProgress": false,
         "clickable": true,
         "supportedTypes": ["movie"]
-      },
-      "traktConfig": {
-        "username": "garycrawfordgc",
-        "listSlug": "top-movies-of-the-week",
-        "sortBy": "rank",
-        "sortOrder": "asc",
-        "apiEndpoint": "https://api.trakt.tv/users/garycrawfordgc/lists/top-movies-of-the-week/items"
       }
     }
   ]

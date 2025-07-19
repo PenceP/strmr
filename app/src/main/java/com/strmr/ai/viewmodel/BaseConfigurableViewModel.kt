@@ -7,7 +7,6 @@ import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.strmr.ai.config.PageConfiguration
 import com.strmr.ai.data.DataSourceConfig
-import com.strmr.ai.data.DataSourceRegistry
 import com.strmr.ai.data.GenericTraktRepository
 import com.strmr.ai.data.MediaType
 import com.strmr.ai.ui.screens.PagingUiState
@@ -54,13 +53,13 @@ abstract class BaseConfigurableViewModel<T : Any>(
             val pagingFlows = mutableMapOf<String, Flow<PagingData<T>>>()
             
             for (row in enabledRows) {
-                val dataSourceConfig = getDataSourceConfig(row.id)
+                val dataSourceConfig = row.toDataSourceConfig()
                 if (dataSourceConfig != null) {
                     // Create paging flow for this data source
                     pagingFlows[row.title] = createPagingFlow(dataSourceConfig)
                     Log.d("BaseConfigurableViewModel", "📋 Setup data source: ${row.title} -> ${dataSourceConfig.endpoint}")
                 } else {
-                    Log.w("BaseConfigurableViewModel", "⚠️ Unknown data source: ${row.id}")
+                    Log.w("BaseConfigurableViewModel", "⚠️ Row missing endpoint/mediaType/cacheKey: ${row.id}")
                 }
             }
             
@@ -75,7 +74,7 @@ abstract class BaseConfigurableViewModel<T : Any>(
         pageConfiguration?.let { config ->
             val enabledRows = config.rows.filter { it.enabled }.sortedBy { it.order }
             val dataSourceConfigs = enabledRows.mapNotNull { row ->
-                getDataSourceConfig(row.id)?.let { dsConfig ->
+                row.toDataSourceConfig()?.let { dsConfig ->
                     row.title to dsConfig
                 }
             }
@@ -98,7 +97,7 @@ abstract class BaseConfigurableViewModel<T : Any>(
                 pageConfiguration?.let { config ->
                     val enabledRows = config.rows.filter { it.enabled }
                     for (row in enabledRows) {
-                        val dataSourceConfig = getDataSourceConfig(row.id)
+                        val dataSourceConfig = row.toDataSourceConfig()
                         if (dataSourceConfig != null) {
                             refreshDataSource(dataSourceConfig)
                             Log.d("BaseConfigurableViewModel", "🔄 Refreshed: ${dataSourceConfig.endpoint}")
@@ -114,15 +113,6 @@ abstract class BaseConfigurableViewModel<T : Any>(
         }
     }
     
-    /**
-     * Get data source config based on media type
-     */
-    private fun getDataSourceConfig(id: String): DataSourceConfig? {
-        return when (mediaType) {
-            MediaType.MOVIE -> DataSourceRegistry.getMovieDataSource(id)
-            MediaType.TV_SHOW -> DataSourceRegistry.getTvDataSource(id)
-        }
-    }
     
     // Abstract methods for subclasses to implement
     abstract fun createPagingFlow(config: DataSourceConfig): Flow<PagingData<T>>

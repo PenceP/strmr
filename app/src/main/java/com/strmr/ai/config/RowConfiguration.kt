@@ -1,6 +1,8 @@
 package com.strmr.ai.config
 
 import com.google.gson.annotations.SerializedName
+import com.strmr.ai.data.DataSourceConfig
+import com.strmr.ai.data.MediaType
 
 /**
  * Configuration for page rows loaded from JSON files
@@ -26,8 +28,6 @@ data class RowConfig(
     val title: String,
     @SerializedName("type")
     val type: String,
-    @SerializedName("dataSource")
-    val dataSource: String,
     @SerializedName("cardType")
     val cardType: String,
     @SerializedName("cardHeight")
@@ -40,6 +40,12 @@ data class RowConfig(
     val order: Int,
     @SerializedName("enabled")
     val enabled: Boolean,
+    @SerializedName("endpoint")
+    val endpoint: String? = null,
+    @SerializedName("mediaType")
+    val mediaType: String? = null,
+    @SerializedName("cacheKey")
+    val cacheKey: String? = null,
     @SerializedName("displayOptions")
     val displayOptions: DisplayOptions,
     @SerializedName("traktConfig")
@@ -48,7 +54,28 @@ data class RowConfig(
     val nestedRows: List<RowConfig>? = null,
     @SerializedName("nestedItems")
     val nestedItems: List<NestedItemConfig>? = null
-)
+) {
+    /**
+     * Convert RowConfig to DataSourceConfig for generic repository usage
+     */
+    fun toDataSourceConfig(): DataSourceConfig? {
+        if (endpoint == null || mediaType == null || cacheKey == null) return null
+        
+        return DataSourceConfig(
+            id = id,
+            title = title,
+            endpoint = endpoint,
+            mediaType = when (mediaType.lowercase()) {
+                "movie" -> MediaType.MOVIE
+                "tvshow", "tv_show" -> MediaType.TV_SHOW
+                else -> MediaType.MOVIE
+            },
+            cacheKey = cacheKey,
+            enabled = enabled,
+            order = order
+        )
+    }
+}
 
 /**
  * Display options for a row

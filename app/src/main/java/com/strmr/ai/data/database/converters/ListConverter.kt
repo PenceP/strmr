@@ -77,4 +77,17 @@ class ListConverter {
         val listType = object : TypeToken<List<CollectionMovie>>() {}.type
         return Gson().fromJson(value, listType)
     }
+    
+    @TypeConverter
+    fun fromStringIntMap(map: Map<String, Int?>?): String? {
+        if (map == null) return null
+        return Gson().toJson(map)
+    }
+
+    @TypeConverter
+    fun toStringIntMap(value: String?): Map<String, Int?>? {
+        if (value == null) return null
+        val mapType = object : TypeToken<Map<String, Int?>>() {}.type
+        return Gson().fromJson(value, mapType)
+    }
 } 

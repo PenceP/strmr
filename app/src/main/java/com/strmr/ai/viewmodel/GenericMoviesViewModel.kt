@@ -6,7 +6,6 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.strmr.ai.data.DataSourceConfig
-import com.strmr.ai.data.DataSourceRegistry
 import com.strmr.ai.data.GenericTraktRepository
 import com.strmr.ai.data.MediaType
 import com.strmr.ai.data.OmdbRepository
