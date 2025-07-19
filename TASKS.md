@@ -87,6 +87,7 @@
 
 ### 11. Video Player Integration
 - [ ] Add ExoPlayer [https://github.com/androidx/media]
+- [ ] Add ffmpeg support, that's what handles various encode types
 - [ ] Integrate TMDB API for trailers [api.themoviedb.org/3/movie/120/videos?language=en-US]
 - [ ] Implement trailers button functionality from MediaDetails page
 - [ ] Use videos marked as "official" and "Trailer" type
