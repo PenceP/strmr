@@ -49,6 +49,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import com.strmr.ai.viewmodel.HomeViewModel
 import com.strmr.ai.data.MovieRepository
 import com.strmr.ai.data.TvShowRepository
+import com.strmr.ai.data.YouTubeExtractor
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -62,6 +63,9 @@ class MainActivity : ComponentActivity() {
     
     @Inject
     lateinit var tvShowRepository: TvShowRepository
+    
+    @Inject
+    lateinit var youtubeExtractor: YouTubeExtractor
     
     @OptIn(ExperimentalTvMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -80,7 +84,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     shape = RectangleShape
                 ) {
-                    MainScreen()
+                    MainScreen(youtubeExtractor = youtubeExtractor)
                 }
             }
         }
@@ -102,7 +106,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MainScreen() {
+fun MainScreen(youtubeExtractor: YouTubeExtractor) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -338,7 +342,8 @@ fun MainScreen() {
                     VideoPlayerScreen(
                         videoUrl = decodedUrl,
                         title = title,
-                        onBack = { navController.popBackStack() }
+                        onBack = { navController.popBackStack() },
+                        youtubeExtractor = youtubeExtractor
                     )
                 }
             }

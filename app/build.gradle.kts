@@ -105,11 +105,22 @@ dependencies {
     // ExoPlayer Media3 for video playback
     implementation("androidx.media3:media3-exoplayer:1.6.1")
     implementation("androidx.media3:media3-exoplayer-dash:1.6.1")
+    implementation("androidx.media3:media3-exoplayer-hls:1.6.1")
     implementation("androidx.media3:media3-ui:1.6.1")
     implementation("androidx.media3:media3-datasource-okhttp:1.6.1")
     
-    // NewPipeExtractor for YouTube URL extraction
-    implementation("com.github.teamnewpipe:NewPipeExtractor:0.24.6")
+    // YouTube extraction dependencies (simplified approach)
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("org.jsoup:jsoup:1.15.3")
+    
+    // Rhino JavaScript engine for YouTube parameter transformation
+    implementation("org.mozilla:rhino:1.7.14")
+    
+    // DataStore for settings
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+    
+    // Gson for JSON parsing
+    implementation("com.google.code.gson:gson:2.10.1")
     
     // Test dependencies
     testImplementation("junit:junit:4.13.2")

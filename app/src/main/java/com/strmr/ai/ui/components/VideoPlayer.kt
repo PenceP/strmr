@@ -14,7 +14,10 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
 import android.util.Log
 import androidx.compose.material.icons.Icons
@@ -23,6 +26,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.text.style.TextAlign
+import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
 
 /**
  * ExoPlayer-based video player component for Android TV
@@ -42,39 +47,88 @@ fun VideoPlayer(
     var hasError by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     
-    // Create ExoPlayer instance
+    // Create ExoPlayer instance with custom data source for YouTube URLs
     val exoPlayer = remember {
-        ExoPlayer.Builder(context)
-            .build()
-            .apply {
-                setMediaItem(MediaItem.fromUri(videoUrl))
-                prepare()
-                playWhenReady = autoPlay
-                
-                // Add listener for player events
-                addListener(object : Player.Listener {
-                    override fun onPlaybackStateChanged(playbackState: Int) {
-                        when (playbackState) {
-                            Player.STATE_READY -> {
-                                isPlayerReady = true
-                                hasError = false
-                                Log.d("VideoPlayer", "✅ Player ready for URL: $videoUrl")
-                            }
-                            Player.STATE_ENDED -> {
-                                Log.d("VideoPlayer", "🏁 Video playback ended")
-                                onVideoEnded?.invoke()
-                            }
+        // Check if this is a YouTube/googlevideo URL or proxy service URL
+        val isYouTubeUrl = videoUrl.contains("googlevideo.com") || 
+                          videoUrl.contains("youtube.com") ||
+                          videoUrl.contains("invidious") ||
+                          videoUrl.contains("piped") ||
+                          videoUrl.contains("youtube-nocookie.com")
+        
+        val player = if (isYouTubeUrl) {
+            // Create OkHttpClient with necessary configuration for YouTube
+            val okHttpClient = OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .followRedirects(true)
+                .followSslRedirects(true)
+                .build()
+            
+            // Create OkHttpDataSource.Factory with YouTube-compatible headers
+            val dataSourceFactory = OkHttpDataSource.Factory(okHttpClient)
+                .setDefaultRequestProperties(mapOf(
+                    "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                    "Accept" to "*/*",
+                    "Accept-Language" to "en-US,en;q=0.9",
+                    "Accept-Encoding" to "gzip, deflate",
+                    "Connection" to "keep-alive",
+                    "Origin" to "https://www.youtube.com",
+                    "Referer" to "https://www.youtube.com/"
+                ))
+            
+            // Create media source factory with our custom data source
+            val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
+            
+            // Build ExoPlayer with custom configuration
+            ExoPlayer.Builder(context)
+                .setMediaSourceFactory(mediaSourceFactory)
+                .build()
+        } else {
+            // Standard ExoPlayer for non-YouTube URLs
+            ExoPlayer.Builder(context).build()
+        }
+        
+        player.apply {
+            setMediaItem(MediaItem.fromUri(videoUrl))
+            prepare()
+            playWhenReady = autoPlay
+            
+            // Add listener for player events
+            addListener(object : Player.Listener {
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    when (playbackState) {
+                        Player.STATE_READY -> {
+                            isPlayerReady = true
+                            hasError = false
+                            Log.d("VideoPlayer", "✅ Player ready for URL: $videoUrl")
+                        }
+                        Player.STATE_ENDED -> {
+                            Log.d("VideoPlayer", "🏁 Video playback ended")
+                            onVideoEnded?.invoke()
                         }
                     }
+                }
+                
+                override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                    hasError = true
+                    errorMessage = error.message ?: "Unknown playback error"
+                    Log.e("VideoPlayer", "❌ ExoPlayer error: $errorMessage", error)
                     
-                    override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
-                        hasError = true
-                        errorMessage = error.message ?: "Unknown playback error"
-                        Log.e("VideoPlayer", "❌ ExoPlayer error: $errorMessage", error)
-                        onPlayerError?.invoke(errorMessage)
+                    // Check if it's a 403 error and provide more specific message
+                    if (error.cause?.message?.contains("403") == true) {
+                        errorMessage = "Video access denied. The URL may have expired."
                     }
-                })
-            }
+                    // Check for proxy service errors
+                    if (error.cause?.message?.contains("404") == true && 
+                        (videoUrl.contains("invidious") || videoUrl.contains("piped"))) {
+                        errorMessage = "Proxy service unavailable. Please try again."
+                    }
+                    
+                    onPlayerError?.invoke(errorMessage)
+                }
+            })
+        }
     }
     
     // Cleanup on dispose

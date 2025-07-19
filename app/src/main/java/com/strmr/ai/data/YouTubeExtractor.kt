@@ -1,79 +1,134 @@
 package com.strmr.ai.data
 
 import android.util.Log
+import com.strmr.ai.data.youtube.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.schabi.newpipe.extractor.MediaFormat
-import org.schabi.newpipe.extractor.NewPipe
-import org.schabi.newpipe.extractor.ServiceList
-import org.schabi.newpipe.extractor.stream.StreamInfo
-import org.schabi.newpipe.extractor.downloader.Downloader
-import org.schabi.newpipe.extractor.downloader.Request
-import org.schabi.newpipe.extractor.downloader.Response
-import org.schabi.newpipe.extractor.exceptions.ReCaptchaException
 import javax.inject.Inject
 import javax.inject.Singleton
-import java.io.IOException
-import java.util.concurrent.TimeUnit
 
 /**
- * YouTube URL extractor using NewPipeExtractor
- * Extracts direct video URLs that can be played in ExoPlayer
+ * SmartTube-based YouTube URL extractor
+ * Provides real YouTube video URL extraction functionality
  */
 @Singleton
-class YouTubeExtractor @Inject constructor() {
+class YouTubeExtractor @Inject constructor(
+    private val innerTubeClient: YouTubeInnerTubeClient,
+    private val formatSelector: YouTubeFormatSelector,
+    private val streamUrlResolver: YouTubeStreamUrlResolver,
+    private val proxyExtractor: YouTubeProxyExtractor
+) {
     
-    init {
-        // Initialize NewPipe with a simple downloader
-        try {
-            NewPipe.init(object : Downloader() {
-                @Throws(IOException::class, ReCaptchaException::class)
-                override fun execute(request: Request): Response {
-                    // Simple implementation - NewPipe will handle the actual downloading
-                    throw UnsupportedOperationException("Custom downloader not fully implemented")
+    /**
+     * Extract direct video URL from YouTube URL
+     * Uses SmartTube-based extraction with proxy fallback for reliability
+     */
+    suspend fun extractDirectUrl(youtubeUrl: String): String? = withContext(Dispatchers.IO) {
+        return@withContext try {
+            Log.d("YouTubeExtractor", "🔍 Extracting direct URL using SmartTube approach: $youtubeUrl")
+            
+            val videoId = extractVideoId(youtubeUrl)
+            if (videoId == null) {
+                Log.w("YouTubeExtractor", "❌ Could not extract video ID")
+                return@withContext null
+            }
+            
+            // First try SmartTube approach with InnerTube API
+            val playerResponse = innerTubeClient.getPlayerResponse(videoId)
+            if (playerResponse != null && formatSelector.hasPlayableFormats(playerResponse.streamingData)) {
+                // Select best format
+                val selectedFormats = formatSelector.selectBestFormat(playerResponse.streamingData, "720p")
+                if (selectedFormats != null) {
+                    // Resolve stream URLs
+                    val resolvedUrls = streamUrlResolver.resolveStreamUrls(selectedFormats)
+                    if (resolvedUrls != null && streamUrlResolver.validateStreamUrls(resolvedUrls)) {
+                        val qualityInfo = streamUrlResolver.getStreamQualityInfo(resolvedUrls)
+                        Log.d("YouTubeExtractor", "✅ Successfully extracted ${qualityInfo.videoQuality} video URL via InnerTube")
+                        return@withContext resolvedUrls.videoUrl
+                    }
                 }
-            })
+            }
+            
+            // If InnerTube approach fails, try proxy extraction (Stremio approach)
+            Log.d("YouTubeExtractor", "⚠️ InnerTube extraction failed, trying proxy extraction...")
+            val proxyUrl = proxyExtractor.extractVideoUrl(youtubeUrl)
+            if (proxyUrl != null) {
+                Log.d("YouTubeExtractor", "✅ Successfully extracted URL via proxy service")
+                return@withContext proxyUrl
+            }
+            
+            Log.w("YouTubeExtractor", "❌ All extraction methods failed")
+            null
         } catch (e: Exception) {
-            Log.w("YouTubeExtractor", "NewPipe initialization: ${e.message}")
+            Log.e("YouTubeExtractor", "❌ Error during URL extraction", e)
+            null
         }
     }
     
     /**
-     * Extract direct video URL from YouTube URL using NewPipeExtractor
-     * Returns a direct URL that ExoPlayer can play
+     * Extract detailed video information including multiple quality options
      */
-    suspend fun extractDirectUrl(youtubeUrl: String): String? = withContext(Dispatchers.IO) {
+    suspend fun extractVideoInfo(youtubeUrl: String): YouTubeVideoInfo? = withContext(Dispatchers.IO) {
         return@withContext try {
-            Log.d("YouTubeExtractor", "🔍 Extracting direct URL from: $youtubeUrl")
+            Log.d("YouTubeExtractor", "📋 Extracting video info for: $youtubeUrl")
             
-            val service = ServiceList.YouTube
-            val streamInfo = StreamInfo.getInfo(service, youtubeUrl)
-            
-            // Try to get the best quality MP4 video stream
-            val videoStream = streamInfo.videoStreams
-                .filter { it.format == MediaFormat.MPEG_4 }
-                .maxByOrNull { it.height }
-            
-            if (videoStream != null) {
-                Log.d("YouTubeExtractor", "✅ Found direct URL: ${videoStream.url}")
-                Log.d("YouTubeExtractor", "📐 Video quality: ${videoStream.height}p")
-                videoStream.url
-            } else {
-                // Fallback to any available video stream
-                val fallbackStream = streamInfo.videoStreams.firstOrNull()
-                if (fallbackStream != null) {
-                    Log.d("YouTubeExtractor", "⚠️ Using fallback stream: ${fallbackStream.url}")
-                    Log.d("YouTubeExtractor", "📐 Fallback quality: ${fallbackStream.height}p, format: ${fallbackStream.format}")
-                    fallbackStream.url
-                } else {
-                    Log.w("YouTubeExtractor", "❌ No video streams found")
-                    null
-                }
+            val videoId = extractVideoId(youtubeUrl)
+            if (videoId == null) {
+                Log.w("YouTubeExtractor", "❌ Could not extract video ID")
+                return@withContext null
             }
+            
+            val playerResponse = innerTubeClient.getPlayerResponse(videoId)
+            if (playerResponse == null) {
+                Log.w("YouTubeExtractor", "❌ Failed to get player response")
+                return@withContext null
+            }
+            
+            val availableQualities = formatSelector.getAvailableQualities(playerResponse.streamingData)
+            
+            YouTubeVideoInfo(
+                videoId = videoId,
+                title = playerResponse.videoDetails?.title ?: "Unknown Title",
+                duration = playerResponse.videoDetails?.lengthSeconds,
+                availableQualities = availableQualities,
+                hasPlayableFormats = formatSelector.hasPlayableFormats(playerResponse.streamingData)
+            )
         } catch (e: Exception) {
-            Log.e("YouTubeExtractor", "❌ Error extracting direct URL from YouTube", e)
-            // Return original URL as fallback for navigation
-            youtubeUrl
+            Log.e("YouTubeExtractor", "❌ Error extracting video info", e)
+            null
+        }
+    }
+    
+    /**
+     * Extract video URL with specific quality preference
+     */
+    suspend fun extractDirectUrlWithQuality(youtubeUrl: String, preferredQuality: String): String? = withContext(Dispatchers.IO) {
+        return@withContext try {
+            Log.d("YouTubeExtractor", "🎯 Extracting $preferredQuality URL for: $youtubeUrl")
+            
+            val videoId = extractVideoId(youtubeUrl)
+            if (videoId == null) {
+                Log.w("YouTubeExtractor", "❌ Could not extract video ID")
+                return@withContext null
+            }
+            
+            val playerResponse = innerTubeClient.getPlayerResponse(videoId)
+            if (playerResponse == null) {
+                Log.w("YouTubeExtractor", "❌ Failed to get player response")
+                return@withContext null
+            }
+            
+            val selectedFormats = formatSelector.selectBestFormat(playerResponse.streamingData, preferredQuality)
+            if (selectedFormats == null) {
+                Log.w("YouTubeExtractor", "❌ Failed to select format for quality: $preferredQuality")
+                return@withContext null
+            }
+            
+            val resolvedUrls = streamUrlResolver.resolveStreamUrls(selectedFormats)
+            resolvedUrls?.videoUrl
+        } catch (e: Exception) {
+            Log.e("YouTubeExtractor", "❌ Error extracting URL with quality", e)
+            null
         }
     }
     
@@ -128,3 +183,14 @@ class YouTubeExtractor @Inject constructor() {
         return "https://www.youtube.com/watch?v=$videoId"
     }
 }
+
+/**
+ * Data class for YouTube video information
+ */
+data class YouTubeVideoInfo(
+    val videoId: String,
+    val title: String,
+    val duration: String?,
+    val availableQualities: List<String>,
+    val hasPlayableFormats: Boolean
+)

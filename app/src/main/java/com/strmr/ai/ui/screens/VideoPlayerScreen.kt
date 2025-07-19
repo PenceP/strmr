@@ -17,16 +17,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.strmr.ai.ui.components.VideoPlayer
+import com.strmr.ai.ui.components.YouTubeWebPlayer
 import com.strmr.ai.data.YouTubeExtractor
+import com.strmr.ai.data.SettingsManager
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import androidx.compose.ui.input.key.*
 import androidx.media3.common.util.UnstableApi
+import androidx.hilt.navigation.compose.hiltViewModel
+import kotlinx.coroutines.flow.first
 
 /**
  * Full-screen video player screen for trailers
- * Uses NewPipeExtractor to handle YouTube URLs and extract direct video streams
+ * Uses WebView-based YouTube player for reliable in-app playback
  */
 @UnstableApi
 @Composable
@@ -34,12 +38,13 @@ fun VideoPlayerScreen(
     videoUrl: String,
     title: String = "Trailer",
     onBack: () -> Unit,
-    youtubeExtractor: YouTubeExtractor = YouTubeExtractor()
+    youtubeExtractor: YouTubeExtractor
 ) {
     val context = LocalContext.current
     var showFallback by remember { mutableStateOf(false) }
+    var useWebViewPlayer by remember { mutableStateOf(false) }
     var actualVideoUrl by remember { mutableStateOf(videoUrl) }
-    var isProcessing by remember { mutableStateOf(true) }
+    var isProcessing by remember { mutableStateOf(false) } // Start with false since we'll use WebView primarily
     val isYouTubeUrl = remember { youtubeExtractor.isYouTubeUrl(videoUrl) }
     val videoId = remember { 
         if (isYouTubeUrl) youtubeExtractor.extractVideoId(videoUrl) else null 
@@ -50,25 +55,22 @@ fun VideoPlayerScreen(
         Log.d("VideoPlayerScreen", "📺 Is YouTube URL: $isYouTubeUrl")
         Log.d("VideoPlayerScreen", "🆔 Video ID: $videoId")
         
-        if (isYouTubeUrl) {
-            // Try to extract direct URL using NewPipeExtractor
-            val directUrl = youtubeExtractor.extractDirectUrl(videoUrl)
-            if (directUrl != null && directUrl != videoUrl) {
-                // Successfully extracted direct URL
-                Log.d("VideoPlayerScreen", "✅ Got direct URL, will use ExoPlayer")
-                actualVideoUrl = directUrl
-                showFallback = false
-            } else {
-                // Failed to extract or same URL returned, use fallback
-                Log.d("VideoPlayerScreen", "⚠️ Using YouTube fallback UI")
-                showFallback = true
-            }
-        } else {
-            // Direct video URL
-            actualVideoUrl = videoUrl
+        if (isYouTubeUrl && videoId != null) {
+            // For YouTube URLs, use WebView player as primary method
+            Log.d("VideoPlayerScreen", "🌐 Using WebView-based YouTube player")
+            useWebViewPlayer = true
             showFallback = false
+        } else if (!isYouTubeUrl) {
+            // Direct video URL - play in ExoPlayer
+            Log.d("VideoPlayerScreen", "🎬 Using ExoPlayer for direct video URL")
+            actualVideoUrl = videoUrl
+            useWebViewPlayer = false
+            showFallback = false
+        } else {
+            // YouTube URL but no video ID - show fallback
+            Log.d("VideoPlayerScreen", "⚠️ Invalid YouTube URL, showing fallback")
+            showFallback = true
         }
-        isProcessing = false
     }
     
     Box(
@@ -106,7 +108,7 @@ fun VideoPlayerScreen(
                 }
             }
             showFallback && isYouTubeUrl -> {
-                // YouTube fallback UI when NewPipeExtractor fails
+                // YouTube fallback UI when WebView fails
                 YouTubeFallbackUI(
                     videoUrl = videoUrl,
                     videoId = videoId,
@@ -131,13 +133,28 @@ fun VideoPlayerScreen(
                     modifier = Modifier.fillMaxSize()
                 )
             }
+            useWebViewPlayer && videoId != null -> {
+                // Use WebView-based YouTube player for YouTube URLs
+                YouTubeWebPlayer(
+                    videoId = videoId,
+                    modifier = Modifier.fillMaxSize(),
+                    onError = { error ->
+                        Log.e("VideoPlayerScreen", "❌ WebView player error: $error")
+                        showFallback = true
+                    },
+                    onReady = {
+                        Log.d("VideoPlayerScreen", "✅ WebView player ready")
+                    },
+                    onBack = onBack
+                )
+            }
             else -> {
-                // Play video in ExoPlayer (either direct URL or extracted from YouTube)
+                // Use ExoPlayer for direct video URLs
                 VideoPlayer(
                     videoUrl = actualVideoUrl,
                     modifier = Modifier.fillMaxSize(),
                     onPlayerError = { error ->
-                        Log.e("VideoPlayerScreen", "❌ Player error: $error")
+                        Log.e("VideoPlayerScreen", "❌ ExoPlayer error: $error")
                         if (isYouTubeUrl) {
                             // If it was a YouTube URL and ExoPlayer failed, show fallback
                             showFallback = true

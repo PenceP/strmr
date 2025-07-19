@@ -106,23 +106,15 @@ class TrailerService @Inject constructor(
     
     /**
      * Convert TMDB video to playable URL
-     * Uses NewPipeExtractor to get direct URLs from YouTube
+     * Returns original YouTube URL for WebView-based player
      */
     private suspend fun convertToPlayableUrl(video: TmdbVideo): String? {
         return when (video.site.lowercase()) {
             "youtube" -> {
                 val youtubeUrl = "https://www.youtube.com/watch?v=${video.key}"
                 Log.d("TrailerService", "🔗 Generated YouTube URL: $youtubeUrl")
-                
-                // Use NewPipeExtractor to get direct URL
-                val directUrl = youtubeExtractor.extractDirectUrl(youtubeUrl)
-                if (directUrl != null) {
-                    Log.d("TrailerService", "✅ Extracted direct URL for ExoPlayer")
-                    directUrl
-                } else {
-                    Log.w("TrailerService", "⚠️ Could not extract direct URL, falling back to YouTube URL")
-                    youtubeUrl // Fallback to original YouTube URL
-                }
+                Log.d("TrailerService", "✅ Returning original YouTube URL for WebView player")
+                youtubeUrl
             }
             else -> {
                 Log.w("TrailerService", "⚠️ Unsupported video site: ${video.site}")
