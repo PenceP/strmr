@@ -132,6 +132,18 @@
 - [ ] Configure release deployment workflow
 - [ ] **Must be completed before auto-update functionality**
 
+### 17. Watched Indicators
+- [ ] Watched Flag on poster if media is fully watched
+- [ ] Watched Flag with % watched if partial
+- [ ] For TV: If tv has partial watch, show the number of episodes that remain unwatched
+
+### 18. Add long-press functionality to posters/media items
+- [ ] Add to/remove from Watchlist/Collection (depending on current status)
+- [ ] Mark Watched/unwatched (this should work on posters, season buttons, episodes)
+- [ ] Possibly any more I missed
+
+
+
 ---
 
 **Next Priority: Complete Task 11 (Video Player Integration) - Add ExoPlayer and trailer functionality to MediaDetails page**
