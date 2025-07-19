@@ -97,6 +97,12 @@
 
 ### 5. Add ExoPlayer [https://github.com/androidx/media] and get trailers button working from tmdb api "official" videos [api.themoviedb.org/3/movie/120/videos?language=en-US]
 use the video that has official key=true and "Trailer" in the name key.
+
+### 6. Add Season/Episode View
+ - Modern view that displays air date, episode summary, episode screenshot as landscape image, etc
+
+### 7. Auto-update functionality
+ - implement versioning and ping server on start to see if there's an updated version. if so, download and install it
 ---
 
 **Next up: Start on Task 1 (MediaDetails Page).** 
