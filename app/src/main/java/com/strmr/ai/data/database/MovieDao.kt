@@ -90,4 +90,16 @@ interface MovieDao {
      */
     @RawQuery
     suspend fun clearDataSourceField(query: SupportSQLiteQuery): Int
+    
+    /**
+     * Generic method to get movies from any data source with pagination
+     */
+    @RawQuery
+    suspend fun getMoviesFromDataSourcePaged(query: SupportSQLiteQuery): List<MovieEntity>
+    
+    /**
+     * Generic method to count movies in a data source
+     */
+    @RawQuery
+    suspend fun getCountFromDataSource(query: SupportSQLiteQuery): Int
 } 

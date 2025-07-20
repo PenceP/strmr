@@ -24,12 +24,15 @@ import coil.compose.AsyncImage
 import com.strmr.ai.ui.components.MediaHero
 import com.strmr.ai.ui.components.MediaDetails
 import com.strmr.ai.ui.components.CenteredMediaRow
+import com.strmr.ai.ui.components.PagingMediaRow
 import com.strmr.ai.ui.components.MediaRowSkeleton
 import com.strmr.ai.ui.components.SkeletonCardType
 import com.strmr.ai.ui.components.MediaCard
 import com.strmr.ai.data.OmdbResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.LazyPagingItems
 
 @Composable
 fun MoviesPage(
@@ -51,13 +54,15 @@ fun MoviesPage(
     }
     
     val uiState by viewModel.uiState.collectAsState()
+    val pagingUiState by viewModel.pagingUiState.collectAsState()
+    val logoUrls by viewModel.logoUrls.collectAsState()
     
     // Use the new SelectionManager
     val selectionManager = rememberSelectionManager()
     
-    // Get all available rows from uiState
-    val allRows = uiState.mediaRows
-    val allRowTitles = allRows.keys.toList()
+    // For now, get row titles from regular uiState for navigation
+    // but we'll use paging data for actual display
+    val allRowTitles = uiState.mediaRows.keys.toList()
     val rowCount = allRowTitles.size
     val focusRequesters = remember(rowCount) { List(rowCount) { FocusRequester() } }
 
@@ -73,8 +78,33 @@ fun MoviesPage(
     // Get selected item for hero section
     val validRowIndex = if (selectionManager.selectedRowIndex >= rowCount) 0 else selectionManager.selectedRowIndex
     val currentRowTitle = allRowTitles.getOrNull(validRowIndex) ?: ""
-    val selectedRow = allRows[currentRowTitle] ?: emptyList()
-    val selectedItem = selectedRow.getOrNull(selectionManager.selectedItemIndex)
+    
+    // Get the paging flow for the current row
+    val currentPagingFlow = pagingUiState.mediaRows[currentRowTitle]
+    
+    // Collect paging items for the current row
+    val pagingItems = currentPagingFlow?.collectAsLazyPagingItems()
+    
+    // Get selected item from paging data if available, otherwise from regular data
+    val selectedRow = uiState.mediaRows[currentRowTitle] ?: emptyList()
+    val selectedItem = if (pagingItems != null && selectionManager.selectedItemIndex < pagingItems.itemCount) {
+        // Ensure we get the correct item from paging data
+        val item = pagingItems[selectionManager.selectedItemIndex]
+        Log.d("MoviesPage", "🎬 Selected item from paging: ${item?.title} at index ${selectionManager.selectedItemIndex}")
+        item
+    } else {
+        // Fallback to regular data
+        val item = selectedRow.getOrNull(selectionManager.selectedItemIndex)
+        Log.d("MoviesPage", "🎬 Selected item from regular: ${item?.title} at index ${selectionManager.selectedItemIndex}")
+        item
+    }
+    
+    // Update focused row in ViewModel when it changes
+    LaunchedEffect(currentRowTitle) {
+        if (currentRowTitle.isNotEmpty()) {
+            viewModel.updateFocusedRow(currentRowTitle)
+        }
+    }
 
     // Check if current row should show hero based on configuration
     val shouldShowHero = pageConfiguration?.let { config ->
@@ -176,7 +206,7 @@ fun MoviesPage(
                         mediaDetails = {
                             MediaDetails(
                                 title = selectedItem.title,
-                                logoUrl = selectedItem.logoUrl,
+                                logoUrl = logoUrls[selectedItem.tmdbId] ?: selectedItem.logoUrl,
                                 year = selectedItem.year,
                                 formattedDate = selectedItem.releaseDate,
                                 runtime = selectedItem.runtime,
@@ -200,13 +230,12 @@ fun MoviesPage(
                     .fillMaxWidth()
                     .weight(if (shouldShowHero) 0.51f else 1f)
             ) {
-                // Render the selected row
-                val rowItems = selectedRow
-                
-                if (rowItems.isNotEmpty()) {
-                    CenteredMediaRow(
+                // Check if we have paging data for this row
+                if (currentPagingFlow != null && pagingItems != null) {
+                    // Use paging version of the row
+                    PagingMediaRow(
                         title = currentRowTitle,
-                        mediaItems = rowItems,
+                        pagingFlow = currentPagingFlow,
                         selectedIndex = selectionManager.selectedItemIndex,
                         isRowSelected = true,
                         onSelectionChanged = { newIndex ->
@@ -230,27 +259,65 @@ fun MoviesPage(
                         currentRowIndex = validRowIndex,
                         totalRowCount = rowCount,
                         onItemClick = { movie ->
-                            onNavigateToDetails?.invoke((movie as MovieEntity).tmdbId)
+                            onNavigateToDetails?.invoke(movie.tmdbId)
                         },
-                        itemContent = { movie, isSelected ->
-                            MediaCard(
-                                title = (movie as MovieEntity).title,
-                                posterUrl = movie.posterUrl,
-                                isSelected = isSelected,
-                                onClick = {
-                                    onNavigateToDetails?.invoke(movie.tmdbId)
-                                }
-                            )
+                        onPositionChanged = { currentPosition, totalItems ->
+                            viewModel.updateRowPosition(currentRowTitle, currentPosition, totalItems)
                         }
                     )
                 } else {
-                    // Show skeleton when no items loaded yet
-                    MediaRowSkeleton(
-                        title = currentRowTitle,
-                        cardCount = 8,
-                        cardType = SkeletonCardType.PORTRAIT,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    // Fallback to regular row if no paging data
+                    val rowItems = selectedRow
+                    
+                    if (rowItems.isNotEmpty()) {
+                        CenteredMediaRow(
+                            title = currentRowTitle,
+                            mediaItems = rowItems,
+                            selectedIndex = selectionManager.selectedItemIndex,
+                            isRowSelected = true,
+                            onSelectionChanged = { newIndex ->
+                                selectionManager.updateSelection(validRowIndex, newIndex)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            focusRequester = if (selectionManager.isContentFocused) focusRequesters.getOrNull(validRowIndex) else null,
+                            onUpDown = { direction ->
+                                val newRowIndex = validRowIndex + direction
+                                if (newRowIndex >= 0 && newRowIndex < rowCount) {
+                                    Log.d("MoviesPage", "🎯 Row navigation: $validRowIndex -> $newRowIndex, maintaining focus")
+                                    selectionManager.updateSelection(newRowIndex, 0)
+                                    selectionManager.updateContentFocus(true)
+                                }
+                            },
+                            isContentFocused = selectionManager.isContentFocused,
+                            onContentFocusChanged = { focused ->
+                                selectionManager.updateContentFocus(focused)
+                                onContentFocusChanged?.invoke(focused)
+                            },
+                            currentRowIndex = validRowIndex,
+                            totalRowCount = rowCount,
+                            onItemClick = { movie ->
+                                onNavigateToDetails?.invoke((movie as MovieEntity).tmdbId)
+                            },
+                            itemContent = { movie, isSelected ->
+                                MediaCard(
+                                    title = (movie as MovieEntity).title,
+                                    posterUrl = movie.posterUrl,
+                                    isSelected = isSelected,
+                                    onClick = {
+                                        onNavigateToDetails?.invoke(movie.tmdbId)
+                                    }
+                                )
+                            }
+                        )
+                    } else {
+                        // Show skeleton when no items loaded yet
+                        MediaRowSkeleton(
+                            title = currentRowTitle,
+                            cardCount = 8,
+                            cardType = SkeletonCardType.PORTRAIT,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
         }

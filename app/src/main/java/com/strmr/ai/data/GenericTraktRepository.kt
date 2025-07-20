@@ -13,6 +13,7 @@ import com.strmr.ai.data.SimilarContent
 import com.strmr.ai.data.BelongsToCollection
 import com.strmr.ai.domain.usecase.FetchLogoUseCase
 import com.strmr.ai.domain.usecase.MediaType as LogoMediaType
+import com.strmr.ai.utils.DateFormatter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
@@ -25,7 +26,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class GenericTraktRepository @Inject constructor(
-    private val database: StrmrDatabase,
+    val database: StrmrDatabase,
     private val traktApiService: TraktApiService,
     private val tmdbApiService: TmdbApiService,
     private val fetchLogoUseCase: FetchLogoUseCase
@@ -55,20 +56,179 @@ class GenericTraktRepository @Inject constructor(
      * Get paging source for movies from any data source
      */
     fun getMoviesPagingFromDataSource(config: DataSourceConfig): PagingSource<Int, MovieEntity> {
-        val query = DataSourceQueryBuilder.buildDataSourceQuery("movies", config.id)
-        val sqlQuery = SimpleSQLiteQuery(query)
-        
-        return database.movieDao().getMoviesPagingFromDataSource(sqlQuery)
+        // Build query for the specific data source
+        val fieldName = DataSourceQueryBuilder.getDataSourceField(config.id)
+        val query = SimpleSQLiteQuery(
+            "SELECT * FROM movies WHERE $fieldName IS NOT NULL ORDER BY $fieldName ASC"
+        )
+        Log.d("GenericTraktRepository", "🏭 Creating PagingSource for ${config.title} with query: ${query.sql}")
+        // Use the DAO method directly which has observedEntities for proper invalidation
+        return database.movieDao().getMoviesPagingFromDataSource(query)
     }
     
     /**
      * Get paging source for TV shows from any data source
      */
     fun getTvShowsPagingFromDataSource(config: DataSourceConfig): PagingSource<Int, TvShowEntity> {
-        val query = DataSourceQueryBuilder.buildDataSourceQuery("tv_shows", config.id)
+        // Build query for the specific data source
+        val fieldName = DataSourceQueryBuilder.getDataSourceField(config.id)
+        val query = SimpleSQLiteQuery(
+            "SELECT * FROM tv_shows WHERE $fieldName IS NOT NULL ORDER BY $fieldName ASC"
+        )
+        Log.d("GenericTraktRepository", "🏭 Creating PagingSource for ${config.title} with query: ${query.sql}")
+        // Use the DAO method directly which has observedEntities for proper invalidation
+        return database.tvShowDao().getTvShowsPagingFromDataSource(query)
+    }
+    
+    /**
+     * Check if a movie data source is empty
+     */
+    suspend fun isMovieDataSourceEmpty(config: DataSourceConfig): Boolean {
+        val fieldName = DataSourceQueryBuilder.getDataSourceField(config.id)
+        val query = "SELECT COUNT(*) FROM movies WHERE $fieldName IS NOT NULL"
         val sqlQuery = SimpleSQLiteQuery(query)
-        
-        return database.tvShowDao().getTvShowsPagingFromDataSource(sqlQuery)
+        val count = database.movieDao().getCountFromDataSource(sqlQuery)
+        return count == 0
+    }
+    
+    /**
+     * Check if a TV data source is empty
+     */
+    suspend fun isTvDataSourceEmpty(config: DataSourceConfig): Boolean {
+        val fieldName = DataSourceQueryBuilder.getDataSourceField(config.id)
+        val query = "SELECT COUNT(*) FROM tv_shows WHERE $fieldName IS NOT NULL"
+        val sqlQuery = SimpleSQLiteQuery(query)
+        val count = database.tvShowDao().getCountFromDataSource(sqlQuery)
+        return count == 0
+    }
+    
+    /**
+     * Get count of movies in a data source
+     */
+    suspend fun getMovieDataSourceCount(config: DataSourceConfig): Int {
+        val fieldName = DataSourceQueryBuilder.getDataSourceField(config.id)
+        val query = "SELECT COUNT(*) FROM movies WHERE $fieldName IS NOT NULL"
+        val sqlQuery = SimpleSQLiteQuery(query)
+        return database.movieDao().getCountFromDataSource(sqlQuery)
+    }
+    
+    /**
+     * Get count of TV shows in a data source
+     */
+    suspend fun getTvDataSourceCount(config: DataSourceConfig): Int {
+        val fieldName = DataSourceQueryBuilder.getDataSourceField(config.id)
+        val query = "SELECT COUNT(*) FROM tv_shows WHERE $fieldName IS NOT NULL"
+        val sqlQuery = SimpleSQLiteQuery(query)
+        return database.tvShowDao().getCountFromDataSource(sqlQuery)
+    }
+    
+    /**
+     * Load a specific page for a movie data source
+     */
+    suspend fun loadMovieDataSourcePage(config: DataSourceConfig, page: Int) {
+        try {
+            Log.d("GenericTraktRepository", "📥 Loading page $page for movie data source: ${config.endpoint}")
+            
+            val response = when {
+                config.endpoint == "movies/trending" -> traktApiService.getTrendingMovies(page = page, limit = 50)
+                config.endpoint == "movies/popular" -> traktApiService.getPopularMovies(page = page, limit = 50)
+                config.endpoint.startsWith("users/") && config.endpoint.endsWith("/items") -> {
+                    // Extract username and list slug from endpoint
+                    val parts = config.endpoint.split("/")
+                    if (parts.size >= 5 && parts[2] == "lists") {
+                        val username = parts[1]
+                        val listSlug = parts[3]
+                        // Note: User lists might not support pagination
+                        if (page > 1) {
+                            Log.w("GenericTraktRepository", "⚠️ User lists may not support pagination")
+                            return
+                        }
+                        traktApiService.getUserListItems(username, listSlug)
+                    } else {
+                        Log.w("GenericTraktRepository", "⚠️ Invalid user list endpoint format: ${config.endpoint}")
+                        return
+                    }
+                }
+                else -> {
+                    Log.w("GenericTraktRepository", "⚠️ Unknown movie endpoint: ${config.endpoint}")
+                    return
+                }
+            }
+            
+            // Get current max order to append new items
+            val currentCount = getMovieDataSourceCount(config)
+            val startOrder = currentCount
+            
+            // Transform and insert new data with TMDB enrichment
+            val entities = when {
+                config.endpoint == "movies/trending" -> {
+                    (response as? List<TrendingMovie>)?.mapIndexedNotNull { index, trending ->
+                        enrichMovieWithTmdbData(trending.movie, config.id, startOrder + index)
+                    } ?: emptyList()
+                }
+                config.endpoint == "movies/popular" -> {
+                    (response as? List<Movie>)?.mapIndexedNotNull { index, movie ->
+                        enrichMovieWithTmdbData(movie, config.id, startOrder + index)
+                    } ?: emptyList()
+                }
+                else -> emptyList()
+            }
+            
+            if (entities.isNotEmpty()) {
+                database.movieDao().insertMovies(entities)
+                Log.d("GenericTraktRepository", "✅ Inserted ${entities.size} movies for page $page")
+            }
+        } catch (e: Exception) {
+            Log.e("GenericTraktRepository", "❌ Error loading page $page for ${config.endpoint}", e)
+            throw e
+        }
+    }
+    
+    /**
+     * Load a specific page for a TV data source
+     */
+    suspend fun loadTvDataSourcePage(config: DataSourceConfig, page: Int) {
+        try {
+            Log.d("GenericTraktRepository", "📥 Loading page $page for TV data source: ${config.endpoint}")
+            
+            val response = when (config.endpoint) {
+                "shows/trending" -> traktApiService.getTrendingTvShows(page = page, limit = 50)
+                "shows/popular" -> traktApiService.getPopularTvShows(page = page, limit = 50)
+                else -> {
+                    Log.w("GenericTraktRepository", "⚠️ Unknown TV endpoint: ${config.endpoint}")
+                    return
+                }
+            }
+            
+            // Get current max order to append new items
+            val currentCount = getTvDataSourceCount(config)
+            val startOrder = currentCount
+            
+            // Transform and insert new data with TMDB enrichment
+            val entities = when (config.endpoint) {
+                "shows/trending" -> {
+                    (response as? List<TrendingShow>)?.mapIndexedNotNull { index, trending ->
+                        val orderMap = mapOf(config.id to startOrder + index)
+                        enrichTvShowWithTmdbData(trending.show, orderMap)
+                    } ?: emptyList()
+                }
+                "shows/popular" -> {
+                    (response as? List<Show>)?.mapIndexedNotNull { index, show ->
+                        val orderMap = mapOf(config.id to startOrder + index)
+                        enrichTvShowWithTmdbData(show, orderMap)
+                    } ?: emptyList()
+                }
+                else -> emptyList()
+            }
+            
+            if (entities.isNotEmpty()) {
+                database.tvShowDao().insertTvShows(entities)
+                Log.d("GenericTraktRepository", "✅ Inserted ${entities.size} TV shows for page $page")
+            }
+        } catch (e: Exception) {
+            Log.e("GenericTraktRepository", "❌ Error loading page $page for ${config.endpoint}", e)
+            throw e
+        }
     }
     
     /**
@@ -265,8 +425,68 @@ class GenericTraktRepository @Inject constructor(
     }
     
     /**
+     * Update movie logo in database
+     */
+    suspend fun updateMovieLogo(tmdbId: Int, logoUrl: String?) {
+        database.movieDao().updateMovieLogo(tmdbId, logoUrl)
+    }
+    
+    /**
+     * Update TV show logo in database
+     */
+    suspend fun updateTvShowLogo(tmdbId: Int, logoUrl: String?) {
+        database.tvShowDao().updateTvShowLogo(tmdbId, logoUrl)
+    }
+    
+    /**
      * Enrich TV show data with TMDB details (posters, backdrops, overview, etc.)
      */
+    private suspend fun enrichTvShowWithTmdbData(
+        show: Show,
+        orderMap: Map<String, Int>
+    ): TvShowEntity? {
+        val tmdbId = show.ids.tmdb ?: return null
+        return try {
+            val details = tmdbApiService.getTvShowDetails(tmdbId)
+            val credits = tmdbApiService.getTvShowCredits(tmdbId)
+            
+            // Fetch logo
+            val logoUrl = fetchLogoUseCase.fetchAndExtractLogo(tmdbId, LogoMediaType.TV_SHOW)
+            
+            TvShowEntity(
+                tmdbId = tmdbId,
+                imdbId = show.ids.imdb,
+                title = details.name ?: show.title,
+                posterUrl = details.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" },
+                backdropUrl = details.backdrop_path?.let { "https://image.tmdb.org/t/p/w780$it" },
+                overview = details.overview,
+                rating = details.vote_average,
+                logoUrl = logoUrl,
+                year = DateFormatter.extractYear(details.first_air_date),
+                firstAirDate = details.first_air_date,
+                lastAirDate = details.last_air_date,
+                runtime = details.episode_run_time?.firstOrNull(),
+                genres = details.genres.map { it.name },
+                cast = credits.cast.take(15).map { 
+                    Actor(
+                        id = it.id,
+                        name = it.name,
+                        character = it.character,
+                        profilePath = it.profile_path
+                    )
+                },
+                trendingOrder = orderMap["trending"],
+                popularOrder = orderMap["popular"],
+                topRatedOrder = orderMap["top_rated"],
+                airingTodayOrder = orderMap["airing_today"],
+                onTheAirOrder = orderMap["on_the_air"]
+            )
+        } catch (e: Exception) {
+            Log.e("GenericTraktRepository", "Error enriching TV show ${show.title}", e)
+            null
+        }
+    }
+    
     private suspend fun enrichTvShowWithTmdbData(
         show: Show,
         dataSourceId: String,

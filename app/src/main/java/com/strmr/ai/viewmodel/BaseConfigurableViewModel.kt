@@ -34,6 +34,30 @@ abstract class BaseConfigurableViewModel<T : Any>(
     private var pageConfiguration: PageConfiguration? = null
     private var initialLoadComplete = false
     
+    // Track which row is currently focused
+    private val _focusedRowTitle = MutableStateFlow<String?>(null)
+    val focusedRowTitle = _focusedRowTitle.asStateFlow()
+    
+    // Track current position and total items for each row
+    private val _rowPositions = MutableStateFlow<Map<String, Pair<Int, Int>>>(emptyMap())
+    val rowPositions = _rowPositions.asStateFlow()
+    
+    /**
+     * Update the currently focused row
+     */
+    fun updateFocusedRow(rowTitle: String?) {
+        _focusedRowTitle.value = rowTitle
+        Log.d("BaseConfigurableViewModel", "🎯 Row focus updated: $rowTitle")
+    }
+    
+    /**
+     * Update the current position and total items for a row
+     */
+    fun updateRowPosition(rowTitle: String, currentPosition: Int, totalItems: Int) {
+        _rowPositions.value = _rowPositions.value + (rowTitle to (currentPosition to totalItems))
+        Log.d("BaseConfigurableViewModel", "📍 Row position updated: $rowTitle - Position $currentPosition/$totalItems")
+    }
+    
     /**
      * Initialize with configuration - this replaces hardcoded init blocks
      */
@@ -41,7 +65,8 @@ abstract class BaseConfigurableViewModel<T : Any>(
         pageConfiguration = configuration
         setupDataSources()
         loadData()
-        refreshAllData()
+        // Only refresh if cache is empty
+        checkAndRefreshEmptyDataSources()
     }
     
     /**
@@ -55,8 +80,16 @@ abstract class BaseConfigurableViewModel<T : Any>(
             for (row in enabledRows) {
                 val dataSourceConfig = row.toDataSourceConfig()
                 if (dataSourceConfig != null) {
-                    // Create paging flow for this data source
-                    pagingFlows[row.title] = createPagingFlow(dataSourceConfig)
+                    // Create paging flow for this data source with focus and position checks
+                    pagingFlows[row.title] = createPagingFlow(dataSourceConfig, 
+                        isRowFocused = { _focusedRowTitle.value == row.title },
+                        getCurrentPosition = { 
+                            _rowPositions.value[row.title]?.first ?: 0 
+                        },
+                        getTotalItems = { 
+                            _rowPositions.value[row.title]?.second ?: 0 
+                        }
+                    )
                     Log.d("BaseConfigurableViewModel", "📋 Setup data source: ${row.title} -> ${dataSourceConfig.endpoint}")
                 } else {
                     Log.w("BaseConfigurableViewModel", "⚠️ Row missing endpoint/mediaType/cacheKey: ${row.id}")
@@ -88,34 +121,40 @@ abstract class BaseConfigurableViewModel<T : Any>(
     }
     
     /**
-     * Refresh all data sources dynamically
+     * Check and refresh only empty data sources (no cached data)
      */
-    private fun refreshAllData() {
-        _uiState.value = _uiState.value.copy(isLoading = true)
+    private fun checkAndRefreshEmptyDataSources() {
         viewModelScope.launch {
             try {
                 pageConfiguration?.let { config ->
                     val enabledRows = config.rows.filter { it.enabled }
                     for (row in enabledRows) {
                         val dataSourceConfig = row.toDataSourceConfig()
-                        if (dataSourceConfig != null) {
+                        if (dataSourceConfig != null && isDataSourceEmpty(dataSourceConfig)) {
+                            Log.d("BaseConfigurableViewModel", "📥 Loading page 1 for empty data source: ${dataSourceConfig.endpoint}")
                             refreshDataSource(dataSourceConfig)
-                            Log.d("BaseConfigurableViewModel", "🔄 Refreshed: ${dataSourceConfig.endpoint}")
+                        } else {
+                            Log.d("BaseConfigurableViewModel", "✅ Data source ${dataSourceConfig?.endpoint} already has cached data")
                         }
                     }
                 }
             } catch (e: Exception) {
-                Log.e("BaseConfigurableViewModel", "❌ Error refreshing data sources", e)
+                Log.e("BaseConfigurableViewModel", "❌ Error checking/refreshing data sources", e)
             } finally {
                 initialLoadComplete = true
-                _uiState.value = _uiState.value.copy(isLoading = false)
             }
         }
     }
     
     
     // Abstract methods for subclasses to implement
-    abstract fun createPagingFlow(config: DataSourceConfig): Flow<PagingData<T>>
+    abstract fun createPagingFlow(
+        config: DataSourceConfig, 
+        isRowFocused: () -> Boolean,
+        getCurrentPosition: () -> Int,
+        getTotalItems: () -> Int
+    ): Flow<PagingData<T>>
     abstract suspend fun loadMultipleDataSources(dataSources: List<Pair<String, DataSourceConfig>>)
     abstract suspend fun refreshDataSource(config: DataSourceConfig)
+    abstract suspend fun isDataSourceEmpty(config: DataSourceConfig): Boolean
 }

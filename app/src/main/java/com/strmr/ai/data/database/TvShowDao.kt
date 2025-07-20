@@ -89,4 +89,16 @@ interface TvShowDao {
      */
     @RawQuery
     suspend fun clearDataSourceField(query: SupportSQLiteQuery): Int
+    
+    /**
+     * Generic method to get TV shows from any data source with pagination
+     */
+    @RawQuery
+    suspend fun getTvShowsFromDataSourcePaged(query: SupportSQLiteQuery): List<TvShowEntity>
+    
+    /**
+     * Generic method to count TV shows in a data source
+     */
+    @RawQuery
+    suspend fun getCountFromDataSource(query: SupportSQLiteQuery): Int
 } 

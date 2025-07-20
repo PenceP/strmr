@@ -14,28 +14,28 @@ interface TraktApiService {
     @GET("movies/trending")
     suspend fun getTrendingMovies(
         @Query("page") page: Int = 1,
-        @Query("limit") limit: Int = 20
+        @Query("limit") limit: Int = 50
     ): List<TrendingMovie>
 
     @Headers("Content-Type: application/json")
     @GET("shows/trending")
     suspend fun getTrendingTvShows(
         @Query("page") page: Int = 1,
-        @Query("limit") limit: Int = 20
+        @Query("limit") limit: Int = 50
     ): List<TrendingShow>
 
     @Headers("Content-Type: application/json")
     @GET("shows/popular")
     suspend fun getPopularTvShows(
         @Query("page") page: Int = 1,
-        @Query("limit") limit: Int = 20
+        @Query("limit") limit: Int = 50
     ): List<Show>
 
     @Headers("Content-Type: application/json")
     @GET("movies/popular")
     suspend fun getPopularMovies(
         @Query("page") page: Int = 1,
-        @Query("limit") limit: Int = 20
+        @Query("limit") limit: Int = 50
     ): List<Movie>
 
     @Headers("Content-Type: application/json")
