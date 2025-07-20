@@ -97,6 +97,16 @@ class ConfigurableRemoteMediator<T : Any>(
                     val currentPosition = getCurrentPosition()
                     Log.d("ConfigurableRemoteMediator", "📥 Loading page $nextPage for ${config.title} (position ${currentPosition + 1}/$dbCount)")
                     
+                    // Check if we should actually load more data - load when within 8 items of end
+                    // (slightly higher threshold to account for proactive loading from UI)
+                    val itemsRemaining = dbCount - currentPosition - 1
+                    if (itemsRemaining > 8) {
+                        Log.d("ConfigurableRemoteMediator", "⏸️ Skip append - still ${itemsRemaining} items remaining (threshold: 8)")
+                        return MediatorResult.Success(endOfPaginationReached = false)
+                    }
+                    
+                    Log.d("ConfigurableRemoteMediator", "🚀 Triggering load - only ${itemsRemaining} items remaining")
+                    
                     loadPageFromApi(nextPage)
                 }
             }
@@ -121,18 +131,22 @@ class ConfigurableRemoteMediator<T : Any>(
     }
     
     private suspend fun loadPageFromApi(page: Int): MediatorResult {
-        return database.withTransaction {
-            // Load specific page from API
-            if (isMovie) {
+        return try {
+            // Load specific page from API WITHOUT database transaction to prevent invalidation
+            val itemsLoaded = if (isMovie) {
                 genericRepository.loadMovieDataSourcePage(config, page)
             } else {
                 genericRepository.loadTvDataSourcePage(config, page)
             }
             
-            Log.d("ConfigurableRemoteMediator", "✅ Loaded page $page for ${config.title}")
+            Log.d("ConfigurableRemoteMediator", "✅ Loaded page $page for ${config.title}, items: $itemsLoaded")
             
-            // Always indicate more pages might be available unless we know for sure
-            MediatorResult.Success(endOfPaginationReached = false)
+            // Check if this was a partial page (end of pagination)
+            val isEndOfPagination = itemsLoaded < 50  // Page size
+            MediatorResult.Success(endOfPaginationReached = isEndOfPagination)
+        } catch (e: Exception) {
+            Log.e("ConfigurableRemoteMediator", "❌ Error loading page $page", e)
+            MediatorResult.Error(e)
         }
     }
 }

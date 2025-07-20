@@ -124,8 +124,9 @@ class GenericTraktRepository @Inject constructor(
     
     /**
      * Load a specific page for a movie data source
+     * @return number of items loaded
      */
-    suspend fun loadMovieDataSourcePage(config: DataSourceConfig, page: Int) {
+    suspend fun loadMovieDataSourcePage(config: DataSourceConfig, page: Int): Int {
         try {
             Log.d("GenericTraktRepository", "📥 Loading page $page for movie data source: ${config.endpoint}")
             
@@ -141,53 +142,74 @@ class GenericTraktRepository @Inject constructor(
                         // Note: User lists might not support pagination
                         if (page > 1) {
                             Log.w("GenericTraktRepository", "⚠️ User lists may not support pagination")
-                            return
+                            return 0
                         }
                         traktApiService.getUserListItems(username, listSlug)
                     } else {
                         Log.w("GenericTraktRepository", "⚠️ Invalid user list endpoint format: ${config.endpoint}")
-                        return
+                        return 0
                     }
                 }
                 else -> {
                     Log.w("GenericTraktRepository", "⚠️ Unknown movie endpoint: ${config.endpoint}")
-                    return
+                    return 0
                 }
             }
             
-            // Get current max order to append new items
-            val currentCount = getMovieDataSourceCount(config)
-            val startOrder = currentCount
+            // Calculate proper order based on page and API position
+            val pageSize = 50
+            val baseOrder = (page - 1) * pageSize
             
             // Transform and insert new data with TMDB enrichment
             val entities = when {
                 config.endpoint == "movies/trending" -> {
                     (response as? List<TrendingMovie>)?.mapIndexedNotNull { index, trending ->
-                        enrichMovieWithTmdbData(trending.movie, config.id, startOrder + index)
+                        enrichMovieWithTmdbData(trending.movie, config.id, baseOrder + index)
                     } ?: emptyList()
                 }
                 config.endpoint == "movies/popular" -> {
                     (response as? List<Movie>)?.mapIndexedNotNull { index, movie ->
-                        enrichMovieWithTmdbData(movie, config.id, startOrder + index)
+                        enrichMovieWithTmdbData(movie, config.id, baseOrder + index)
                     } ?: emptyList()
                 }
                 else -> emptyList()
             }
             
             if (entities.isNotEmpty()) {
-                database.movieDao().insertMovies(entities)
-                Log.d("GenericTraktRepository", "✅ Inserted ${entities.size} movies for page $page")
+                // Insert movies only if they don't already exist to prevent disrupting existing order
+                database.withTransaction {
+                    for (entity in entities) {
+                        val existing = database.movieDao().getMovieByTmdbId(entity.tmdbId)
+                        if (existing == null) {
+                            database.movieDao().insertMovies(listOf(entity))
+                        } else {
+                            // Update only the specific data source field, preserve other orders
+                            val fieldName = DataSourceQueryBuilder.getDataSourceField(config.id)
+                            when (fieldName) {
+                                "trendingOrder" -> existing.copy(trendingOrder = entity.trendingOrder)
+                                "popularOrder" -> existing.copy(popularOrder = entity.popularOrder)
+                                else -> existing
+                            }.let { updatedEntity ->
+                                database.movieDao().insertMovies(listOf(updatedEntity))
+                            }
+                        }
+                    }
+                }
+                Log.d("GenericTraktRepository", "✅ Inserted/Updated ${entities.size} movies for page $page (order ${baseOrder}-${baseOrder + entities.size - 1})")
             }
+            
+            return entities.size
         } catch (e: Exception) {
             Log.e("GenericTraktRepository", "❌ Error loading page $page for ${config.endpoint}", e)
-            throw e
+            return 0
         }
     }
     
     /**
      * Load a specific page for a TV data source
+     * @return number of items loaded
      */
-    suspend fun loadTvDataSourcePage(config: DataSourceConfig, page: Int) {
+    suspend fun loadTvDataSourcePage(config: DataSourceConfig, page: Int): Int {
         try {
             Log.d("GenericTraktRepository", "📥 Loading page $page for TV data source: ${config.endpoint}")
             
@@ -196,25 +218,25 @@ class GenericTraktRepository @Inject constructor(
                 "shows/popular" -> traktApiService.getPopularTvShows(page = page, limit = 50)
                 else -> {
                     Log.w("GenericTraktRepository", "⚠️ Unknown TV endpoint: ${config.endpoint}")
-                    return
+                    return 0
                 }
             }
             
-            // Get current max order to append new items
-            val currentCount = getTvDataSourceCount(config)
-            val startOrder = currentCount
+            // Calculate proper order based on page and API position
+            val pageSize = 50
+            val baseOrder = (page - 1) * pageSize
             
             // Transform and insert new data with TMDB enrichment
             val entities = when (config.endpoint) {
                 "shows/trending" -> {
                     (response as? List<TrendingShow>)?.mapIndexedNotNull { index, trending ->
-                        val orderMap = mapOf(config.id to startOrder + index)
+                        val orderMap = mapOf(config.id to baseOrder + index)
                         enrichTvShowWithTmdbData(trending.show, orderMap)
                     } ?: emptyList()
                 }
                 "shows/popular" -> {
                     (response as? List<Show>)?.mapIndexedNotNull { index, show ->
-                        val orderMap = mapOf(config.id to startOrder + index)
+                        val orderMap = mapOf(config.id to baseOrder + index)
                         enrichTvShowWithTmdbData(show, orderMap)
                     } ?: emptyList()
                 }
@@ -222,12 +244,32 @@ class GenericTraktRepository @Inject constructor(
             }
             
             if (entities.isNotEmpty()) {
-                database.tvShowDao().insertTvShows(entities)
-                Log.d("GenericTraktRepository", "✅ Inserted ${entities.size} TV shows for page $page")
+                // Insert TV shows only if they don't already exist to prevent disrupting existing order
+                database.withTransaction {
+                    for (entity in entities) {
+                        val existing = database.tvShowDao().getTvShowByTmdbId(entity.tmdbId)
+                        if (existing == null) {
+                            database.tvShowDao().insertTvShows(listOf(entity))
+                        } else {
+                            // Update only the specific data source field, preserve other orders
+                            val fieldName = DataSourceQueryBuilder.getDataSourceField(config.id)
+                            when (fieldName) {
+                                "trendingOrder" -> existing.copy(trendingOrder = entity.trendingOrder)
+                                "popularOrder" -> existing.copy(popularOrder = entity.popularOrder)
+                                else -> existing
+                            }.let { updatedEntity ->
+                                database.tvShowDao().insertTvShows(listOf(updatedEntity))
+                            }
+                        }
+                    }
+                }
+                Log.d("GenericTraktRepository", "✅ Inserted/Updated ${entities.size} TV shows for page $page (order ${baseOrder}-${baseOrder + entities.size - 1})")
             }
+            
+            return entities.size
         } catch (e: Exception) {
             Log.e("GenericTraktRepository", "❌ Error loading page $page for ${config.endpoint}", e)
-            throw e
+            return 0
         }
     }
     

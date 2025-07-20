@@ -47,9 +47,9 @@ class GenericMoviesViewModel @Inject constructor(
             config = PagingConfig(
                 pageSize = 50,  // Larger page size for TV app
                 enablePlaceholders = false,
-                prefetchDistance = 150,  // 3x page size for smooth navigation
-                initialLoadSize = 150,  // 3x page size for initial load
-                maxSize = PagingConfig.MAX_SIZE_UNBOUNDED,  // Allow unlimited items in memory
+                prefetchDistance = 10,  // Much smaller to prevent excessive loading
+                initialLoadSize = 50,  // Same as page size to avoid over-loading
+                maxSize = 200,  // Limit memory usage to prevent excessive caching
                 jumpThreshold = Int.MAX_VALUE  // Disable jump threshold to prevent unnecessary loads
             ),
             remoteMediator = com.strmr.ai.data.paging.ConfigurableRemoteMediator(

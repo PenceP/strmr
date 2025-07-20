@@ -134,10 +134,25 @@ fun PagingMediaRow(
                             when (event.nativeKeyEvent.keyCode) {
                                 android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
                                     if (selectedIndex > 0) {
-                                        onSelectionChanged(selectedIndex - 1)
+                                        val newIndex = selectedIndex - 1
+                                        onSelectionChanged(newIndex)
                                         coroutineScope.launch {
-                                            listState.animateScrollToItem(selectedIndex - 1)
+                                            listState.animateScrollToItem(newIndex)
                                         }
+                                        
+                                        // Report position change
+                                        onPositionChanged?.invoke(newIndex, lazyPagingItems.itemCount)
+                                        
+                                        // Proactive loading check even when going left
+                                        val currentIdx = newIndex
+                                        val numLoadedItems = lazyPagingItems.itemCount
+                                        if (currentIdx + 6 >= numLoadedItems) {
+                                            Log.d("PagingMediaRow", "🚀 Proactive load trigger (left): currentIdx($currentIdx) + 6 >= numLoadedItems($numLoadedItems)")
+                                            // Force Paging3 to load more by accessing an item near the end
+                                            val triggerIndex = minOf(currentIdx + 3, numLoadedItems - 1)
+                                            lazyPagingItems[triggerIndex] // This access triggers Paging3 to load more
+                                        }
+                                        
                                         true
                                     } else false
                                 }
@@ -158,7 +173,16 @@ fun PagingMediaRow(
                                         // Report position change
                                         onPositionChanged?.invoke(newIndex, lazyPagingItems.itemCount)
                                         
-                                        // Let Paging 3 handle prefetching automatically based on PagingConfig
+                                        // Proactive loading check: if (currentIdx + 6) > numLoadedItems, trigger load
+                                        val currentIdx = newIndex
+                                        val numLoadedItems = lazyPagingItems.itemCount
+                                        if (currentIdx + 6 >= numLoadedItems) {
+                                            Log.d("PagingMediaRow", "🚀 Proactive load trigger: currentIdx($currentIdx) + 6 >= numLoadedItems($numLoadedItems)")
+                                            // Force Paging3 to load more by accessing an item near the end
+                                            val triggerIndex = minOf(currentIdx + 3, numLoadedItems - 1)
+                                            lazyPagingItems[triggerIndex] // This access triggers Paging3 to load more
+                                        }
+                                        
                                         true
                                     } else false
                                 }

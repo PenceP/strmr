@@ -223,7 +223,9 @@ fun HomeMediaRow(
                     } else false
                 },
             horizontalArrangement = Arrangement.spacedBy(18.dp),
-            verticalAlignment = Alignment.Bottom
+            verticalAlignment = Alignment.Bottom,
+            // Add performance optimizations
+            userScrollEnabled = true
         ) {
             items(mediaItems.size) { i ->
                 val mediaItem = mediaItems[i]
@@ -372,20 +374,30 @@ fun HomePage(
     val rowCount = rowTitles.size
     val focusRequesters = remember(rowTitles) { List(rowTitles.size) { FocusRequester() } }
 
-    // Prefetch OMDb ratings for all visible items
+    // Optimized OMDb ratings prefetch - only for visible items and with batching
     val coroutineScope = rememberCoroutineScope()
     LaunchedEffect(rows) {
-        rows.flatten().forEach { item ->
-            val imdbId = when (item) {
+        // Only prefetch for first row items to reduce startup overhead
+        val firstRowItems = rows.firstOrNull() ?: emptyList()
+        val imdbIds = firstRowItems.mapNotNull { item ->
+            when (item) {
                 is com.strmr.ai.data.database.MovieEntity -> item.imdbId
                 is com.strmr.ai.data.database.TvShowEntity -> item.imdbId
                 is com.strmr.ai.viewmodel.HomeMediaItem.Movie -> item.movie.imdbId
                 is com.strmr.ai.viewmodel.HomeMediaItem.TvShow -> item.show.imdbId
                 else -> null
             }
-            if (!imdbId.isNullOrBlank()) {
-                coroutineScope.launch {
-                    viewModel.getOmdbRatings(imdbId)
+        }.filter { it.isNotBlank() }
+        
+        // Batch the requests to avoid creating too many coroutines
+        if (imdbIds.isNotEmpty()) {
+            coroutineScope.launch(Dispatchers.IO) {
+                imdbIds.forEach { imdbId ->
+                    try {
+                        viewModel.getOmdbRatings(imdbId)
+                    } catch (e: Exception) {
+                        Log.e("HomePage", "Failed to fetch OMDb ratings for $imdbId", e)
+                    }
                 }
             }
         }

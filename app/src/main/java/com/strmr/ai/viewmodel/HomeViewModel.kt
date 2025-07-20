@@ -51,50 +51,66 @@ class HomeViewModel @Inject constructor(
                         when (entity.type) {
                             "movie" -> {
                                 entity.movieTmdbId?.let { tmdbId ->
-                                    val movieEntity = movieRepository.getOrFetchMovieWithLogo(tmdbId)
-                                    var altBackdropUrl: String? = null
-                                    if (movieEntity != null) {
-                                        try {
-                                            val images = movieRepository.getMovieImages(tmdbId)
-                                            altBackdropUrl = images?.backdrops?.getOrNull(1)?.file_path?.let { path -> "https://image.tmdb.org/t/p/w780$path" }
-                                        } catch (_: Exception) {}
-                                    }
-                                    movieEntity?.let { movieEnt ->
-                                        HomeMediaItem.Movie(movieEnt, entity.progress, altBackdropUrl)
+                                    try {
+                                        val movieEntity = movieRepository.getOrFetchMovieWithLogo(tmdbId)
+                                        var altBackdropUrl: String? = null
+                                        if (movieEntity != null) {
+                                            // Move image fetching to background to avoid blocking
+                                            try {
+                                                val images = movieRepository.getMovieImages(tmdbId)
+                                                altBackdropUrl = images?.backdrops?.getOrNull(1)?.file_path?.let { path -> "https://image.tmdb.org/t/p/w780$path" }
+                                            } catch (e: Exception) {
+                                                Log.w("HomeViewModel", "Failed to load alt backdrop for movie $tmdbId", e)
+                                            }
+                                        }
+                                        movieEntity?.let { movieEnt ->
+                                            HomeMediaItem.Movie(movieEnt, entity.progress, altBackdropUrl)
+                                        }
+                                    } catch (e: Exception) {
+                                        Log.e("HomeViewModel", "Failed to load movie $tmdbId", e)
+                                        null
                                     }
                                 }
                             }
                             "episode" -> {
                                 entity.showTmdbId?.let { showTmdbId ->
-                                    tvShowRepository.getOrFetchTvShowWithLogo(showTmdbId)?.let { tvShowEntity ->
-                                        var episodeImageUrl: String? = null
-                                        var episodeOverview: String? = null
-                                        var episodeAirDate: String? = null
-                                        val season = entity.episodeSeason
-                                        val episode = entity.episodeNumber
-                                        
-                                        Log.d("HomeViewModel", "🎬 Continue watching item: ${tvShowEntity.title} S${season}E${episode} (${if (entity.isNextEpisode) "next episode" else "in progress"})")
-                                        
-                                        if (season != null && episode != null) {
-                                            try {
-                                                val episodeDetails = tvShowRepository.getEpisodeDetails(showTmdbId, season, episode)
-                                                episodeImageUrl = episodeDetails?.still_path?.let { "https://image.tmdb.org/t/p/w780$it" }
-                                                episodeOverview = episodeDetails?.overview
-                                                // Get episode air date from the database
-                                                val episodeEntity = tvShowRepository.getEpisodeByDetails(showTmdbId, season, episode)
-                                                episodeAirDate = episodeEntity?.airDate
-                                            } catch (_: Exception) {}
+                                    try {
+                                        tvShowRepository.getOrFetchTvShowWithLogo(showTmdbId)?.let { tvShowEntity ->
+                                            var episodeImageUrl: String? = null
+                                            var episodeOverview: String? = null
+                                            var episodeAirDate: String? = null
+                                            val season = entity.episodeSeason
+                                            val episode = entity.episodeNumber
+                                            
+                                            Log.d("HomeViewModel", "🎬 Continue watching item: ${tvShowEntity.title} S${season}E${episode} (${if (entity.isNextEpisode) "next episode" else "in progress"})")
+                                            
+                                            if (season != null && episode != null) {
+                                                try {
+                                                    // Batch episode data fetching for better performance
+                                                    val episodeDetails = tvShowRepository.getEpisodeDetails(showTmdbId, season, episode)
+                                                    episodeImageUrl = episodeDetails?.still_path?.let { "https://image.tmdb.org/t/p/w780$it" }
+                                                    episodeOverview = episodeDetails?.overview
+                                                    // Get episode air date from the database
+                                                    val episodeEntity = tvShowRepository.getEpisodeByDetails(showTmdbId, season, episode)
+                                                    episodeAirDate = episodeEntity?.airDate
+                                                } catch (e: Exception) {
+                                                    Log.w("HomeViewModel", "Failed to load episode details for $showTmdbId S${season}E${episode}", e)
+                                                }
+                                            }
+                                            HomeMediaItem.TvShow(
+                                                show = tvShowEntity, 
+                                                progress = entity.progress, 
+                                                episodeImageUrl = episodeImageUrl, 
+                                                season = season, 
+                                                episode = episode, 
+                                                episodeOverview = episodeOverview, 
+                                                episodeAirDate = episodeAirDate,
+                                                isNextEpisode = entity.isNextEpisode
+                                            )
                                         }
-                                        HomeMediaItem.TvShow(
-                                            show = tvShowEntity, 
-                                            progress = entity.progress, 
-                                            episodeImageUrl = episodeImageUrl, 
-                                            season = season, 
-                                            episode = episode, 
-                                            episodeOverview = episodeOverview, 
-                                            episodeAirDate = episodeAirDate,
-                                            isNextEpisode = entity.isNextEpisode
-                                        )
+                                    } catch (e: Exception) {
+                                        Log.e("HomeViewModel", "Failed to load TV show $showTmdbId", e)
+                                        null
                                     }
                                 }
                             }

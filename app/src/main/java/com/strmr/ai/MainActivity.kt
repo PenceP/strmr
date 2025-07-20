@@ -91,11 +91,16 @@ class MainActivity : ComponentActivity() {
     }
     
     private fun clearNullLogos() {
-        // Use a coroutine to clear null logos asynchronously
+        // Use a coroutine to clear null logos asynchronously with proper error handling
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                movieRepository.clearNullLogos()
-                tvShowRepository.clearNullLogos()
+                // Batch these operations for better performance
+                val movieJob = launch { movieRepository.clearNullLogos() }
+                val tvShowJob = launch { tvShowRepository.clearNullLogos() }
+                
+                // Wait for both to complete
+                movieJob.join()
+                tvShowJob.join()
                 
                 Log.d("MainActivity", "✅ Cleared null logos for retry")
             } catch (e: Exception) {
