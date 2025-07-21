@@ -16,6 +16,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.graphicsLayer
@@ -320,6 +324,38 @@ fun MoviesPage(
                         )
                     }
                 }
+            }
+        }
+
+        // Up arrow (shown when there are rows above current row)
+        if (validRowIndex > 0) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.KeyboardArrowUp,
+                    contentDescription = "Navigate up",
+                    tint = Color.White.copy(alpha = 0.7f),
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+        }
+
+        // Down arrow (shown when there are rows below current row)
+        if (validRowIndex < rowCount - 1) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.KeyboardArrowDown,
+                    contentDescription = "Navigate down",
+                    tint = Color.White.copy(alpha = 0.7f),
+                    modifier = Modifier.size(32.dp)
+                )
             }
         }
     }
