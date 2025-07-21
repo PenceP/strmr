@@ -103,14 +103,14 @@ fun PagingMediaRow(
             Text(
                 text = title,
                 color = Color.White,
-                modifier = Modifier.padding(horizontal = 30.dp, vertical = 8.dp)
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
             )
             
             // Media items row
             LazyRow(
                 state = listState,
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
-                contentPadding = PaddingValues(horizontal = 50.dp),
+                contentPadding = PaddingValues(horizontal = 10.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .then(
