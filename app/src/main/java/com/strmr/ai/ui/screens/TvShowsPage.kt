@@ -25,7 +25,7 @@ import coil.compose.AsyncImage
 import com.strmr.ai.ui.components.MediaHero
 import com.strmr.ai.ui.components.MediaDetails
 import com.strmr.ai.ui.components.CenteredMediaRow
-import com.strmr.ai.ui.components.PagingTvShowRow
+import com.strmr.ai.ui.components.PagingMediaRow
 import com.strmr.ai.ui.components.MediaRowSkeleton
 import com.strmr.ai.ui.components.SkeletonCardType
 import com.strmr.ai.ui.components.MediaCard
@@ -227,7 +227,7 @@ fun TvShowsPage(
                 // Check if we have paging data for this row
                 if (currentPagingFlow != null) {
                     // Use paging version of the row
-                    PagingTvShowRow(
+                    PagingMediaRow(
                         title = currentRowTitle,
                         pagingFlow = currentPagingFlow,
                         selectedIndex = selectionManager.selectedItemIndex,
@@ -254,7 +254,11 @@ fun TvShowsPage(
                         totalRowCount = rowCount,
                         onItemClick = { show ->
                             onNavigateToDetails?.invoke(show.tmdbId)
-                        }
+                        },
+                        onPositionChanged = { currentPosition, totalItems ->
+                            viewModel.updateRowPosition(currentRowTitle, currentPosition, totalItems)
+                        },
+                        logTag = "PagingTvShowRow"
                     )
                 } else {
                     // Fallback to regular row if no paging data

@@ -15,7 +15,6 @@ import androidx.paging.LoadState
 import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
-import com.strmr.ai.data.database.MovieEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import androidx.compose.material3.Text
@@ -26,13 +25,13 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 
 /**
- * A paging-aware media row that handles infinite scrolling for movies.
+ * A paging-aware media row that handles infinite scrolling for any media type.
  * This component automatically loads more items when approaching the end of the list.
  */
 @Composable
-fun PagingMediaRow(
+fun <T : MediaItem> PagingMediaRow(
     title: String,
-    pagingFlow: Flow<PagingData<MovieEntity>>,
+    pagingFlow: Flow<PagingData<T>>,
     selectedIndex: Int,
     isRowSelected: Boolean,
     onSelectionChanged: (Int) -> Unit,
@@ -43,8 +42,9 @@ fun PagingMediaRow(
     onContentFocusChanged: ((Boolean) -> Unit)? = null,
     currentRowIndex: Int = 0,
     totalRowCount: Int = 1,
-    onItemClick: ((MovieEntity) -> Unit)? = null,
-    onPositionChanged: ((Int, Int) -> Unit)? = null  // Reports (currentPosition, totalItems)
+    onItemClick: ((T) -> Unit)? = null,
+    onPositionChanged: ((Int, Int) -> Unit)? = null,  // Reports (currentPosition, totalItems)
+    logTag: String = "PagingMediaRow"  // For distinguishing between movie/tv logs
 ) {
     val lazyPagingItems = pagingFlow.collectAsLazyPagingItems()
     val listState = rememberLazyListState()
@@ -70,26 +70,26 @@ fun PagingMediaRow(
     LaunchedEffect(lazyPagingItems.loadState) {
         when (val refresh = lazyPagingItems.loadState.refresh) {
             is LoadState.Loading -> {
-                Log.d("PagingMediaRow", "📥 Loading initial data for '$title'")
+                Log.d(logTag, "📥 Loading initial data for '$title'")
             }
             is LoadState.Error -> {
-                Log.e("PagingMediaRow", "❌ Error loading '$title'", refresh.error)
+                Log.e(logTag, "❌ Error loading '$title'", refresh.error)
             }
             is LoadState.NotLoading -> {
-                Log.d("PagingMediaRow", "✅ Initial load complete for '$title', items: ${lazyPagingItems.itemCount}")
+                Log.d(logTag, "✅ Initial load complete for '$title', items: ${lazyPagingItems.itemCount}")
             }
         }
         
         when (val append = lazyPagingItems.loadState.append) {
             is LoadState.Loading -> {
-                Log.d("PagingMediaRow", "📥 Loading next page for '$title'")
+                Log.d(logTag, "📥 Loading next page for '$title'")
             }
             is LoadState.Error -> {
-                Log.e("PagingMediaRow", "❌ Error loading next page for '$title'", append.error)
+                Log.e(logTag, "❌ Error loading next page for '$title'", append.error)
             }
             is LoadState.NotLoading -> {
                 if (append.endOfPaginationReached) {
-                    Log.d("PagingMediaRow", "📄 No more pages for '$title'")
+                    Log.d(logTag, "📄 No more pages for '$title'")
                 }
             }
         }
@@ -122,7 +122,7 @@ fun PagingMediaRow(
                                     if (focusState.hasFocus) {
                                         onContentFocusChanged?.invoke(true)
                                     }
-                                    Log.d("PagingMediaRow", "🎯 Focus changed for '$title': ${focusState.hasFocus}")
+                                    Log.d(logTag, "🎯 Focus changed for '$title': ${focusState.hasFocus}")
                                 }
                         } else {
                             Modifier
@@ -147,7 +147,7 @@ fun PagingMediaRow(
                                         val currentIdx = newIndex
                                         val numLoadedItems = lazyPagingItems.itemCount
                                         if (currentIdx + 6 >= numLoadedItems) {
-                                            Log.d("PagingMediaRow", "🚀 Proactive load trigger (left): currentIdx($currentIdx) + 6 >= numLoadedItems($numLoadedItems)")
+                                            Log.d(logTag, "🚀 Proactive load trigger (left): currentIdx($currentIdx) + 6 >= numLoadedItems($numLoadedItems)")
                                             // Force Paging3 to load more by accessing an item near the end
                                             val triggerIndex = minOf(currentIdx + 3, numLoadedItems - 1)
                                             lazyPagingItems[triggerIndex] // This access triggers Paging3 to load more
@@ -167,8 +167,8 @@ fun PagingMediaRow(
                                         // Log position for debugging
                                         val remainingItems = lazyPagingItems.itemCount - newIndex - 1
                                         val item = lazyPagingItems[newIndex]
-                                        Log.d("PagingMediaRow", "📊 Row '$title' - Position: ${newIndex + 1}/${lazyPagingItems.itemCount}, Remaining: $remainingItems")
-                                        Log.d("PagingMediaRow", "   Selected: ${item?.title}")
+                                        Log.d(logTag, "📊 Row '$title' - Position: ${newIndex + 1}/${lazyPagingItems.itemCount}, Remaining: $remainingItems")
+                                        Log.d(logTag, "   Selected: ${item?.title}")
                                         
                                         // Report position change
                                         onPositionChanged?.invoke(newIndex, lazyPagingItems.itemCount)
@@ -177,7 +177,7 @@ fun PagingMediaRow(
                                         val currentIdx = newIndex
                                         val numLoadedItems = lazyPagingItems.itemCount
                                         if (currentIdx + 6 >= numLoadedItems) {
-                                            Log.d("PagingMediaRow", "🚀 Proactive load trigger: currentIdx($currentIdx) + 6 >= numLoadedItems($numLoadedItems)")
+                                            Log.d(logTag, "🚀 Proactive load trigger: currentIdx($currentIdx) + 6 >= numLoadedItems($numLoadedItems)")
                                             // Force Paging3 to load more by accessing an item near the end
                                             val triggerIndex = minOf(currentIdx + 3, numLoadedItems - 1)
                                             lazyPagingItems[triggerIndex] // This access triggers Paging3 to load more
@@ -210,7 +210,7 @@ fun PagingMediaRow(
                     count = lazyPagingItems.itemCount,
                     key = { index -> lazyPagingItems[index]?.tmdbId ?: index }
                 ) { index ->
-                    lazyPagingItems[index]?.let { movie ->
+                    lazyPagingItems[index]?.let { mediaItem ->
                         val isSelected = index == selectedIndex && isRowSelected
                         
                         Box(
@@ -220,11 +220,11 @@ fun PagingMediaRow(
                             contentAlignment = Alignment.Center
                         ) {
                             MediaCard(
-                                title = movie.title,
-                                posterUrl = movie.posterUrl,
+                                title = mediaItem.title,
+                                posterUrl = mediaItem.posterUrl,
                                 isSelected = isSelected,
                                 onClick = {
-                                    onItemClick?.invoke(movie)
+                                    onItemClick?.invoke(mediaItem)
                                 }
                             )
                         }

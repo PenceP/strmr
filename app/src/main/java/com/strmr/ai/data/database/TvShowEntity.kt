@@ -6,14 +6,15 @@ import androidx.room.TypeConverters
 import com.strmr.ai.data.database.converters.ListConverter
 import com.strmr.ai.data.Actor
 import com.strmr.ai.data.SimilarContent
+import com.strmr.ai.ui.components.MediaItem
 
 @Entity(tableName = "tv_shows")
 @TypeConverters(ListConverter::class)
 data class TvShowEntity(
-    @PrimaryKey val tmdbId: Int,
+    @PrimaryKey override val tmdbId: Int,
     val imdbId: String?,
-    val title: String,
-    val posterUrl: String?,
+    override val title: String,
+    override val posterUrl: String?,
     val backdropUrl: String?,
     val overview: String?,
     val rating: Float?,
@@ -34,4 +35,4 @@ data class TvShowEntity(
     val onTheAirOrder: Int? = null,
     val dataSourceOrders: Map<String, Int?> = emptyMap(), // Generic data source ordering (future use)
     val lastUpdated: Long = 0L // for cache expiry
-) 
+) : MediaItem 

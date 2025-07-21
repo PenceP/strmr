@@ -263,7 +263,8 @@ fun MoviesPage(
                         },
                         onPositionChanged = { currentPosition, totalItems ->
                             viewModel.updateRowPosition(currentRowTitle, currentPosition, totalItems)
-                        }
+                        },
+                        logTag = "PagingMovieRow"
                     )
                 } else {
                     // Fallback to regular row if no paging data
