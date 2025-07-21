@@ -103,14 +103,14 @@ fun PagingMediaRow(
             Text(
                 text = title,
                 color = Color.White,
-                modifier = Modifier.padding(horizontal = 60.dp, vertical = 8.dp)
+                modifier = Modifier.padding(horizontal = 30.dp, vertical = 8.dp)
             )
             
             // Media items row
             LazyRow(
                 state = listState,
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(horizontal = 60.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                contentPadding = PaddingValues(horizontal = 50.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .then(
@@ -215,8 +215,8 @@ fun PagingMediaRow(
                         
                         Box(
                             modifier = Modifier
-                                .width(160.dp)
-                                .height(240.dp),
+                                .width(130.dp)
+                                .height(200.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             MediaCard(
@@ -232,8 +232,8 @@ fun PagingMediaRow(
                         // Placeholder while loading
                         Box(
                             modifier = Modifier
-                                .width(160.dp)
-                                .height(240.dp)
+                                .width(130.dp)
+                                .height(200.dp)
                         ) {
                             MediaCardSkeleton()
                         }
@@ -246,8 +246,8 @@ fun PagingMediaRow(
                         item {
                             Box(
                                 modifier = Modifier
-                                    .width(160.dp)
-                                    .height(240.dp),
+                                    .width(130.dp)
+                                    .height(200.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 CircularProgressIndicator(color = Color.White)
@@ -258,8 +258,8 @@ fun PagingMediaRow(
                         item {
                             Box(
                                 modifier = Modifier
-                                    .width(160.dp)
-                                    .height(240.dp),
+                                    .width(130.dp)
+                                    .height(200.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Button(
