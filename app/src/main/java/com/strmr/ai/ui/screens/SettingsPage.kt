@@ -24,7 +24,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.strmr.ai.viewmodel.SettingsViewModel
+import com.strmr.ai.viewmodel.UpdateViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -123,6 +125,15 @@ fun SettingsPage(
                     title = "Playback",
                     items = listOf(
                         SettingsNavItem("Auto Play", Icons.Default.PlayArrow, showArrow = false)
+                    )
+                )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                SettingsNavSection(
+                    title = "System",
+                    items = listOf(
+                        SettingsNavItem("Updates", Icons.Default.SystemUpdate)
                     )
                 )
             }
@@ -278,6 +289,193 @@ fun SettingsPage(
                                         "10" to "10 seconds",
                                         "15" to "15 seconds"
                                     )
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(32.dp))
+                
+                // System Settings
+                SystemSettingsSection()
+            }
+        }
+    }
+}
+
+@Composable
+fun SystemSettingsSection() {
+    val updateViewModel: UpdateViewModel = hiltViewModel()
+    val updateState by updateViewModel.uiState.collectAsStateWithLifecycle()
+    
+    SettingsContentSection(
+        title = "System",
+        subtitle = "App updates and system settings"
+    ) {
+        ModernSettingsCard(
+            title = "App Updates",
+            subtitle = updateState.updateInfo?.let { updateInfo ->
+                if (updateInfo.hasUpdate) {
+                    "Version ${updateInfo.latestVersion} available"
+                } else {
+                    "Version ${updateInfo.currentVersion} - Up to date"
+                }
+            } ?: "Version Unknown - Up to date",
+            icon = Icons.Default.SystemUpdate,
+            isConnected = updateState.updateInfo?.hasUpdate,
+            showArrow = false
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp)
+            ) {
+                when {
+                    updateState.isLoading -> {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = Color(0xFF007AFF)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Checking for updates...",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color(0xFF888888)
+                            )
+                        }
+                    }
+                    
+                    updateState.isDownloading -> {
+                        Column {
+                            Text(
+                                text = "Downloading update...",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = Color.White
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            LinearProgressIndicator(
+                                progress = { updateState.downloadProgress / 100f },
+                                modifier = Modifier.fillMaxWidth(),
+                                color = Color(0xFF007AFF),
+                                trackColor = Color(0xFF333333)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "${updateState.downloadProgress}% - ${updateState.downloadStatus ?: "Preparing..."}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFF888888)
+                            )
+                        }
+                    }
+                    
+                    updateState.updateInfo?.hasUpdate == true -> {
+                        updateState.updateInfo?.let { updateInfo ->
+                            Column {
+                                Text(
+                                    text = "New version available: ${updateInfo.latestVersion}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFF007AFF)
+                                )
+                                
+                                updateInfo.releaseNotes?.let { releaseNotes ->
+                                    if (releaseNotes.isNotEmpty()) {
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            text = "What's new:",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = Color.White
+                                        )
+                                        Text(
+                                            text = releaseNotes,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color(0xFF888888),
+                                            maxLines = 3
+                                        )
+                                    }
+                                }
+                                
+                                Spacer(modifier = Modifier.height(12.dp))
+                                
+                                Row {
+                                    Button(
+                                        onClick = { updateViewModel.downloadAndInstallUpdate() },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color(0xFF007AFF)
+                                        )
+                                    ) {
+                                        Text("Update Now")
+                                    }
+                                    
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    
+                                    TextButton(
+                                        onClick = { updateViewModel.checkForUpdates() }
+                                    ) {
+                                        Text(
+                                            text = "Check Again",
+                                            color = Color(0xFF888888)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    updateState.error != null -> {
+                        updateState.error?.let { error ->
+                            Column {
+                                Text(
+                                    text = "Error checking for updates",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFFFF6B6B)
+                                )
+                                Text(
+                                    text = error,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF888888)
+                                )
+                                
+                                Spacer(modifier = Modifier.height(12.dp))
+                                
+                                TextButton(
+                                    onClick = { 
+                                        updateViewModel.dismissError()
+                                        updateViewModel.checkForUpdates() 
+                                    }
+                                ) {
+                                    Text(
+                                        text = "Retry",
+                                        color = Color(0xFF007AFF)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    
+                    else -> {
+                        Row {
+                            Text(
+                                text = "✅ You're up to date",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color(0xFF4CAF50),
+                                modifier = Modifier.weight(1f)
+                            )
+                            
+                            TextButton(
+                                onClick = { updateViewModel.checkForUpdates() }
+                            ) {
+                                Text(
+                                    text = "Check Now",
+                                    color = Color(0xFF888888)
                                 )
                             }
                         }
