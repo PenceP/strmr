@@ -1,0 +1,4 @@
+-dontoptimize
+-dontobfuscate
+-keepattributes *Annotation*
+-dontwarn java.util.concurrent.** 
