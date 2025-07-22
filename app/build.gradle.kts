@@ -118,6 +118,9 @@ dependencies {
     // Gson for JSON parsing
     implementation("com.google.code.gson:gson:2.10.1")
     
+    // Security for encrypted preferences
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    
     // Test dependencies
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.mockito:mockito-core:5.1.1")
