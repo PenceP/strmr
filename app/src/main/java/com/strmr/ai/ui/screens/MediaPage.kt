@@ -27,6 +27,7 @@ import com.strmr.ai.ui.components.CenteredMediaRow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.draw.blur
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -171,7 +172,8 @@ LaunchedEffect(isContentFocused, selectedRowIndex, selectedItemIndex) {
                             .graphicsLayer {
                                 scaleX = 1.1f
                                 scaleY = 1.1f
-                            },
+                            }
+                            .blur(radius = 8.dp),
                         contentScale = ContentScale.Crop,
                         alpha = 1f
                     )

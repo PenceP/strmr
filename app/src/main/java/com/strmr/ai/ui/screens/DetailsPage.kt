@@ -230,7 +230,9 @@ fun MovieDetailsView(
             AsyncImage(
                 model = it,
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blur(radius = 8.dp),
                 contentScale = ContentScale.Crop,
                 alpha = 0.4f
             )
@@ -870,7 +872,9 @@ fun TvShowDetailsView(
             AsyncImage(
                 model = it,
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blur(radius = 8.dp),
                 contentScale = ContentScale.Crop,
                 alpha = 0.4f
             )

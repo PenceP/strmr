@@ -20,6 +20,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.border
+import com.strmr.ai.utils.resolveImageSource
 
 data class DetailsContentData(
     val title: String,
@@ -104,9 +105,10 @@ fun DetailsContentCard(
                 .background(Color.Gray),
             contentAlignment = Alignment.Center
         ) {
-            if (!content.posterUrl.isNullOrBlank()) {
+            val resolvedPosterSource = resolveImageSource(content.posterUrl)
+            if (resolvedPosterSource != null) {
                 AsyncImage(
-                    model = content.posterUrl,
+                    model = resolvedPosterSource,
                     contentDescription = content.title,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop

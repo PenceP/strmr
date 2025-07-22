@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.Dp
@@ -96,7 +97,8 @@ fun HomeMediaRow(
     onContentFocusChanged: ((Boolean) -> Unit)? = null,
     showOverlays: Boolean = false,
     rowHeight: Dp = 120.dp,
-    onItemClick: ((Any) -> Unit)? = null
+    onItemClick: ((Any) -> Unit)? = null,
+    cardType: String = "portrait"
 ) {
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
@@ -271,16 +273,31 @@ fun HomeMediaRow(
                             onSelectionChanged(i)
                         }
                     )
-                    is HomeMediaItem.Collection -> MediaCard(
-                        title = if (mediaItem.nameDisplayMode != "Hidden") mediaItem.name else "",
-                        posterUrl = mediaItem.backgroundImageUrl,
-                        isSelected = isSelected,
-                        onClick = {
-                            // Only update selection, don't trigger navigation here
-                            Log.d("HomeMediaRow", "🎯 Collection item clicked: $i")
-                            onSelectionChanged(i)
+                    is HomeMediaItem.Collection -> {
+                        if (cardType == "landscape") {
+                            LandscapeMediaCard(
+                                title = if (mediaItem.nameDisplayMode != "Hidden") mediaItem.name else "",
+                                landscapeUrl = mediaItem.backgroundImageUrl,
+                                isSelected = isSelected,
+                                onClick = {
+                                    // Only update selection, don't trigger navigation here
+                                    Log.d("HomeMediaRow", "🎯 Collection item clicked: $i")
+                                    onSelectionChanged(i)
+                                }
+                            )
+                        } else {
+                            MediaCard(
+                                title = if (mediaItem.nameDisplayMode != "Hidden") mediaItem.name else "",
+                                posterUrl = mediaItem.backgroundImageUrl,
+                                isSelected = isSelected,
+                                onClick = {
+                                    // Only update selection, don't trigger navigation here
+                                    Log.d("HomeMediaRow", "🎯 Collection item clicked: $i")
+                                    onSelectionChanged(i)
+                                }
+                            )
                         }
-                    )
+                    }
                 }
             }
         }
@@ -307,6 +324,7 @@ fun HomePage(
     var pageConfiguration by remember { mutableStateOf<PageConfiguration?>(null) }
     var collections by remember { mutableStateOf<List<HomeMediaItem.Collection>>(emptyList()) }
     var networks by remember { mutableStateOf<List<com.strmr.ai.data.NetworkInfo>>(emptyList()) }
+    var directors by remember { mutableStateOf<List<HomeMediaItem.Collection>>(emptyList()) }
     
     LaunchedEffect(Unit) {
         val configLoader = ConfigurationLoader(context)
@@ -314,6 +332,7 @@ fun HomePage(
         pageConfiguration?.let { config ->
             collections = configLoader.getCollectionsFromConfig(config)
             networks = configLoader.getNetworksFromConfig(config)
+            directors = configLoader.getDirectorsFromConfig(config)
         }
     }
     
@@ -362,6 +381,12 @@ fun HomePage(
                 "collections" -> {
                     if (collections.isNotEmpty()) {
                         mediaRows[rowConfig.title] = collections
+                        rowConfigs[rowConfig.title] = rowConfig
+                    }
+                }
+                "directors" -> {
+                    if (directors.isNotEmpty()) {
+                        mediaRows[rowConfig.title] = directors
                         rowConfigs[rowConfig.title] = rowConfig
                     }
                 }
@@ -507,7 +532,9 @@ fun HomePage(
         Image(
             painter = painterResource(id = R.drawable.wallpaper),
             contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .blur(radius = 8.dp),
             contentScale = ContentScale.Crop
         )
 
@@ -545,7 +572,9 @@ fun HomePage(
             AsyncImage(
                 model = backdropUrl,
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blur(radius = 8.dp),
                 contentScale = ContentScale.Crop,
                 alpha = 1f
             )
@@ -666,6 +695,7 @@ fun HomePage(
                             },
                             showOverlays = rowConfig?.displayOptions?.showOverlays == true,
                             rowHeight = rowHeight,
+                            cardType = rowConfig?.cardType ?: "portrait",
                             onItemClick = if (rowConfig?.displayOptions?.clickable == true) { item ->
                                 when (item) {
                                     is HomeMediaItem.Movie -> onNavigateToDetails?.invoke("movie", item.movie.tmdbId, null, null)

@@ -20,6 +20,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.strmr.ai.utils.resolveImageSource
 
 @Composable
 fun SquareMediaCard(
@@ -45,9 +46,10 @@ fun SquareMediaCard(
             .clip(RoundedCornerShape(8.dp)),
         contentAlignment = Alignment.Center
     ) {
-        if (posterUrl != null) {
+        val resolvedPosterSource = resolveImageSource(posterUrl)
+        if (resolvedPosterSource != null) {
             AsyncImage(
-                model = posterUrl,
+                model = resolvedPosterSource,
                 contentDescription = title,
                 modifier = Modifier.matchParentSize(),
                 contentScale = ContentScale.Crop

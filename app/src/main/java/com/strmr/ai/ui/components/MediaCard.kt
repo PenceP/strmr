@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.animation.core.animateFloatAsState
+import com.strmr.ai.utils.resolveImageSource
 
 @Composable
 fun MediaCard(
@@ -40,9 +41,10 @@ fun MediaCard(
             .width(animatedWidth)
             .height(animatedHeight)
     ) {
-        if (posterUrl != null) {
+        val resolvedImageSource = resolveImageSource(posterUrl)
+        if (resolvedImageSource != null) {
             AsyncImage(
-                model = posterUrl,
+                model = resolvedImageSource,
                 contentDescription = title,
                 modifier = Modifier
                     .fillMaxSize()

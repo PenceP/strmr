@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.blur
 import coil.compose.AsyncImage
 import com.strmr.ai.ui.components.MediaHero
 import com.strmr.ai.ui.components.MediaDetails
@@ -153,7 +154,8 @@ fun MoviesPage(
                     .graphicsLayer {
                         scaleX = 1.1f
                         scaleY = 1.1f
-                    },
+                    }
+                    .blur(radius = 8.dp),
                 contentScale = ContentScale.Crop,
                 alpha = 1f
             )

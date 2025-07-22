@@ -50,6 +50,7 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.blur
 import com.strmr.ai.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.runtime.rememberCoroutineScope
@@ -104,7 +105,9 @@ fun SearchPage(
         Image(
             painter = painterResource(id = R.drawable.wallpaper),
             contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .blur(radius = 8.dp),
             contentScale = ContentScale.Crop
         )
         // Create focus requesters that can be shared between components

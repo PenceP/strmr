@@ -17,6 +17,7 @@ import androidx.compose.foundation.Image
 import com.strmr.ai.R
 import com.strmr.ai.utils.DateFormatter
 import androidx.compose.runtime.LaunchedEffect
+import com.strmr.ai.utils.resolveImageSource
 
 @Composable
 fun MediaDetails(
@@ -47,9 +48,10 @@ fun MediaDetails(
             .width(400.dp)
     ) {
         // Title
-        if (!logoUrl.isNullOrBlank()) {
+        val resolvedLogoSource = resolveImageSource(logoUrl)
+        if (resolvedLogoSource != null) {
             AsyncImage(
-                model = logoUrl,
+                model = resolvedLogoSource,
                 contentDescription = title,
                 modifier = Modifier
                     .height(72.dp)

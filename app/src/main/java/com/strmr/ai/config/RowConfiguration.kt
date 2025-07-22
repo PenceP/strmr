@@ -15,7 +15,9 @@ data class PageConfiguration(
     @SerializedName("collections")
     val collections: List<CollectionConfig>? = null,
     @SerializedName("networks")
-    val networks: List<NetworkConfig>? = null
+    val networks: List<NetworkConfig>? = null,
+    @SerializedName("directors")
+    val directors: List<DirectorConfig>? = null
 )
 
 /**
@@ -140,6 +142,20 @@ data class NetworkConfig(
 )
 
 /**
+ * Configuration for a director item
+ */
+data class DirectorConfig(
+    @SerializedName("id")
+    val id: String,
+    @SerializedName("name")
+    val name: String,
+    @SerializedName("backgroundImageUrl")
+    val backgroundImageUrl: String,
+    @SerializedName("nameDisplayMode")
+    val nameDisplayMode: String
+)
+
+/**
  * Configuration for a nested item within a row
  */
 data class NestedItemConfig(
@@ -165,6 +181,7 @@ enum class RowType {
     CONTINUE_WATCHING,
     NETWORKS,
     COLLECTIONS,
+    DIRECTORS,
     PAGING,
     TRAKT_LIST;
     
@@ -174,6 +191,7 @@ enum class RowType {
                 "continue_watching" -> CONTINUE_WATCHING
                 "networks" -> NETWORKS
                 "collections" -> COLLECTIONS
+                "directors" -> DIRECTORS
                 "paging" -> PAGING
                 "trakt_list" -> TRAKT_LIST
                 else -> throw IllegalArgumentException("Unknown row type: $type")

@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import com.strmr.ai.utils.resolveImageSource
 
 @Composable
 fun LandscapeMediaCard(
@@ -57,9 +58,10 @@ fun LandscapeMediaCard(
             contentAlignment = Alignment.BottomStart
         ) {
             val cardHeightPx = with(LocalDensity.current) { maxHeight.toPx() }
-            if (landscapeUrl != null) {
+            val resolvedLandscapeSource = resolveImageSource(landscapeUrl)
+            if (resolvedLandscapeSource != null) {
                 AsyncImage(
-                    model = landscapeUrl,
+                    model = resolvedLandscapeSource,
                     contentDescription = title,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
@@ -97,7 +99,8 @@ fun LandscapeMediaCard(
                 }
             }
             // Centered logo
-            if (!logoUrl.isNullOrBlank()) {
+            val resolvedLogoSource = resolveImageSource(logoUrl)
+            if (resolvedLogoSource != null) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.Center)
@@ -105,7 +108,7 @@ fun LandscapeMediaCard(
                         .widthIn(max = 160.dp)
                 ) {
                     AsyncImage(
-                        model = logoUrl,
+                        model = resolvedLogoSource,
                         contentDescription = "$title logo",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Fit

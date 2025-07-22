@@ -67,6 +67,20 @@ class ConfigurationLoader(private val context: Context) {
     }
 
     /**
+     * Get directors from configuration as HomeMediaItem.Collection objects
+     */
+    fun getDirectorsFromConfig(config: PageConfiguration): List<HomeMediaItem.Collection> {
+        return config.directors?.map { directorConfig ->
+            HomeMediaItem.Collection(
+                id = directorConfig.id,
+                name = directorConfig.name,
+                backgroundImageUrl = directorConfig.backgroundImageUrl,
+                nameDisplayMode = directorConfig.nameDisplayMode
+            )
+        } ?: emptyList()
+    }
+
+    /**
      * Get nested rows from configuration as complete row configurations
      */
     fun getNestedRowsFromConfig(rowConfig: RowConfig): List<RowConfig> {

@@ -26,6 +26,7 @@ import kotlinx.coroutines.withContext
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.blur
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -122,7 +123,8 @@ fun <T : Any> MediaPagingPage(
                     .graphicsLayer {
                         scaleX = 1.1f
                         scaleY = 1.1f
-                    },
+                    }
+                    .blur(radius = 8.dp),
                 contentScale = ContentScale.Crop,
                 alpha = 1f
             )
