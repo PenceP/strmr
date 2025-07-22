@@ -107,6 +107,9 @@ fun SearchPage(
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
+        // Create focus requesters that can be shared between components
+        val searchBarFocusRequester = remember { FocusRequester() }
+        
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -131,6 +134,7 @@ fun SearchPage(
                     }
                 },
                 hasSearchResults = searchResults != null,
+                searchBarFocusRequester = searchBarFocusRequester,
                 modifier = Modifier.padding(16.dp)
             )
             
@@ -184,6 +188,10 @@ fun SearchPage(
                         SearchResultsContent(
                             searchResults = results,
                             onNavigateToDetails = onNavigateToDetails,
+                            onFocusReturnToSearchBar = {
+                                // Return focus to search bar when UP pressed on first row
+                                searchBarFocusRequester.requestFocus()
+                            },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -216,99 +224,128 @@ private fun SearchBar(
     onClear: () -> Unit,
     onVoiceSearch: () -> Unit,
     hasSearchResults: Boolean,
+    searchBarFocusRequester: FocusRequester,
     modifier: Modifier = Modifier
 ) {
-    val focusRequester = remember { FocusRequester() }
+    val focusRequester = searchBarFocusRequester
+    val voiceFocusRequester = remember { FocusRequester() }
+    var isSearchBarFocused by remember { mutableStateOf(false) }
+    var isVoiceButtonFocused by remember { mutableStateOf(false) }
     
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .onKeyEvent { event ->
-                if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
-                    event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
-                    hasSearchResults) {
-                    // This will be handled by the SearchResultsContent
-                    false
-                } else {
-                    false
-                }
-            },
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f)),
-        shape = RoundedCornerShape(8.dp)
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
+        // Voice search button - outside the search box on the left
+        IconButton(
+            onClick = onVoiceSearch,
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            
-            
-            
-            IconButton(
-                onClick = onVoiceSearch,
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(
-                        Color.White.copy(alpha = 0.1f),
-                        RoundedCornerShape(20.dp)
-                    )
-                    .focusable()
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Mic,
-                    contentDescription = "Voice Search",
-                    tint = Color.White
+                .size(48.dp)
+                .background(
+                    Color.White.copy(alpha = if (isVoiceButtonFocused) 0.2f else 0.1f),
+                    RoundedCornerShape(24.dp)
                 )
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            //Icon(
-            //    imageVector = Icons.Default.Search,
-            //    contentDescription = "Search",
-            //    tint = Color.White.copy(alpha = 0.9f),
-            //    modifier = Modifier.size(24.dp)
-            //)
-            
-            Spacer(modifier = Modifier.width(12.dp))
-            
-            BasicTextField(
-                value = query,
-                onValueChange = onQueryChange,
+                .focusRequester(voiceFocusRequester)
+                .onFocusChanged { isVoiceButtonFocused = it.isFocused }
+                .onKeyEvent { event ->
+                    if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
+                        when (event.nativeKeyEvent.keyCode) {
+                            android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                                focusRequester.requestFocus()
+                                true
+                            }
+                            android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
+                                if (hasSearchResults) {
+                                    isSearchBarFocused = false
+                                    isVoiceButtonFocused = false
+                                    true
+                                } else false
+                            }
+                            else -> false
+                        }
+                    } else false
+                }
+        ) {
+            Icon(
+                imageVector = Icons.Default.Mic,
+                contentDescription = "Voice Search",
+                tint = Color.White,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+        
+        Spacer(modifier = Modifier.width(12.dp))
+        
+        // Search input box
+        Card(
+            modifier = Modifier
+                .weight(1f),
+            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f)),
+            shape = RoundedCornerShape(8.dp)
+        ) {
+            Row(
                 modifier = Modifier
-                    .weight(1f)
-                    .focusRequester(focusRequester),
-                textStyle = TextStyle(
-                    color = Color.White,
-                    fontSize = 18.sp
-                ),
-                cursorBrush = SolidColor(Color.White),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text,
-                    imeAction = ImeAction.Search
-                ),
-                decorationBox = { innerTextField ->
-                    if (query.isEmpty()) {
-                        Text(
-                            text = "Search movies, TV shows, people...",
-                            color = Color.White.copy(alpha = 0.5f),
-                            fontSize = 18.sp
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                BasicTextField(
+                    value = query,
+                    onValueChange = onQueryChange,
+                    modifier = Modifier
+                        .weight(1f)
+                        .focusRequester(focusRequester)
+                        .onFocusChanged { isSearchBarFocused = it.isFocused }
+                        .onKeyEvent { event ->
+                            if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
+                                when (event.nativeKeyEvent.keyCode) {
+                                    android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
+                                        voiceFocusRequester.requestFocus()
+                                        true
+                                    }
+                                    android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
+                                        if (hasSearchResults) {
+                                            isSearchBarFocused = false
+                                            true
+                                        } else false
+                                    }
+                                    else -> false
+                                }
+                            } else false
+                        },
+                    textStyle = TextStyle(
+                        color = Color.White,
+                        fontSize = 18.sp
+                    ),
+                    cursorBrush = SolidColor(Color.White),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Search
+                    ),
+                    decorationBox = { innerTextField ->
+                        if (query.isEmpty()) {
+                            Text(
+                                text = "Search movies, TV shows, people...",
+                                color = Color.White.copy(alpha = 0.5f),
+                                fontSize = 18.sp
+                            )
+                        }
+                        innerTextField()
+                    }
+                )
+                
+                if (query.isNotEmpty()) {
+                    IconButton(
+                        onClick = onClear,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Clear,
+                            contentDescription = "Clear",
+                            tint = Color.White.copy(alpha = 0.7f)
                         )
                     }
-                    innerTextField()
-                }
-            )
-            
-            if (query.isNotEmpty()) {
-                IconButton(
-                    onClick = onClear,
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Clear,
-                        contentDescription = "Clear",
-                        tint = Color.White.copy(alpha = 0.7f)
-                    )
                 }
             }
         }
@@ -477,6 +514,7 @@ private fun SearchResultsLoading(
 private fun SearchResultsContent(
     searchResults: com.strmr.ai.data.SearchResults,
     onNavigateToDetails: ((String, Int) -> Unit)?,
+    onFocusReturnToSearchBar: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     // Build list of available sections - always include sections if they have data
@@ -554,6 +592,7 @@ private fun SearchResultsContent(
                     } else if (newRowIndex < 0) {
                         // Go back to search bar
                         isContentFocused = false
+                        onFocusReturnToSearchBar()
                     }
                 },
                 focusRequester = if (rowIndex == selectedRowIndex) focusRequester else null,
