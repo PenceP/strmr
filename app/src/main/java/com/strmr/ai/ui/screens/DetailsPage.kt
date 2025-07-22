@@ -522,8 +522,8 @@ fun MovieDetailsView(
                                     isActorsRowSelected = true
                                 }
                             } else {
-                                // Move down (could be end of content)
-                                isSimilarRowSelected = false
+                                // Stay on current row when at bottom boundary
+                                // Don't clear focus to prevent focus escape
                             }
                         },
                         focusRequester = similarFocusRequester,
@@ -1124,8 +1124,8 @@ fun TvShowDetailsView(
                                 isSimilarRowSelected = false
                                 isActorsRowSelected = true
                             } else {
-                                // Move down (could be end of content)
-                                isSimilarRowSelected = false
+                                // Stay on current row when at bottom boundary
+                                // Don't clear focus to prevent focus escape
                             }
                         },
                         focusRequester = similarFocusRequester,
