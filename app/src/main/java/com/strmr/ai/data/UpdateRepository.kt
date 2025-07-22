@@ -46,7 +46,7 @@ class UpdateRepository @Inject constructor(
 ) {
     companion object {
         private const val TAG = "UpdateRepository"
-        private const val GITHUB_REPO_OWNER = "spencerpreston"
+        private const val GITHUB_REPO_OWNER = "PenceP"
         private const val GITHUB_REPO_NAME = "strmr"
         private const val GITHUB_API_BASE = "https://api.github.com"
     }
