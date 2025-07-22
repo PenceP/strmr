@@ -124,10 +124,10 @@
 - [ ] **Note: Should be implemented after CI/CD system (Task 16)**
 
 ### 16. CI/CD Pipeline with GitHub Actions
-- [ ] Set up build stage with proper Android SDK configuration
-- [ ] Implement automated testing stage
-- [ ] Configure APK compilation with version number in filename
-- [ ] Add artifacts upload for release builds
+- [x] Set up build stage with proper Android SDK configuration
+- [x] Implement automated testing stage
+- [x] Configure APK compilation with version number in filename
+- [x] Add artifacts upload for release builds
 - [ ] **Optional:** Set up emulator testing with basic smoke tests
 - [ ] Configure release deployment workflow
 - [ ] **Must be completed before auto-update functionality**
@@ -328,7 +328,7 @@
 - [ ] **Premiumize Integration**
     - [ ] Implement OAuth flow for Premiumize authentication
     - [ ] Create Retrofit service for Premiumize API endpoints
-    - [ ] Add secure storage for Premiumize API keys using EncryptedSharedPreferences
+    - [ ] Add secure storage for Premiumize API keys using EncryptedSharedPreferences (or in accounts db with trakt api)
     - [ ] Implement API key validation and refresh mechanisms
     - [ ] Add user settings screen for debrid service configuration
 
