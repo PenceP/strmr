@@ -110,10 +110,10 @@
     - [ ] Proper TV navigation between episodes
 
 ### 14. Pagination Fix
-- [ ] Investigate and fix broken paging system
-- [ ] Ensure movies and TV shows load beyond first page from API
-- [ ] Implement proper infinite scrolling for all content rows
-- [ ] Add loading indicators for pagination
+- [x] Investigate and fix broken paging system
+- [x] Ensure movies and TV shows load beyond first page from API
+- [x] Implement proper infinite scrolling for all content rows
+- [x] Add loading indicators for pagination
 
 ### 15. Auto-Update System
 - [ ] Implement app versioning system
