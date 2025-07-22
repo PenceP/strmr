@@ -1,0 +1,48 @@
+package com.strmr.ai.data.models
+
+import com.google.gson.annotations.SerializedName
+
+// Premiumize OAuth Models
+data class PremiumizeTokenResponse(
+    @SerializedName("access_token")
+    val accessToken: String,
+    @SerializedName("token_type")
+    val tokenType: String?,
+    @SerializedName("expires_in")
+    val expiresIn: Int?
+)
+
+data class PremiumizeAuthError(
+    val error: String,
+    @SerializedName("error_description")
+    val errorDescription: String?
+)
+
+// Device code flow models
+data class PremiumizeDeviceCodeResponse(
+    @SerializedName("device_code")
+    val deviceCode: String,
+    @SerializedName("user_code")
+    val userCode: String,
+    @SerializedName("verification_uri")
+    val verificationUrl: String = "https://premiumize.me/device",
+    @SerializedName("expires_in")
+    val expiresIn: Int,
+    val interval: Int
+)
+
+// User account models
+data class PremiumizeAccount(
+    @SerializedName("customer_id")
+    val customerId: String,
+    val email: String,
+    @SerializedName("premium_until")
+    val premiumUntil: Long,
+    val status: String,
+    @SerializedName("space_used")
+    val spaceUsed: Long,
+    @SerializedName("limit_used")
+    val limitUsed: Long,
+    @SerializedName("space_limit")
+    val spaceLimit: Long? = 1099511627776L // 1TB default
+)

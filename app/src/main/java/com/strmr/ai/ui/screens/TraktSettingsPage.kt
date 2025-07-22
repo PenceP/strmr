@@ -29,6 +29,8 @@ import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.strmr.ai.ui.components.AuthStep
+import com.strmr.ai.ui.components.ModernErrorDialog
 import com.strmr.ai.viewmodel.SettingsViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -931,111 +933,6 @@ fun ModernTraktAuthDialog(
     }
 }
 
-@Composable
-fun AuthStep(
-    number: String,
-    text: String
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(24.dp)
-                .background(
-                    Color(0xFF007AFF),
-                    androidx.compose.foundation.shape.CircleShape
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = number,
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-        }
-        
-        Spacer(modifier = Modifier.width(12.dp))
-        
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.White
-        )
-    }
-}
-
-@Composable
-fun ModernErrorDialog(
-    message: String,
-    onDismiss: () -> Unit
-) {
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            dismissOnBackPress = true,
-            dismissOnClickOutside = true
-        )
-    ) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(32.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = Color(0xFF1a1a1a)
-            ),
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Error,
-                    contentDescription = null,
-                    tint = Color(0xFFFF3B30),
-                    modifier = Modifier
-                        .size(48.dp)
-                        .padding(bottom = 16.dp)
-                )
-                
-                Text(
-                    text = "Error",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFFF3B30),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                
-                Text(
-                    text = message,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(bottom = 24.dp)
-                )
-                
-                Button(
-                    onClick = onDismiss,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFF3B30)
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = "OK",
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-        }
-    }
-}
 
 data class TraktNavItem(
     val title: String,
