@@ -32,6 +32,7 @@ import com.strmr.ai.ui.screens.TvShowsPage
 import com.strmr.ai.ui.screens.TraktSettingsPage
 import com.strmr.ai.ui.screens.PremiumizeSettingsPage
 import com.strmr.ai.ui.screens.RealDebridSettingsPage
+import com.strmr.ai.ui.screens.SplashScreen
 import com.strmr.ai.ui.theme.StrmrTheme
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -84,7 +85,15 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     shape = RectangleShape
                 ) {
-                    MainScreen(youtubeExtractor = youtubeExtractor)
+                    var showSplash by remember { mutableStateOf(true) }
+                    
+                    if (showSplash) {
+                        SplashScreen(
+                            onSplashComplete = { showSplash = false }
+                        )
+                    } else {
+                        MainScreen(youtubeExtractor = youtubeExtractor)
+                    }
                 }
             }
         }
