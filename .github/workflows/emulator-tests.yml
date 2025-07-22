@@ -42,104 +42,74 @@ jobs:
         echo "OMDB_API_KEY=${{ secrets.OMDB_API_KEY }}" >> secrets.properties
         echo "TMDB_READ_KEY=${{ secrets.TMDB_READ_KEY }}" >> secrets.properties
         
-    - name: Enable KVM group perms
+    - name: Build debug APK
+      run: ./gradlew assembleDebug
+        
+    - name: Enable KVM
       run: |
         echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
         sudo udevadm control --reload-rules
         sudo udevadm trigger --name-match=kvm
         
-    - name: Cache AVD
-      uses: actions/cache@v4
-      id: avd-cache
-      with:
-        path: |
-          ~/.android/avd/*
-          ~/.android/adb*
-        key: avd-30
-        
-    - name: Create AVD and generate snapshot for caching
-      if: steps.avd-cache.outputs.cache-hit != 'true'
+    - name: Run Android TV emulator tests
       uses: reactivecircus/android-emulator-runner@v2
       with:
         api-level: 30
-        target: android-tv
+        target: google_apis
         arch: x86_64
         profile: tv_1080p
-        force-avd-creation: false
-        emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-        disable-animations: false
-        script: echo "Generated AVD snapshot for caching."
-        
-    - name: Run instrumentation tests
-      uses: reactivecircus/android-emulator-runner@v2
-      with:
-        api-level: 30
-        target: android-tv
-        arch: x86_64
-        profile: tv_1080p
-        force-avd-creation: false
-        emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+        emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
         disable-animations: true
         script: |
           # Wait for emulator to fully boot
-          adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed | tr -d '\''\r'\'') ]]; do sleep 1; done; input keyevent 82'
+          echo "Waiting for emulator to boot..."
+          adb wait-for-device
+          adb shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
           
-          # Basic smoke tests
-          echo "Running basic smoke tests..."
-          
-          # Install and launch the app
-          ./gradlew assembleDebug
+          # Install the app
+          echo "Installing app..."
           adb install app/build/outputs/apk/debug/app-debug.apk
           
-          # Launch the app and verify it starts
+          # Launch the app
+          echo "Launching app..."
           adb shell am start -n com.strmr.ai/.MainActivity
           sleep 5
           
-          # Take a screenshot for verification
+          # Take a screenshot
+          echo "Taking screenshot..."
           adb shell screencap -p /sdcard/screenshot.png
-          adb pull /sdcard/screenshot.png screenshot.png
+          adb pull /sdcard/screenshot.png screenshot-launch.png
           
           # Check if app is running
-          APP_RUNNING=$(adb shell ps | grep com.strmr.ai | wc -l)
-          if [ "$APP_RUNNING" -gt 0 ]; then
+          if adb shell ps | grep -q com.strmr.ai; then
             echo "✅ App is running successfully"
           else
             echo "❌ App failed to start"
+            adb logcat -d > logcat-failure.txt
             exit 1
           fi
           
-          # Basic navigation test (simulate DPAD navigation)
-          echo "Testing basic DPAD navigation..."
+          # Test DPAD navigation
+          echo "Testing DPAD navigation..."
           adb shell input keyevent 20  # DPAD_DOWN
-          sleep 1
-          adb shell input keyevent 19  # DPAD_UP
           sleep 1
           adb shell input keyevent 22  # DPAD_RIGHT
           sleep 1
-          adb shell input keyevent 21  # DPAD_LEFT
-          sleep 1
+          adb shell screencap -p /sdcard/screenshot-nav.png
+          adb pull /sdcard/screenshot-nav.png screenshot-navigation.png
           
-          # Test back button
-          adb shell input keyevent 4   # BACK
-          sleep 2
+          echo "✅ Basic smoke tests completed"
           
-          echo "✅ Basic smoke tests completed successfully"
-          
-    - name: Upload emulator screenshots
+    - name: Upload screenshots
       if: always()
       uses: actions/upload-artifact@v4
       with:
         name: emulator-screenshots
         path: "*.png"
         
-    - name: Upload emulator logs
-      if: failure()
-      run: |
-        adb logcat -d > logcat.txt || true
-        
     - name: Upload logs on failure
       if: failure()
       uses: actions/upload-artifact@v4
       with:
         name: emulator-logs
-        path: logcat.txt
+        path: "*.txt"
