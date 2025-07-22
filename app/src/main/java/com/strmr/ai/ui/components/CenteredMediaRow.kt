@@ -102,20 +102,20 @@ fun <T> CenteredMediaRow(
         }
     }
 
-    Column(modifier = modifier.padding(vertical = 8.dp)) {
+    Column(modifier = modifier.padding(vertical = 1.dp)) {
         // Row title
         Text(
             text = title,
             color = Color.White,
-            modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
+            modifier = Modifier.padding(start = 8.dp, bottom = 0.dp)
         )
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(0.dp))
         
         // Larger container for row and navigation indicators
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(rowHeight + 90.dp) // Extra space for arrows
+                .height(rowHeight + 40.dp) // Extra space for arrows and scaling
         ) {
             // Row content centered in the container
             LazyRow(

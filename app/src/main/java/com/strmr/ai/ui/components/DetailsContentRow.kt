@@ -3,8 +3,6 @@ package com.strmr.ai.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -18,19 +16,24 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.strmr.ai.data.SimilarContent
-import com.strmr.ai.ui.components.CenteredMediaRow
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.border
 
+data class DetailsContentData(
+    val title: String,
+    val posterUrl: String?,
+    val subtitle: String? = null,
+    val rating: String? = null
+)
+
 @Composable
-fun SimilarContentRow(
-    similarContent: List<SimilarContent>,
-    onItemClick: (SimilarContent) -> Unit,
+fun <T : Any> DetailsContentRow(
+    title: String,
+    items: List<T>,
+    onItemClick: (T) -> Unit,
+    contentMapper: (T) -> DetailsContentData,
     modifier: Modifier = Modifier,
     selectedIndex: Int = 0,
     isRowSelected: Boolean = false,
@@ -40,48 +43,45 @@ fun SimilarContentRow(
     isContentFocused: Boolean = false,
     onContentFocusChanged: ((Boolean) -> Unit)? = null
 ) {
-    if (similarContent.isEmpty()) return
+    if (items.isEmpty()) return
     
-    val title = "Similar ${if (similarContent.firstOrNull()?.mediaType == "movie") "Movies" else "TV Shows"}"
-    
-    CenteredMediaRow(
+    CenteredMediaRow<T>(
         title = title,
-        mediaItems = similarContent.take(10),
+        mediaItems = items.take(10),
         selectedIndex = selectedIndex,
         isRowSelected = isRowSelected,
         onSelectionChanged = onSelectionChanged,
         onUpDown = onUpDown,
-        onItemClick = { content -> onItemClick(content as SimilarContent) },
+        onItemClick = onItemClick,
         modifier = modifier,
-        itemWidth = 120.dp,
-        itemSpacing = 16.dp,
+        itemWidth = 90.dp,
+        itemSpacing = 12.dp,
         rowHeight = 200.dp,
         focusRequester = focusRequester,
         isContentFocused = isContentFocused,
-        onContentFocusChanged = onContentFocusChanged,
-        itemContent = { content, isSelected ->
-            SimilarContentCard(
-                content = content as SimilarContent,
-                onClick = { onItemClick(content) },
-                isSelected = isSelected
-            )
-        }
-    )
+        onContentFocusChanged = onContentFocusChanged
+    ) { item, isSelected ->
+        DetailsContentCard(
+            content = contentMapper(item),
+            onClick = { onItemClick(item) },
+            isSelected = isSelected
+        )
+    }
 }
 
 @Composable
-fun SimilarContentCard(
-    content: SimilarContent,
+fun DetailsContentCard(
+    content: DetailsContentData,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     isSelected: Boolean = false
 ) {
     val baseWidth = 120.dp
     val baseHeight = 180.dp
-    val targetWidth = if (isSelected) baseWidth * 1.2f else baseWidth
+    val targetWidth = if (isSelected) baseWidth * 1.1f else baseWidth
     val targetHeight = if (isSelected) baseHeight * 1.1f else baseHeight
-    val animatedWidth by animateDpAsState(targetValue = targetWidth, animationSpec = tween(durationMillis = 200))
-    val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = tween(durationMillis = 200))
+    val animatedWidth by animateDpAsState(targetValue = targetWidth, animationSpec = tween(durationMillis = 10))
+    val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = tween(durationMillis = 10))
 
     Column(
         modifier = modifier
@@ -133,25 +133,27 @@ fun SimilarContentCard(
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
         
-        // Year and rating
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            content.year?.let { year ->
-                Text(
-                    text = year.toString(),
-                    color = Color.Gray,
-                    fontSize = 10.sp
-                )
-            }
-            content.rating?.let { rating ->
-                Text(
-                    text = String.format("%.1f", rating),
-                    color = Color.Gray,
-                    fontSize = 10.sp
-                )
+        // Subtitle and rating
+        if (content.subtitle != null || content.rating != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                content.subtitle?.let { subtitle ->
+                    Text(
+                        text = subtitle,
+                        color = Color.Gray,
+                        fontSize = 10.sp
+                    )
+                }
+                content.rating?.let { rating ->
+                    Text(
+                        text = rating,
+                        color = Color.Gray,
+                        fontSize = 10.sp
+                    )
+                }
             }
         }
     }
-} 
+}

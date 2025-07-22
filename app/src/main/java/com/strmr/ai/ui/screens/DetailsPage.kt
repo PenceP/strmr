@@ -67,9 +67,9 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInParent
 import com.strmr.ai.ui.components.MediaHero
 import com.strmr.ai.ui.components.MediaDetails
-import com.strmr.ai.ui.components.SimilarContentRow
+import com.strmr.ai.ui.components.DetailsContentRow
 import com.strmr.ai.ui.components.CenteredMediaRow
-import com.strmr.ai.ui.components.CollectionRow
+import com.strmr.ai.ui.components.DetailsContentData
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -428,7 +428,7 @@ fun MovieDetailsView(
                         }
                     }
                 }
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(18.dp))
                 // Actors row
                 if (movie.cast.isNotEmpty()) {
                     ActorsRow(
@@ -462,8 +462,18 @@ fun MovieDetailsView(
                 Log.d("MovieDetailsView", "🎬 Current collection: $currentCollection")
                 Log.d("MovieDetailsView", "🎬 Collection parts size: ${currentCollection?.parts?.size}")
                 if (currentCollection != null && currentCollection.parts.size > 1) {
-                    CollectionRow(
-                        collectionMovies = currentCollection.parts,
+                    DetailsContentRow(
+                        title = "Part of Collection",
+                        items = currentCollection.parts,
+                        onItemClick = { /* TODO: handle collection movie click */ },
+                        contentMapper = { movie ->
+                            DetailsContentData(
+                                title = movie.title,
+                                posterUrl = if (!movie.poster_path.isNullOrBlank()) "https://image.tmdb.org/t/p/w500${movie.poster_path}" else null,
+                                subtitle = movie.release_date?.take(4), // Extract year
+                                rating = String.format("%.1f", movie.vote_average)
+                            )
+                        },
                         selectedIndex = collectionSelectedIndex,
                         isRowSelected = isCollectionRowSelected,
                         onSelectionChanged = { collectionSelectedIndex = it },
@@ -478,16 +488,24 @@ fun MovieDetailsView(
                         },
                         focusRequester = collectionFocusRequester,
                         isContentFocused = isCollectionRowSelected,
-                        onContentFocusChanged = { isCollectionRowSelected = it },
-                        onItemClick = { /* TODO: handle collection movie click */ }
+                        onContentFocusChanged = { isCollectionRowSelected = it }
                     )
                 }
                 // Similar content row
                 if (similarContent.isNotEmpty()) {
-                    SimilarContentRow(
-                        similarContent = similarContent,
+                    DetailsContentRow(
+                        title = "Similar ${if (similarContent.firstOrNull()?.mediaType == "movie") "Movies" else "TV Shows"}",
+                        items = similarContent,
                         onItemClick = { content ->
                             onNavigateToSimilar(content.mediaType, content.tmdbId)
+                        },
+                        contentMapper = { content ->
+                            DetailsContentData(
+                                title = content.title,
+                                posterUrl = content.posterUrl,
+                                subtitle = content.year?.toString(),
+                                rating = content.rating?.let { String.format("%.1f", it) }
+                            )
                         },
                         modifier = Modifier.fillMaxWidth(),
                         selectedIndex = similarSelectedIndex,
@@ -533,7 +551,7 @@ private fun HeaderSection(
             .padding(start = 48.dp, end = 48.dp, bottom = 32.dp),
         horizontalAlignment = Alignment.Start
     ) {
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(18.dp))
         // 1. Logo/title
         if (!logoUrl.isNullOrBlank()) {
             AsyncImage(
@@ -1055,7 +1073,7 @@ fun TvShowDetailsView(
                     }
                 }
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(18.dp))
                 // Actors row
                 if (show.cast.isNotEmpty()) {
                     ActorsRow(
@@ -1079,13 +1097,22 @@ fun TvShowDetailsView(
                         onContentFocusChanged = { isActorsRowSelected = it }
                     )
                 }
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(18.dp))
                 // Similar content row
                 if (similarContent.isNotEmpty()) {
-                    SimilarContentRow(
-                        similarContent = similarContent,
+                    DetailsContentRow(
+                        title = "Similar ${if (similarContent.firstOrNull()?.mediaType == "movie") "Movies" else "TV Shows"}",
+                        items = similarContent,
                         onItemClick = { content ->
                             onNavigateToSimilar(content.mediaType, content.tmdbId)
+                        },
+                        contentMapper = { content ->
+                            DetailsContentData(
+                                title = content.title,
+                                posterUrl = content.posterUrl,
+                                subtitle = content.year?.toString(),
+                                rating = content.rating?.let { String.format("%.1f", it) }
+                            )
                         },
                         modifier = Modifier.fillMaxWidth(),
                         selectedIndex = similarSelectedIndex,
@@ -1133,8 +1160,8 @@ fun ActorsRow(
         onSelectionChanged = onSelectionChanged,
         onUpDown = onUpDown,
         modifier = modifier,
-        itemWidth = 120.dp,
-        itemSpacing = 16.dp,
+        itemWidth = 90.dp,
+        itemSpacing = 12.dp,
         rowHeight = 200.dp,
         focusRequester = focusRequester,
         isContentFocused = isContentFocused,
@@ -1153,10 +1180,10 @@ fun ActorCard(
 ) {
     val baseWidth = 120.dp
     val baseHeight = 180.dp
-    val targetWidth = if (isSelected) baseWidth * 1.2f else baseWidth
+    val targetWidth = if (isSelected) baseWidth * 1.1f else baseWidth
     val targetHeight = if (isSelected) baseHeight * 1.1f else baseHeight
-    val animatedWidth by animateDpAsState(targetValue = targetWidth, animationSpec = tween(durationMillis = 200))
-    val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = tween(durationMillis = 200))
+    val animatedWidth by animateDpAsState(targetValue = targetWidth, animationSpec = tween(durationMillis = 10))
+    val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = tween(durationMillis = 10))
 
     Column(
         modifier = modifier
