@@ -355,8 +355,8 @@
 
 #### Phase 4: UI Integration for Stream Selection
 - [ ] **MediaDetails Page Stream Integration**
-    - [ ] Add "Watch Now" button to MediaDetails page
-    - [ ] Create stream selection dialog/page showing available options
+    - [ ] Link "Play" button in MediaDetails page
+    - [ ] Create stream selection page showing available options
     - [ ] Display stream information: quality, file size, provider, seeds/peers
     - [ ] Implement stream quality badges and provider icons
     - [ ] Add fallback messaging when no streams are available
@@ -420,3 +420,7 @@
 - Ensure all debrid service API keys are stored securely and never logged
 - Plan for legal compliance and appropriate content warnings
 - Design with scalability in mind for adding more scraper services in the future
+
+
+### 21. Update Continue Watching Logig
+- [ ] Do not show episode in row if episode is not yet released 

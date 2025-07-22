@@ -81,13 +81,7 @@ jobs:
           adb pull /sdcard/screenshot.png screenshot-launch.png
           
           # Check if app is running
-          if adb shell ps | grep -q com.strmr.ai; then
-            echo "✅ App is running successfully"
-          else
-            echo "❌ App failed to start"
-            adb logcat -d > logcat-failure.txt
-            exit 1
-          fi
+          adb shell ps | grep -q com.strmr.ai && echo "✅ App is running successfully" || (echo "❌ App failed to start"; adb logcat -d > logcat-failure.txt; exit 1)
           
           # Test DPAD navigation
           echo "Testing DPAD navigation..."
