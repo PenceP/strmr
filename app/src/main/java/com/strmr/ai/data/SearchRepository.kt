@@ -3,6 +3,7 @@ package com.strmr.ai.data
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import com.strmr.ai.ui.theme.StrmrConstants
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -62,7 +63,7 @@ class SearchRepository @Inject constructor(
     
     private suspend fun searchTraktMovies(query: String): List<TraktSearchResult> {
         return try {
-            traktApiService.searchMovies(query, limit = 10)
+            traktApiService.searchMovies(query, limit = StrmrConstants.Api.SEARCH_LIMIT)
         } catch (e: Exception) {
             Log.w("SearchRepository", "Trakt movie search failed: ${e.message}")
             emptyList()
@@ -71,7 +72,7 @@ class SearchRepository @Inject constructor(
     
     private suspend fun searchTraktShows(query: String): List<TraktSearchResult> {
         return try {
-            traktApiService.searchTvShows(query, limit = 10)
+            traktApiService.searchTvShows(query, limit = StrmrConstants.Api.SEARCH_LIMIT)
         } catch (e: Exception) {
             Log.w("SearchRepository", "Trakt show search failed: ${e.message}")
             emptyList()
@@ -80,7 +81,7 @@ class SearchRepository @Inject constructor(
     
     private suspend fun searchTraktPeople(query: String): List<TraktSearchResult> {
         return try {
-            traktApiService.searchPeople(query, limit = 10)
+            traktApiService.searchPeople(query, limit = StrmrConstants.Api.SEARCH_LIMIT)
         } catch (e: Exception) {
             Log.w("SearchRepository", "Trakt people search failed: ${e.message}")
             emptyList()

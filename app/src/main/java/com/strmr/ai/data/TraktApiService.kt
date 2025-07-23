@@ -1,6 +1,7 @@
 package com.strmr.ai.data
 
 import com.strmr.ai.BuildConfig
+import com.strmr.ai.ui.theme.StrmrConstants
 import retrofit2.http.GET
 import retrofit2.http.Headers
 import retrofit2.http.Path
@@ -14,28 +15,28 @@ interface TraktApiService {
     @GET("movies/trending")
     suspend fun getTrendingMovies(
         @Query("page") page: Int = 1,
-        @Query("limit") limit: Int = 50
+        @Query("limit") limit: Int = StrmrConstants.Api.LARGE_PAGE_SIZE
     ): List<TrendingMovie>
 
     @Headers("Content-Type: application/json")
     @GET("shows/trending")
     suspend fun getTrendingTvShows(
         @Query("page") page: Int = 1,
-        @Query("limit") limit: Int = 50
+        @Query("limit") limit: Int = StrmrConstants.Api.LARGE_PAGE_SIZE
     ): List<TrendingShow>
 
     @Headers("Content-Type: application/json")
     @GET("shows/popular")
     suspend fun getPopularTvShows(
         @Query("page") page: Int = 1,
-        @Query("limit") limit: Int = 50
+        @Query("limit") limit: Int = StrmrConstants.Api.LARGE_PAGE_SIZE
     ): List<Show>
 
     @Headers("Content-Type: application/json")
     @GET("movies/popular")
     suspend fun getPopularMovies(
         @Query("page") page: Int = 1,
-        @Query("limit") limit: Int = 50
+        @Query("limit") limit: Int = StrmrConstants.Api.LARGE_PAGE_SIZE
     ): List<Movie>
 
     @Headers("Content-Type: application/json")
@@ -58,7 +59,7 @@ interface TraktApiService {
     @GET("sync/history")
     suspend fun getHistory(
         @Header("Authorization") token: String,
-        @Query("limit") limit: Int = 50
+        @Query("limit") limit: Int = StrmrConstants.Api.LARGE_PAGE_SIZE
     ): List<WatchedHistoryItem>
 
     @Headers("Content-Type: application/json")
@@ -89,21 +90,21 @@ interface TraktApiService {
     @GET("search/movie")
     suspend fun searchMovies(
         @Query("query") query: String,
-        @Query("limit") limit: Int = 20
+        @Query("limit") limit: Int = StrmrConstants.Api.DEFAULT_PAGE_SIZE
     ): List<TraktSearchResult>
 
     @Headers("Content-Type: application/json")
     @GET("search/show")
     suspend fun searchTvShows(
         @Query("query") query: String,
-        @Query("limit") limit: Int = 20
+        @Query("limit") limit: Int = StrmrConstants.Api.DEFAULT_PAGE_SIZE
     ): List<TraktSearchResult>
 
     @Headers("Content-Type: application/json")
     @GET("search/person")
     suspend fun searchPeople(
         @Query("query") query: String,
-        @Query("limit") limit: Int = 20
+        @Query("limit") limit: Int = StrmrConstants.Api.DEFAULT_PAGE_SIZE
     ): List<TraktSearchResult>
 
     @Headers("Content-Type: application/json")

@@ -3,6 +3,7 @@ package com.strmr.ai.domain.usecase
 import android.util.Log
 import com.strmr.ai.data.TmdbApiService
 import com.strmr.ai.data.TmdbImagesResponse
+import com.strmr.ai.ui.theme.StrmrConstants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -61,7 +62,7 @@ class FetchLogoUseCase @Inject constructor(
         val selectedLogo = images.logos.firstOrNull { it.iso_639_1 == "en" && !it.file_path.isNullOrBlank() }
             ?: images.logos.firstOrNull { !it.file_path.isNullOrBlank() }
         
-        val logoUrl = selectedLogo?.file_path?.let { "https://image.tmdb.org/t/p/original$it" }
+        val logoUrl = selectedLogo?.file_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_ORIGINAL + it }
         
         //Log.d("FetchLogoUseCase", "✅ Selected logo: iso=${selectedLogo?.iso_639_1}, path=${selectedLogo?.file_path}")
         Log.d("FetchLogoUseCase", "✅ Final logo URL: $logoUrl")

@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.strmr.ai.data.models.*
+import com.strmr.ai.ui.theme.StrmrConstants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -21,10 +22,6 @@ class ScraperRepository @Inject constructor(
 ) {
     companion object {
         private const val TAG = "ScraperRepository"
-        private const val PREFS_NAME = "scraper_encrypted_prefs"
-        private const val KEY_PREMIUMIZE_API_KEY = "premiumize_api_key"
-        private const val KEY_PREFERRED_SCRAPER = "preferred_scraper"
-        private const val KEY_QUALITY_PREFERENCE = "quality_preference"
     }
     
     private val masterKey = MasterKey.Builder(context)
@@ -33,7 +30,7 @@ class ScraperRepository @Inject constructor(
     
     private val encryptedPrefs = EncryptedSharedPreferences.create(
         context,
-        PREFS_NAME,
+        StrmrConstants.Preferences.PREFS_NAME,
         masterKey,
         EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
         EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
@@ -41,15 +38,15 @@ class ScraperRepository @Inject constructor(
     
     // Premiumize API Key Management
     fun savePremiumizeApiKey(apiKey: String) {
-        encryptedPrefs.edit().putString(KEY_PREMIUMIZE_API_KEY, apiKey).apply()
+        encryptedPrefs.edit().putString(StrmrConstants.Preferences.KEY_PREMIUMIZE_API_KEY, apiKey).apply()
     }
     
     fun getPremiumizeApiKey(): String? {
-        return encryptedPrefs.getString(KEY_PREMIUMIZE_API_KEY, null)
+        return encryptedPrefs.getString(StrmrConstants.Preferences.KEY_PREMIUMIZE_API_KEY, null)
     }
     
     fun clearPremiumizeApiKey() {
-        encryptedPrefs.edit().remove(KEY_PREMIUMIZE_API_KEY).apply()
+        encryptedPrefs.edit().remove(StrmrConstants.Preferences.KEY_PREMIUMIZE_API_KEY).apply()
     }
     
     fun isPremiumizeConfigured(): Boolean {
@@ -76,7 +73,7 @@ class ScraperRepository @Inject constructor(
     ): List<Stream> = withContext(Dispatchers.IO) {
         try {
             val apiKey = getPremiumizeApiKey()
-            val preferredScraper = encryptedPrefs.getString(KEY_PREFERRED_SCRAPER, "torrentio") ?: "torrentio"
+            val preferredScraper = encryptedPrefs.getString(StrmrConstants.Preferences.KEY_PREFERRED_SCRAPER, StrmrConstants.Defaults.PREFERRED_SCRAPER) ?: StrmrConstants.Defaults.PREFERRED_SCRAPER
             
             // Build the ID string for the scraper
             val scraperId = when (type) {
@@ -95,7 +92,7 @@ class ScraperRepository @Inject constructor(
             
             // Try primary scraper first
             val streams = when (preferredScraper) {
-                "torrentio" -> fetchTorrentioStreams(scraperId, type, apiKey)
+                StrmrConstants.Defaults.PREFERRED_SCRAPER -> fetchTorrentioStreams(scraperId, type, apiKey)
                 "comet" -> fetchCometStreams(scraperId, type, apiKey)
                 else -> fetchTorrentioStreams(scraperId, type, apiKey)
             }
@@ -107,7 +104,7 @@ class ScraperRepository @Inject constructor(
                 // Fallback to secondary scraper
                 Log.d(TAG, "⚠️ Primary scraper returned no results, trying fallback")
                 val fallbackStreams = when (preferredScraper) {
-                    "torrentio" -> fetchCometStreams(scraperId, type, apiKey)
+                    StrmrConstants.Defaults.PREFERRED_SCRAPER -> fetchCometStreams(scraperId, type, apiKey)
                     else -> fetchTorrentioStreams(scraperId, type, apiKey)
                 }
                 Log.d(TAG, "📺 Fallback scraper found ${fallbackStreams.size} streams")
@@ -127,7 +124,7 @@ class ScraperRepository @Inject constructor(
         episode: Int? = null
     ): Flow<List<Stream>> = flow {
         val apiKey = getPremiumizeApiKey()
-        val preferredScraper = encryptedPrefs.getString(KEY_PREFERRED_SCRAPER, "torrentio") ?: "torrentio"
+        val preferredScraper = encryptedPrefs.getString(StrmrConstants.Preferences.KEY_PREFERRED_SCRAPER, StrmrConstants.Defaults.PREFERRED_SCRAPER) ?: StrmrConstants.Defaults.PREFERRED_SCRAPER
         
         // Build the ID string for the scraper
         val scraperId = when (mediaType) {
@@ -381,14 +378,14 @@ class ScraperRepository @Inject constructor(
     
     // User Preferences
     fun setPreferredScraper(scraper: String) {
-        encryptedPrefs.edit().putString(KEY_PREFERRED_SCRAPER, scraper).apply()
+        encryptedPrefs.edit().putString(StrmrConstants.Preferences.KEY_PREFERRED_SCRAPER, scraper).apply()
     }
     
     fun setQualityPreference(quality: String) {
-        encryptedPrefs.edit().putString(KEY_QUALITY_PREFERENCE, quality).apply()
+        encryptedPrefs.edit().putString(StrmrConstants.Preferences.KEY_QUALITY_PREFERENCE, quality).apply()
     }
     
     fun getQualityPreference(): String {
-        return encryptedPrefs.getString(KEY_QUALITY_PREFERENCE, "1080p") ?: "1080p"
+        return encryptedPrefs.getString(StrmrConstants.Preferences.KEY_QUALITY_PREFERENCE, StrmrConstants.Defaults.QUALITY_PREFERENCE) ?: StrmrConstants.Defaults.QUALITY_PREFERENCE
     }
 }

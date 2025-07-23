@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ButtonDefaults
 import com.strmr.ai.ui.theme.Purple40
+import com.strmr.ai.ui.theme.StrmrConstants
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -233,7 +234,7 @@ fun MovieDetailsView(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(StrmrConstants.Colors.BACKGROUND_DARK)
 
     ) {
         // Backdrop
@@ -243,9 +244,9 @@ fun MovieDetailsView(
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
-                    .blur(radius = 8.dp),
+                    .blur(radius = StrmrConstants.Blur.RADIUS_STANDARD),
                 contentScale = ContentScale.Crop,
-                alpha = 0.4f
+                alpha = StrmrConstants.Colors.Alpha.LIGHT
             )
         }
         Column(
@@ -256,7 +257,7 @@ fun MovieDetailsView(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(0.5f)
-                    .padding(start = 48.dp)
+                    .padding(start = StrmrConstants.Dimensions.Icons.EXTRA_LARGE)
             ) {
                 Column(
                     modifier = Modifier.fillMaxSize(),
@@ -287,26 +288,26 @@ fun MovieDetailsView(
                     .fillMaxWidth()
                     .weight(0.5f)
                     .verticalScroll(scrollState)
-                    .padding(horizontal = 48.dp, vertical = 32.dp)
+                    .padding(horizontal = StrmrConstants.Dimensions.Icons.EXTRA_LARGE, vertical = StrmrConstants.Dimensions.SPACING_SECTION)
             ) {
                 // Buttons row
                 Box(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier
                         .fillMaxWidth(0.4f)
                         .align(Alignment.CenterStart)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(StrmrConstants.Dimensions.SPACING_STANDARD)) {
                             val playButtonInteractionSource = remember { MutableInteractionSource() }
                             val playButtonIsFocused by playButtonInteractionSource.collectIsFocusedAsState()
                             FrostedGlassButton(
                                 onClick = { onPlay(null, null) },
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(48.dp)
+                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
                                     .focusRequester(playButtonFocusRequester),
                                 interactionSource = playButtonInteractionSource,
                                 isFocused = playButtonIsFocused,
                                 text = "Play",
-                                textColor = Color.White
+                                textColor = StrmrConstants.Colors.TEXT_PRIMARY
                             )
                             val trailerButtonInteractionSource = remember { MutableInteractionSource() }
                             val trailerButtonIsFocused by trailerButtonInteractionSource.collectIsFocusedAsState()
@@ -325,22 +326,22 @@ fun MovieDetailsView(
                                 },
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(48.dp),
+                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT),
                                 interactionSource = trailerButtonInteractionSource,
                                 isFocused = trailerButtonIsFocused,
                                 text = "Trailer",
-                                textColor = Color.White
+                                textColor = StrmrConstants.Colors.TEXT_PRIMARY
                             )
                         }
-                        Spacer(Modifier.height(12.dp))
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Spacer(Modifier.height(StrmrConstants.Dimensions.SPACING_MEDIUM))
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(StrmrConstants.Dimensions.SPACING_STANDARD)) {
                             val collectionButtonInteractionSource = remember { MutableInteractionSource() }
                             val collectionButtonIsFocused by collectionButtonInteractionSource.collectIsFocusedAsState()
                             FrostedGlassButton(
                                 onClick = onAddToCollection,
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(48.dp)
+                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
                                     .onKeyEvent { event ->
                                         if (
                                             event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
@@ -354,13 +355,13 @@ fun MovieDetailsView(
                                 interactionSource = collectionButtonInteractionSource,
                                 isFocused = collectionButtonIsFocused,
                                 text = "",
-                                textColor = Color.White,
+                                textColor = StrmrConstants.Colors.TEXT_PRIMARY,
                                 hasCustomContent = true
                             ) {
                                 Icon(
                                     Icons.Filled.Bookmark, 
                                     contentDescription = "Collection", 
-                                    tint = if (collectionButtonIsFocused) Color.Black else Color.White
+                                    tint = if (collectionButtonIsFocused) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY
                                 )
                             }
                             val watchlistButtonInteractionSource = remember { MutableInteractionSource() }
@@ -369,7 +370,7 @@ fun MovieDetailsView(
                                 onClick = { /* TODO: Watchlist */ },
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(48.dp)
+                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
                                     .onKeyEvent { event ->
                                         if (
                                             event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
@@ -383,13 +384,13 @@ fun MovieDetailsView(
                                 interactionSource = watchlistButtonInteractionSource,
                                 isFocused = watchlistButtonIsFocused,
                                 text = "",
-                                textColor = Color.White,
+                                textColor = StrmrConstants.Colors.TEXT_PRIMARY,
                                 hasCustomContent = true
                             ) {
                                 Icon(
                                     Icons.Filled.Queue, 
                                     contentDescription = "Watchlist", 
-                                    tint = if (watchlistButtonIsFocused) Color.Black else Color.White
+                                    tint = if (watchlistButtonIsFocused) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY
                                 )
                             }
                             // --- New Watched/Unwatched Button ---
@@ -399,7 +400,7 @@ fun MovieDetailsView(
                                 onClick = { /* TODO: Watched/Unwatched */ },
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(48.dp)
+                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
                                     .onKeyEvent { event ->
                                         if (
                                             event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
@@ -413,13 +414,13 @@ fun MovieDetailsView(
                                 interactionSource = watchedButtonInteractionSource,
                                 isFocused = watchedButtonIsFocused,
                                 text = "",
-                                textColor = Color.White,
+                                textColor = StrmrConstants.Colors.TEXT_PRIMARY,
                                 hasCustomContent = true
                             ) {
                                 Icon(
                                     Icons.Filled.Visibility,
                                     contentDescription = "Watched/Unwatched",
-                                    tint = if (watchedButtonIsFocused) Color.Black else Color.White
+                                    tint = if (watchedButtonIsFocused) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY
                                 )
                             }
                             // --- End New Button ---
@@ -429,7 +430,7 @@ fun MovieDetailsView(
                                 onClick = { /* TODO: More */ },
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(48.dp)
+                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
                                     .onKeyEvent { event ->
                                         if (
                                             event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
@@ -443,12 +444,12 @@ fun MovieDetailsView(
                                 interactionSource = moreButtonInteractionSource,
                                 isFocused = moreButtonIsFocused,
                                 text = "...",
-                                textColor = Color.White
+                                textColor = StrmrConstants.Colors.TEXT_PRIMARY
                             )
                         }
                     }
                 }
-                Spacer(Modifier.height(18.dp))
+                Spacer(Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
                 // Actors row
                 if (movie.cast.isNotEmpty()) {
                     ActorsRow(
@@ -568,23 +569,23 @@ private fun HeaderSection(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 48.dp, end = 48.dp, bottom = 32.dp),
+            .padding(start = StrmrConstants.Dimensions.Icons.EXTRA_LARGE, end = StrmrConstants.Dimensions.Icons.EXTRA_LARGE, bottom = StrmrConstants.Dimensions.SPACING_SECTION),
         horizontalAlignment = Alignment.Start
     ) {
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
         // 1. Logo/title
         if (!logoUrl.isNullOrBlank()) {
             AsyncImage(
                 model = logoUrl,
                 contentDescription = movie.title,
                 modifier = Modifier
-                    .height(72.dp)
-                    .padding(bottom = 16.dp)
+                    .height(StrmrConstants.Dimensions.Icons.HUGE)
+                    .padding(bottom = StrmrConstants.Dimensions.SPACING_STANDARD)
             )
         } else {
             Text(
                 text = movie.title,
-                color = Color.White,
+                color = StrmrConstants.Colors.TEXT_PRIMARY,
                 fontSize = 48.sp,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
@@ -593,47 +594,47 @@ private fun HeaderSection(
         // 2. Plot/description
         Text(
             text = movie.overview ?: "",
-            color = Color.White,
+            color = StrmrConstants.Colors.TEXT_PRIMARY,
             fontSize = 16.sp,
             maxLines = 4,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(bottom = 12.dp)
+            modifier = Modifier.padding(bottom = StrmrConstants.Dimensions.SPACING_MEDIUM)
         )
         
         // Info row (runtime, date, genres)
-        Row(modifier = Modifier.padding(bottom = 16.dp)) {
-            Text("${movie.runtime ?: ""} min", color = Color.Gray, fontSize = 16.sp)
-            Spacer(Modifier.width(16.dp))
-            Text(DateFormatter.formatMovieDate(movie.releaseDate) ?: "${movie.year}", color = Color.Gray, fontSize = 16.sp)
-            Spacer(Modifier.width(16.dp))
-            Text(movie.genres?.joinToString() ?: "", color = Color.Gray, fontSize = 16.sp)
+        Row(modifier = Modifier.padding(bottom = StrmrConstants.Dimensions.SPACING_STANDARD)) {
+            Text("${movie.runtime ?: ""} min", color = StrmrConstants.Colors.TEXT_SECONDARY, fontSize = 16.sp)
+            Spacer(Modifier.width(StrmrConstants.Dimensions.SPACING_STANDARD))
+            Text(DateFormatter.formatMovieDate(movie.releaseDate) ?: "${movie.year}", color = StrmrConstants.Colors.TEXT_SECONDARY, fontSize = 16.sp)
+            Spacer(Modifier.width(StrmrConstants.Dimensions.SPACING_STANDARD))
+            Text(movie.genres?.joinToString() ?: "", color = StrmrConstants.Colors.TEXT_SECONDARY, fontSize = 16.sp)
         }
         
         // 3. Ratings row
         val rt = omdbRatings?.Ratings?.find { it.Source == "Rotten Tomatoes" }?.Value
         val meta = omdbRatings?.Metascore?.takeIf { !it.isNullOrBlank() && it != "N/A" }
-        Row(modifier = Modifier.padding(bottom = 16.dp)) {
+        Row(modifier = Modifier.padding(bottom = StrmrConstants.Dimensions.SPACING_STANDARD)) {
             if (omdbRatings?.imdbRating != null) {
-                Image(painter = painterResource(id = R.drawable.imdb_logo), contentDescription = "IMDb", modifier = Modifier.size(32.dp))
-                Spacer(Modifier.width(4.dp))
-                Text(omdbRatings?.imdbRating ?: "-", color = Color.White, fontSize = 18.sp)
-                Spacer(Modifier.width(16.dp))
+                Image(painter = painterResource(id = R.drawable.imdb_logo), contentDescription = "IMDb", modifier = Modifier.size(StrmrConstants.Dimensions.Icons.LARGE))
+                Spacer(Modifier.width(StrmrConstants.Dimensions.SPACING_TINY))
+                Text(omdbRatings?.imdbRating ?: "-", color = StrmrConstants.Colors.TEXT_PRIMARY, fontSize = 18.sp)
+                Spacer(Modifier.width(StrmrConstants.Dimensions.SPACING_STANDARD))
             }
             if (!meta.isNullOrBlank()) {
-                Image(painter = painterResource(id = R.drawable.metacritic_logo), contentDescription = "Metacritic", modifier = Modifier.size(32.dp))
-                Spacer(Modifier.width(4.dp))
-                Text("$meta%", color = Color.White, fontSize = 18.sp)
-                Spacer(Modifier.width(16.dp))
+                Image(painter = painterResource(id = R.drawable.metacritic_logo), contentDescription = "Metacritic", modifier = Modifier.size(StrmrConstants.Dimensions.Icons.LARGE))
+                Spacer(Modifier.width(StrmrConstants.Dimensions.SPACING_TINY))
+                Text("$meta%", color = StrmrConstants.Colors.TEXT_PRIMARY, fontSize = 18.sp)
+                Spacer(Modifier.width(StrmrConstants.Dimensions.SPACING_STANDARD))
             }
             if (!rt.isNullOrBlank()) {
-                Image(painter = painterResource(id = R.drawable.rotten_tomatoes), contentDescription = "Rotten Tomatoes", modifier = Modifier.size(32.dp))
-                Spacer(Modifier.width(4.dp))
-                Text(rt, color = Color.White, fontSize = 18.sp)
-                Spacer(Modifier.width(16.dp))
+                Image(painter = painterResource(id = R.drawable.rotten_tomatoes), contentDescription = "Rotten Tomatoes", modifier = Modifier.size(StrmrConstants.Dimensions.Icons.LARGE))
+                Spacer(Modifier.width(StrmrConstants.Dimensions.SPACING_TINY))
+                Text(rt, color = StrmrConstants.Colors.TEXT_PRIMARY, fontSize = 18.sp)
+                Spacer(Modifier.width(StrmrConstants.Dimensions.SPACING_STANDARD))
             }
-            Image(painter = painterResource(id = R.drawable.trakt1), contentDescription = "Trakt", modifier = Modifier.size(32.dp))
+            Image(painter = painterResource(id = R.drawable.trakt1), contentDescription = "Trakt", modifier = Modifier.size(StrmrConstants.Dimensions.Icons.LARGE))
             Spacer(Modifier.width(4.dp))
-            Text(movie.rating?.let { String.format("%.1f", it) } ?: "-", color = Color.White, fontSize = 18.sp)
+            Text(movie.rating?.let { String.format("%.1f", it) } ?: "-", color = StrmrConstants.Colors.TEXT_PRIMARY, fontSize = 18.sp)
         }
         
         // 4. Buttons (max width 40% of screen)
@@ -653,7 +654,7 @@ private fun HeaderSection(
                         interactionSource = playButtonInteractionSource,
                         isFocused = playButtonIsFocused,
                         text = "Play",
-                        textColor = Color.Black.copy(alpha = 0.87f)
+                        textColor = StrmrConstants.Colors.BACKGROUND_DARK.copy(alpha = StrmrConstants.Colors.Alpha.HEAVY)
                     )
                     val trailerButtonInteractionSource = remember { MutableInteractionSource() }
                     val trailerButtonIsFocused by trailerButtonInteractionSource.collectIsFocusedAsState()
@@ -665,7 +666,7 @@ private fun HeaderSection(
                         interactionSource = trailerButtonInteractionSource,
                         isFocused = trailerButtonIsFocused,
                         text = "Trailer",
-                        textColor = Color.Black.copy(alpha = 0.87f)
+                        textColor = StrmrConstants.Colors.BACKGROUND_DARK.copy(alpha = StrmrConstants.Colors.Alpha.HEAVY)
                     )
                 }
                 Spacer(Modifier.height(12.dp))
@@ -680,7 +681,7 @@ private fun HeaderSection(
                         interactionSource = collectionButtonInteractionSource,
                         isFocused = collectionButtonIsFocused,
                         text = "Collection",
-                        textColor = Color.Black.copy(alpha = 0.87f)
+                        textColor = StrmrConstants.Colors.BACKGROUND_DARK.copy(alpha = StrmrConstants.Colors.Alpha.HEAVY)
                     ) {
                         Row(
                             horizontalArrangement = Arrangement.Center,
@@ -689,7 +690,7 @@ private fun HeaderSection(
                             Icon(
                                 Icons.Filled.Bookmark, 
                                 contentDescription = "Collection", 
-                                tint = if (collectionButtonIsFocused) Color.Black else Color.White
+                                tint = if (collectionButtonIsFocused) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY
                             )
                             //Spacer(Modifier.width(8.dp))
                             //Text(
@@ -710,7 +711,7 @@ private fun HeaderSection(
                         interactionSource = watchlistButtonInteractionSource,
                         isFocused = watchlistButtonIsFocused,
                         text = "Watchlist",
-                        textColor = Color.Black.copy(alpha = 0.87f)
+                        textColor = StrmrConstants.Colors.BACKGROUND_DARK.copy(alpha = StrmrConstants.Colors.Alpha.HEAVY)
                     ) {
                         Row(
                             horizontalArrangement = Arrangement.Center,
@@ -719,7 +720,7 @@ private fun HeaderSection(
                             Icon(
                                 Icons.Filled.Queue, 
                                 contentDescription = "Watchlist", 
-                                tint = if (watchlistButtonIsFocused) Color.Black else Color.White
+                                tint = if (watchlistButtonIsFocused) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY
                             )
                            //Spacer(Modifier.width(8.dp))
                            //Text(
@@ -740,7 +741,7 @@ private fun HeaderSection(
                         interactionSource = moreButtonInteractionSource,
                         isFocused = moreButtonIsFocused,
                         text = "...",
-                        textColor = Color.Black.copy(alpha = 0.87f)
+                        textColor = StrmrConstants.Colors.BACKGROUND_DARK.copy(alpha = StrmrConstants.Colors.Alpha.HEAVY)
                     )
                 }
             }
@@ -899,7 +900,7 @@ fun TvShowDetailsView(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(StrmrConstants.Colors.BACKGROUND_DARK)
     ) {
         // Backdrop
         show.backdropUrl?.let {
@@ -908,9 +909,9 @@ fun TvShowDetailsView(
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
-                    .blur(radius = 8.dp),
+                    .blur(radius = StrmrConstants.Blur.RADIUS_STANDARD),
                 contentScale = ContentScale.Crop,
-                alpha = 0.4f
+                alpha = StrmrConstants.Colors.Alpha.LIGHT
             )
         }
         Column(
@@ -921,7 +922,7 @@ fun TvShowDetailsView(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(0.5f)
-                    .padding(start = 48.dp)
+                    .padding(start = StrmrConstants.Dimensions.Icons.EXTRA_LARGE)
             ) {
                 Column(
                     modifier = Modifier.fillMaxSize(),
@@ -953,14 +954,14 @@ fun TvShowDetailsView(
                     .fillMaxWidth()
                     .weight(0.5f)
                     .verticalScroll(scrollState)
-                    .padding(horizontal = 48.dp, vertical = 32.dp)
+                    .padding(horizontal = StrmrConstants.Dimensions.Icons.EXTRA_LARGE, vertical = StrmrConstants.Dimensions.SPACING_SECTION)
             ) {
                 // Buttons row
                 Box(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier
                         .fillMaxWidth(0.4f)
                         .align(Alignment.CenterStart)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(StrmrConstants.Dimensions.SPACING_STANDARD)) {
                             val playButtonInteractionSource = remember { MutableInteractionSource() }
                             val playButtonIsFocused by playButtonInteractionSource.collectIsFocusedAsState()
                             val episodeNumber = selectedEpisode?.episodeNumber
@@ -970,12 +971,12 @@ fun TvShowDetailsView(
                                 onClick = { onPlay(selectedSeason, episodeNumber) },
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(48.dp)
+                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
                                     .focusRequester(playButtonFocusRequester),
                                 interactionSource = playButtonInteractionSource,
                                 isFocused = playButtonIsFocused,
                                 text = playButtonText,
-                                textColor = Color.White
+                                textColor = StrmrConstants.Colors.TEXT_PRIMARY
                             )
                             val trailerButtonInteractionSource = remember { MutableInteractionSource() }
                             val trailerButtonIsFocused by trailerButtonInteractionSource.collectIsFocusedAsState()
@@ -994,11 +995,11 @@ fun TvShowDetailsView(
                                 },
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(48.dp),
+                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT),
                                 interactionSource = trailerButtonInteractionSource,
                                 isFocused = trailerButtonIsFocused,
                                 text = "Trailer",
-                                textColor = Color.White
+                                textColor = StrmrConstants.Colors.TEXT_PRIMARY
                             )
                             val moreEpisodesButtonInteractionSource = remember { MutableInteractionSource() }
                             val moreEpisodesButtonIsFocused by moreEpisodesButtonInteractionSource.collectIsFocusedAsState()
@@ -1006,22 +1007,22 @@ fun TvShowDetailsView(
                                 onClick = onMoreEpisodes,
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(48.dp),
+                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT),
                                 interactionSource = moreEpisodesButtonInteractionSource,
                                 isFocused = moreEpisodesButtonIsFocused,
                                 text = "More Episodes",
-                                textColor = Color.White
+                                textColor = StrmrConstants.Colors.TEXT_PRIMARY
                             )
                         }
-                        Spacer(Modifier.height(12.dp))
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Spacer(Modifier.height(StrmrConstants.Dimensions.SPACING_MEDIUM))
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(StrmrConstants.Dimensions.SPACING_STANDARD)) {
                             val collectionButtonInteractionSource = remember { MutableInteractionSource() }
                             val collectionButtonIsFocused by collectionButtonInteractionSource.collectIsFocusedAsState()
                             FrostedGlassButton(
                                 onClick = onAddToCollection,
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(48.dp)
+                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
                                     .onKeyEvent { event ->
                                         if (
                                             event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
@@ -1035,13 +1036,13 @@ fun TvShowDetailsView(
                                 interactionSource = collectionButtonInteractionSource,
                                 isFocused = collectionButtonIsFocused,
                                 text = "",
-                                textColor = Color.White,
+                                textColor = StrmrConstants.Colors.TEXT_PRIMARY,
                                 hasCustomContent = true
                             ) {
                                 Icon(
                                     Icons.Filled.Bookmark, 
                                     contentDescription = "Collection", 
-                                    tint = if (collectionButtonIsFocused) Color.Black else Color.White
+                                    tint = if (collectionButtonIsFocused) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY
                                 )
                             }
                             val watchlistButtonInteractionSource = remember { MutableInteractionSource() }
@@ -1050,7 +1051,7 @@ fun TvShowDetailsView(
                                 onClick = { /* TODO: Watchlist */ },
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(48.dp)
+                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
                                     .onKeyEvent { event ->
                                         if (
                                             event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
@@ -1064,13 +1065,13 @@ fun TvShowDetailsView(
                                 interactionSource = watchlistButtonInteractionSource,
                                 isFocused = watchlistButtonIsFocused,
                                 text = "",
-                                textColor = Color.White,
+                                textColor = StrmrConstants.Colors.TEXT_PRIMARY,
                                 hasCustomContent = true
                             ) {
                                 Icon(
                                     Icons.Filled.Queue, 
                                     contentDescription = "Watchlist", 
-                                    tint = if (watchlistButtonIsFocused) Color.Black else Color.White
+                                    tint = if (watchlistButtonIsFocused) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY
                                 )
                             }
                             // --- New Watched/Unwatched Button ---
@@ -1080,7 +1081,7 @@ fun TvShowDetailsView(
                                 onClick = { /* TODO: Watched/Unwatched */ },
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(48.dp)
+                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
                                     .onKeyEvent { event ->
                                         if (
                                             event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
@@ -1094,13 +1095,13 @@ fun TvShowDetailsView(
                                 interactionSource = watchedButtonInteractionSource,
                                 isFocused = watchedButtonIsFocused,
                                 text = "",
-                                textColor = Color.White,
+                                textColor = StrmrConstants.Colors.TEXT_PRIMARY,
                                 hasCustomContent = true
                             ) {
                                 Icon(
                                     Icons.Filled.Visibility,
                                     contentDescription = "Watched/Unwatched",
-                                    tint = if (watchedButtonIsFocused) Color.Black else Color.White
+                                    tint = if (watchedButtonIsFocused) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY
                                 )
                             }
                             // --- End New Button ---
@@ -1110,7 +1111,7 @@ fun TvShowDetailsView(
                                 onClick = { /* TODO: More */ },
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(48.dp)
+                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
                                     .onKeyEvent { event ->
                                         if (
                                             event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
@@ -1124,13 +1125,13 @@ fun TvShowDetailsView(
                                 interactionSource = moreButtonInteractionSource,
                                 isFocused = moreButtonIsFocused,
                                 text = "...",
-                                textColor = Color.White
+                                textColor = StrmrConstants.Colors.TEXT_PRIMARY
                             )
                         }
                     }
                 }
 
-                Spacer(Modifier.height(18.dp))
+                Spacer(Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
                 // Actors row
                 if (show.cast.isNotEmpty()) {
                     ActorsRow(
@@ -1154,7 +1155,7 @@ fun TvShowDetailsView(
                         onContentFocusChanged = { isActorsRowSelected = it }
                     )
                 }
-                Spacer(Modifier.height(18.dp))
+                Spacer(Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
                 // Similar content row
                 if (similarContent.isNotEmpty()) {
                     DetailsContentRow(
@@ -1217,9 +1218,9 @@ fun ActorsRow(
         onSelectionChanged = onSelectionChanged,
         onUpDown = onUpDown,
         modifier = modifier,
-        itemWidth = 90.dp,
-        itemSpacing = 12.dp,
-        rowHeight = 200.dp,
+        itemWidth = 90.dp, // Keep as 90.dp since it's specific for actors
+        itemSpacing = StrmrConstants.Dimensions.SPACING_MEDIUM,
+        rowHeight = StrmrConstants.Dimensions.Cards.MEDIUM_HEIGHT,
         focusRequester = focusRequester,
         isContentFocused = isContentFocused,
         onContentFocusChanged = onContentFocusChanged,
@@ -1235,21 +1236,21 @@ fun ActorCard(
     modifier: Modifier = Modifier,
     isSelected: Boolean = false
 ) {
-    val baseWidth = 120.dp
-    val baseHeight = 180.dp
+    val baseWidth = StrmrConstants.Dimensions.Cards.BASE_WIDTH
+    val baseHeight = StrmrConstants.Dimensions.Cards.BASE_HEIGHT
     val targetWidth = if (isSelected) baseWidth * 1.1f else baseWidth
     val targetHeight = if (isSelected) baseHeight * 1.1f else baseHeight
-    val animatedWidth by animateDpAsState(targetValue = targetWidth, animationSpec = tween(durationMillis = 10))
-    val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = tween(durationMillis = 10))
+    val animatedWidth by animateDpAsState(targetValue = targetWidth, animationSpec = tween(durationMillis = StrmrConstants.Animation.DURATION_INSTANT))
+    val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = tween(durationMillis = StrmrConstants.Animation.DURATION_INSTANT))
 
     Column(
         modifier = modifier
             .width(animatedWidth)
             .height(animatedHeight)
             .border(
-                width = if (isSelected) 2.dp else 0.dp,
+                width = if (isSelected) StrmrConstants.Dimensions.Components.BORDER_WIDTH else 0.dp,
                 color = Color.Transparent,
-                shape = RoundedCornerShape(8.dp)
+                shape = StrmrConstants.Shapes.CORNER_RADIUS_STANDARD
             ),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -1258,8 +1259,8 @@ fun ActorCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color.Gray),
+                .clip(StrmrConstants.Shapes.CORNER_RADIUS_STANDARD)
+                .background(StrmrConstants.Colors.TEXT_SECONDARY),
             contentAlignment = Alignment.Center
         ) {
             if (!actor.profilePath.isNullOrBlank()) {
@@ -1272,18 +1273,18 @@ fun ActorCard(
             } else {
                 Text(
                     text = actor.name?.firstOrNull()?.uppercase() ?: "?",
-                    color = Color.White,
+                    color = StrmrConstants.Colors.TEXT_PRIMARY,
                     fontSize = 20.sp
                 )
             }
         }
         
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_SMALL))
         
         // Actor name
         Text(
             text = actor.name ?: "Unknown",
-            color = Color.White,
+            color = StrmrConstants.Colors.TEXT_PRIMARY,
             fontSize = 12.sp,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
@@ -1294,7 +1295,7 @@ fun ActorCard(
         if (!actor.character.isNullOrBlank()) {
             Text(
                 text = actor.character,
-                color = Color.Gray,
+                color = StrmrConstants.Colors.TEXT_SECONDARY,
                 fontSize = 10.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -1326,8 +1327,8 @@ private fun RatingsRow(
             Log.d("RatingsRow", "⭐ Rendering IMDb rating: ${omdbRatings.imdbRating}")
             Image(painter = painterResource(id = R.drawable.imdb_logo), contentDescription = "IMDb", modifier = Modifier.size(32.dp))
             Spacer(Modifier.width(4.dp))
-            Text(omdbRatings.imdbRating, color = Color.White, fontSize = 18.sp)
-            Spacer(Modifier.width(16.dp))
+            Text(omdbRatings.imdbRating, color = StrmrConstants.Colors.TEXT_PRIMARY, fontSize = 18.sp)
+            Spacer(Modifier.width(StrmrConstants.Dimensions.SPACING_STANDARD))
         } else {
             Log.d("RatingsRow", "⭐ IMDb rating is null, not rendering")
         }
@@ -1335,8 +1336,8 @@ private fun RatingsRow(
             Log.d("RatingsRow", "⭐ Rendering Metacritic rating: $meta")
             Image(painter = painterResource(id = R.drawable.metacritic_logo), contentDescription = "Metacritic", modifier = Modifier.size(32.dp))
             Spacer(Modifier.width(4.dp))
-            Text("$meta%", color = Color.White, fontSize = 18.sp)
-            Spacer(Modifier.width(16.dp))
+            Text("$meta%", color = StrmrConstants.Colors.TEXT_PRIMARY, fontSize = 18.sp)
+            Spacer(Modifier.width(StrmrConstants.Dimensions.SPACING_STANDARD))
         } else {
             Log.d("RatingsRow", "⭐ Metacritic rating is null/blank, not rendering")
         }
@@ -1344,15 +1345,15 @@ private fun RatingsRow(
             Log.d("RatingsRow", "⭐ Rendering Rotten Tomatoes rating: $rt")
             Image(painter = painterResource(id = R.drawable.rotten_tomatoes), contentDescription = "Rotten Tomatoes", modifier = Modifier.size(32.dp))
             Spacer(Modifier.width(4.dp))
-            Text(rt, color = Color.White, fontSize = 18.sp)
-            Spacer(Modifier.width(16.dp))
+            Text(rt, color = StrmrConstants.Colors.TEXT_PRIMARY, fontSize = 18.sp)
+            Spacer(Modifier.width(StrmrConstants.Dimensions.SPACING_STANDARD))
         } else {
             Log.d("RatingsRow", "⭐ Rotten Tomatoes rating is null/blank, not rendering")
         }
         Log.d("RatingsRow", "⭐ Rendering Trakt rating: $traktRating")
         Image(painter = painterResource(id = R.drawable.trakt1), contentDescription = "Trakt", modifier = Modifier.size(32.dp))
         Spacer(Modifier.width(4.dp))
-        Text(traktRating?.let { String.format("%.1f", it) } ?: "-", color = Color.White, fontSize = 18.sp)
+        Text(traktRating?.let { String.format("%.1f", it) } ?: "-", color = StrmrConstants.Colors.TEXT_PRIMARY, fontSize = 18.sp)
     }
 } 
 
@@ -1363,11 +1364,11 @@ fun FrostedGlassButton(
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     isFocused: Boolean = false,
     text: String = "",
-    textColor: Color = Color.White,
+    textColor: Color = StrmrConstants.Colors.TEXT_PRIMARY,
     hasCustomContent: Boolean = false,
     content: @Composable () -> Unit = {}
 ) {
-    val cornerRadius = 8.dp
+    val cornerRadius = StrmrConstants.Dimensions.SPACING_SMALL
     
     Box(
         modifier = modifier
@@ -1380,8 +1381,8 @@ fun FrostedGlassButton(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
-                    color = if (isFocused) Color.White.copy(alpha = 0.95f) else Color.Black.copy(
-                        alpha = 0.6f
+                    color = if (isFocused) StrmrConstants.Colors.TEXT_PRIMARY.copy(alpha = StrmrConstants.Colors.Alpha.FOCUS) else StrmrConstants.Colors.BACKGROUND_DARK.copy(
+                        alpha = StrmrConstants.Colors.Alpha.MEDIUM
                     ),
                     shape = RoundedCornerShape(cornerRadius)
                 )
@@ -1397,7 +1398,7 @@ fun FrostedGlassButton(
             } else if (text.isNotEmpty()) {
                 Text(
                     text = text,
-                    color = if (isFocused) Color.Black else Color.White,
+                    color = if (isFocused) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY,
                     fontSize = 16.sp,
                     fontWeight = if (isFocused) FontWeight.Medium else FontWeight.Normal
                 )

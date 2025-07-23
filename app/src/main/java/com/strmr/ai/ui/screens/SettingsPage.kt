@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.strmr.ai.ui.theme.StrmrConstants
 import com.strmr.ai.viewmodel.SettingsViewModel
 import com.strmr.ai.viewmodel.UpdateViewModel
 import java.text.SimpleDateFormat
@@ -48,7 +49,7 @@ fun SettingsPage(
     var autoPlay by remember { mutableStateOf(true) }
     var nextEpisodeTime by remember { mutableStateOf("5") }
     
-    val navBarWidth = 56.dp
+    val navBarWidth = StrmrConstants.Dimensions.Components.NAV_BAR_WIDTH
     
     Box(
         modifier = modifier
@@ -56,9 +57,9 @@ fun SettingsPage(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF0a0a0a),
-                        Color(0xFF1a1a1a),
-                        Color(0xFF0f0f0f)
+                        StrmrConstants.Colors.BACKGROUND_DARKER,
+                        StrmrConstants.Colors.SURFACE_DARK,
+                        StrmrConstants.Colors.BACKGROUND_DARK
                     )
                 )
             )
@@ -70,13 +71,13 @@ fun SettingsPage(
             // Left Panel - Settings Navigation
             Column(
                 modifier = Modifier
-                    .width(320.dp)
+                    .width(StrmrConstants.Dimensions.Components.SETTINGS_PANEL_WIDTH)
                     .fillMaxHeight()
                     .background(
-                        Color(0xFF151515),
-                        RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp)
+                        StrmrConstants.Colors.SURFACE_DARK.copy(alpha = 0.8f),
+                        StrmrConstants.Shapes.SETTINGS_PANEL_SHAPE
                     )
-                    .padding(24.dp)
+                    .padding(StrmrConstants.Dimensions.SPACING_EXTRA_LARGE)
                     .verticalScroll(rememberScrollState())
             ) {
                 // Header
@@ -84,8 +85,8 @@ fun SettingsPage(
                     text = "Settings",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    modifier = Modifier.padding(bottom = 32.dp)
+                    color = StrmrConstants.Colors.TEXT_PRIMARY,
+                    modifier = Modifier.padding(bottom = StrmrConstants.Dimensions.SPACING_SECTION)
                 )
                 
                 // Navigation Sections
@@ -98,7 +99,7 @@ fun SettingsPage(
                     )
                 )
                 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_EXTRA_LARGE))
                 
                 SettingsNavSection(
                     title = "User Interface",
@@ -107,7 +108,7 @@ fun SettingsPage(
                     )
                 )
                 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_EXTRA_LARGE))
                 
                 SettingsNavSection(
                     title = "Content",
@@ -119,7 +120,7 @@ fun SettingsPage(
                     )
                 )
                 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_EXTRA_LARGE))
                 
                 SettingsNavSection(
                     title = "Playback",
@@ -128,7 +129,7 @@ fun SettingsPage(
                     )
                 )
                 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_EXTRA_LARGE))
                 
                 SettingsNavSection(
                     title = "System",
@@ -142,7 +143,7 @@ fun SettingsPage(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(32.dp)
+                    .padding(StrmrConstants.Dimensions.SPACING_SECTION)
                     .verticalScroll(rememberScrollState())
             ) {
                 // Account Settings Section
@@ -166,7 +167,7 @@ fun SettingsPage(
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(top = 16.dp)
+                                    .padding(top = StrmrConstants.Dimensions.SPACING_STANDARD)
                             ) {
                                 SettingsToggleRow(
                                     label = "Sync on app launch",
@@ -175,7 +176,7 @@ fun SettingsPage(
                                     onCheckedChange = { syncOnLaunch = it }
                                 )
                                 
-                                Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_MEDIUM))
                                 
                                 SettingsToggleRow(
                                     label = "Sync after playback",
@@ -185,7 +186,7 @@ fun SettingsPage(
                                 )
                                 
                                 if (traktUserState.stats != null) {
-                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
                                     StatsDisplay(
                                         movies = traktUserState.stats?.movies?.watched ?: 0,
                                         shows = traktUserState.stats?.shows?.watched ?: 0,
@@ -196,7 +197,7 @@ fun SettingsPage(
                         }
                     }
                     
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
                     
                     // Premiumize Account
                     ModernSettingsCard(
@@ -207,7 +208,7 @@ fun SettingsPage(
                         onClick = onNavigateToPremiumizeSettings
                     )
                     
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
                     
                     // RealDebrid Account
                     ModernSettingsCard(
@@ -277,7 +278,7 @@ fun SettingsPage(
                             )
                             
                             if (autoPlay) {
-                                Spacer(modifier = Modifier.height(16.dp))
+                                Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
                                 SettingsRadioGroup(
                                     title = "Next Episode Countdown",
                                     options = listOf("3", "5", "10", "15"),
@@ -337,15 +338,15 @@ fun SystemSettingsSection() {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp,
-                                color = Color(0xFF007AFF)
+                                modifier = Modifier.size(StrmrConstants.Dimensions.Icons.SMALL),
+                                strokeWidth = StrmrConstants.Dimensions.Components.BORDER_WIDTH * 2,
+                                color = StrmrConstants.Colors.PRIMARY_BLUE
                             )
-                            Spacer(modifier = Modifier.width(12.dp))
+                            Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_MEDIUM))
                             Text(
                                 text = "Checking for updates...",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFF888888)
+                                color = StrmrConstants.Colors.TEXT_SECONDARY
                             )
                         }
                     }
@@ -356,20 +357,20 @@ fun SystemSettingsSection() {
                                 text = "Downloading update...",
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Medium,
-                                color = Color.White
+                                color = StrmrConstants.Colors.TEXT_PRIMARY
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_SMALL))
                             LinearProgressIndicator(
                                 progress = { updateState.downloadProgress / 100f },
                                 modifier = Modifier.fillMaxWidth(),
-                                color = Color(0xFF007AFF),
-                                trackColor = Color(0xFF333333)
+                                color = StrmrConstants.Colors.PRIMARY_BLUE,
+                                trackColor = StrmrConstants.Colors.BORDER_DARK
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = "${updateState.downloadProgress}% - ${updateState.downloadStatus ?: "Preparing..."}",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFF888888)
+                                color = StrmrConstants.Colors.TEXT_SECONDARY
                             )
                         }
                     }
@@ -381,47 +382,47 @@ fun SystemSettingsSection() {
                                     text = "New version available: ${updateInfo.latestVersion}",
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Medium,
-                                    color = Color(0xFF007AFF)
+                                    color = StrmrConstants.Colors.PRIMARY_BLUE
                                 )
                                 
                                 updateInfo.releaseNotes?.let { releaseNotes ->
                                     if (releaseNotes.isNotEmpty()) {
-                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_SMALL))
                                         Text(
                                             text = "What's new:",
                                             style = MaterialTheme.typography.bodySmall,
                                             fontWeight = FontWeight.SemiBold,
-                                            color = Color.White
+                                            color = StrmrConstants.Colors.TEXT_PRIMARY
                                         )
                                         Text(
                                             text = releaseNotes,
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = Color(0xFF888888),
+                                            color = StrmrConstants.Colors.TEXT_SECONDARY,
                                             maxLines = 3
                                         )
                                     }
                                 }
                                 
-                                Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_MEDIUM))
                                 
                                 Row {
                                     Button(
                                         onClick = { updateViewModel.downloadAndInstallUpdate() },
                                         colors = ButtonDefaults.buttonColors(
-                                            containerColor = Color(0xFF007AFF)
+                                            containerColor = StrmrConstants.Colors.PRIMARY_BLUE
                                         )
                                     ) {
                                         Text("Update Now")
                                     }
                                     
-                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_MEDIUM))
                                     
                                     TextButton(
                                         onClick = { updateViewModel.checkForUpdates() }
                                     ) {
                                         Text(
                                             text = "Check Again",
-                                            color = Color(0xFF888888)
+                                            color = StrmrConstants.Colors.TEXT_SECONDARY
                                         )
                                     }
                                 }
@@ -436,15 +437,15 @@ fun SystemSettingsSection() {
                                     text = "Error checking for updates",
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Medium,
-                                    color = Color(0xFFFF6B6B)
+                                    color = StrmrConstants.Colors.ERROR_RED
                                 )
                                 Text(
                                     text = error,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color(0xFF888888)
+                                    color = StrmrConstants.Colors.TEXT_SECONDARY
                                 )
                                 
-                                Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_MEDIUM))
                                 
                                 TextButton(
                                     onClick = { 
@@ -454,7 +455,7 @@ fun SystemSettingsSection() {
                                 ) {
                                     Text(
                                         text = "Retry",
-                                        color = Color(0xFF007AFF)
+                                        color = StrmrConstants.Colors.PRIMARY_BLUE
                                     )
                                 }
                             }
@@ -466,7 +467,7 @@ fun SystemSettingsSection() {
                             Text(
                                 text = "✅ You're up to date",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFF4CAF50),
+                                color = StrmrConstants.Colors.SUCCESS_GREEN,
                                 modifier = Modifier.weight(1f)
                             )
                             
@@ -475,7 +476,7 @@ fun SystemSettingsSection() {
                             ) {
                                 Text(
                                     text = "Check Now",
-                                    color = Color(0xFF888888)
+                                    color = StrmrConstants.Colors.TEXT_SECONDARY
                                 )
                             }
                         }
@@ -493,15 +494,15 @@ fun SettingsNavSection(
 ) {
     Text(
         text = title,
-        fontSize = 14.sp,
+        fontSize = StrmrConstants.Typography.TEXT_SIZE_BODY,
         fontWeight = FontWeight.SemiBold,
-        color = Color(0xFF888888),
-        modifier = Modifier.padding(bottom = 12.dp)
+        color = StrmrConstants.Colors.TEXT_SECONDARY,
+        modifier = Modifier.padding(bottom = StrmrConstants.Dimensions.SPACING_MEDIUM)
     )
     
     items.forEach { item ->
         SettingsNavItemRow(item)
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_SMALL))
     }
 }
 
@@ -510,24 +511,24 @@ fun SettingsNavItemRow(item: SettingsNavItem) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xFF1f1f1f))
-            .padding(12.dp),
+            .clip(StrmrConstants.Shapes.CORNER_RADIUS_STANDARD)
+            .background(StrmrConstants.Colors.CONTAINER_DARK)
+            .padding(StrmrConstants.Dimensions.SPACING_MEDIUM),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = item.icon,
             contentDescription = null,
-            tint = Color.White,
-            modifier = Modifier.size(20.dp)
+            tint = StrmrConstants.Colors.TEXT_PRIMARY,
+            modifier = Modifier.size(StrmrConstants.Dimensions.SPACING_LARGE)
         )
         
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_MEDIUM))
         
         Text(
             text = item.title,
-            color = Color.White,
-            fontSize = 14.sp,
+            color = StrmrConstants.Colors.TEXT_PRIMARY,
+            fontSize = StrmrConstants.Typography.TEXT_SIZE_BODY,
             fontWeight = FontWeight.Medium,
             modifier = Modifier.weight(1f)
         )
@@ -535,21 +536,21 @@ fun SettingsNavItemRow(item: SettingsNavItem) {
         if (item.isConnected != null) {
             Box(
                 modifier = Modifier
-                    .size(8.dp)
+                    .size(StrmrConstants.Dimensions.SPACING_SMALL)
                     .background(
-                        color = if (item.isConnected) Color(0xFF007AFF) else Color.Gray,
+                        color = if (item.isConnected) StrmrConstants.Colors.PRIMARY_BLUE else Color.Gray,
                         shape = androidx.compose.foundation.shape.CircleShape
                     )
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_SMALL))
         }
         
         if (item.showArrow) {
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
-                tint = Color(0xFF666666),
-                modifier = Modifier.size(16.dp)
+                tint = StrmrConstants.Colors.TEXT_TERTIARY,
+                modifier = Modifier.size(StrmrConstants.Dimensions.Icons.SMALL)
             )
         }
     }
@@ -566,15 +567,15 @@ fun SettingsContentSection(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
-            modifier = Modifier.padding(bottom = 4.dp)
+            color = StrmrConstants.Colors.TEXT_PRIMARY,
+            modifier = Modifier.padding(bottom = StrmrConstants.Dimensions.SPACING_TINY)
         )
         
         Text(
             text = subtitle,
             style = MaterialTheme.typography.bodyMedium,
-            color = Color(0xFF888888),
-            modifier = Modifier.padding(bottom = 20.dp)
+            color = StrmrConstants.Colors.TEXT_SECONDARY,
+            modifier = Modifier.padding(bottom = StrmrConstants.Dimensions.SPACING_LARGE)
         )
         
         content()
@@ -595,13 +596,13 @@ fun ModernSettingsCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1a1a1a)
+            containerColor = StrmrConstants.Colors.SURFACE_DARK
         ),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        shape = StrmrConstants.Shapes.CORNER_RADIUS_MEDIUM,
+        elevation = CardDefaults.cardElevation(defaultElevation = StrmrConstants.Dimensions.Elevation.STANDARD)
     ) {
         Column(
-            modifier = Modifier.padding(20.dp)
+            modifier = Modifier.padding(StrmrConstants.Dimensions.SPACING_LARGE)
         ) {
             Row(
                 modifier = Modifier
@@ -616,46 +617,46 @@ fun ModernSettingsCard(
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
+                    tint = StrmrConstants.Colors.TEXT_PRIMARY,
+                    modifier = Modifier.size(StrmrConstants.Dimensions.Icons.STANDARD)
                 )
                 
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_STANDARD))
                 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = title,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color.White
+                        color = StrmrConstants.Colors.TEXT_PRIMARY
                     )
                     
                     Text(
                         text = subtitle,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF888888),
-                        modifier = Modifier.padding(top = 2.dp)
+                        color = StrmrConstants.Colors.TEXT_SECONDARY,
+                        modifier = Modifier.padding(top = StrmrConstants.Dimensions.Components.BORDER_WIDTH * 2)
                     )
                 }
                 
                 if (isConnected != null) {
                     Box(
                         modifier = Modifier
-                            .size(12.dp)
+                            .size(StrmrConstants.Dimensions.SPACING_MEDIUM)
                             .background(
-                                color = if (isConnected) Color(0xFF007AFF) else Color.Gray,
+                                color = if (isConnected) StrmrConstants.Colors.PRIMARY_BLUE else Color.Gray,
                                 shape = androidx.compose.foundation.shape.CircleShape
                             )
                     )
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_MEDIUM))
                 }
                 
                 if (showArrow && onClick != null) {
                     Icon(
                         imageVector = Icons.Default.ChevronRight,
                         contentDescription = null,
-                        tint = Color(0xFF666666),
-                        modifier = Modifier.size(20.dp)
+                        tint = StrmrConstants.Colors.TEXT_TERTIARY,
+                        modifier = Modifier.size(StrmrConstants.Dimensions.SPACING_LARGE)
                     )
                 }
             }
@@ -686,7 +687,7 @@ fun SettingsToggleRow(
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF888888),
+                color = StrmrConstants.Colors.TEXT_SECONDARY,
                 modifier = Modifier.padding(top = 2.dp)
             )
         }
@@ -695,10 +696,10 @@ fun SettingsToggleRow(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White,
-                checkedTrackColor = Color(0xFF007AFF),
+                checkedThumbColor = StrmrConstants.Colors.TEXT_PRIMARY,
+                checkedTrackColor = StrmrConstants.Colors.PRIMARY_BLUE,
                 uncheckedThumbColor = Color.Gray,
-                uncheckedTrackColor = Color(0xFF333333)
+                uncheckedTrackColor = StrmrConstants.Colors.BORDER_DARK
             )
         )
     }
@@ -717,44 +718,44 @@ fun SettingsRadioGroup(
             text = title,
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
-            color = Color.White,
-            modifier = Modifier.padding(bottom = 12.dp)
+            color = StrmrConstants.Colors.TEXT_PRIMARY,
+            modifier = Modifier.padding(bottom = StrmrConstants.Dimensions.SPACING_MEDIUM)
         )
         
         options.forEach { option ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(StrmrConstants.Shapes.CORNER_RADIUS_STANDARD)
                     .clickable { onOptionSelected(option) }
-                    .padding(12.dp),
+                    .padding(StrmrConstants.Dimensions.SPACING_MEDIUM),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 RadioButton(
                     selected = option == selectedOption,
                     onClick = { onOptionSelected(option) },
                     colors = RadioButtonDefaults.colors(
-                        selectedColor = Color(0xFF007AFF),
+                        selectedColor = StrmrConstants.Colors.PRIMARY_BLUE,
                         unselectedColor = Color.Gray
                     )
                 )
                 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_MEDIUM))
                 
                 Column {
                     Text(
                         text = option,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
-                        color = Color.White
+                        color = StrmrConstants.Colors.TEXT_PRIMARY
                     )
                     
                     descriptions[option]?.let { description ->
                         Text(
                             text = description,
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF888888),
-                            modifier = Modifier.padding(top = 2.dp)
+                            color = StrmrConstants.Colors.TEXT_SECONDARY,
+                            modifier = Modifier.padding(top = StrmrConstants.Dimensions.Components.BORDER_WIDTH * 2)
                         )
                     }
                 }
@@ -773,17 +774,17 @@ fun StatsDisplay(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                Color(0xFF222222),
-                RoundedCornerShape(8.dp)
+                StrmrConstants.Colors.CONTAINER_DARK,
+                StrmrConstants.Shapes.CORNER_RADIUS_STANDARD
             )
-            .padding(16.dp)
+            .padding(StrmrConstants.Dimensions.SPACING_STANDARD)
     ) {
         Text(
             text = "Statistics",
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.SemiBold,
             color = Color.White,
-            modifier = Modifier.padding(bottom = 8.dp)
+            modifier = Modifier.padding(bottom = StrmrConstants.Dimensions.SPACING_SMALL)
         )
         
         Row(
@@ -794,12 +795,12 @@ fun StatsDisplay(
             StatItem("Shows", shows.toString())
         }
         
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_SMALL))
         
         Text(
             text = "Last sync: $lastSync",
             style = MaterialTheme.typography.bodySmall,
-            color = Color(0xFF888888)
+            color = StrmrConstants.Colors.TEXT_SECONDARY
         )
     }
 }
@@ -811,12 +812,12 @@ fun StatItem(label: String, value: String) {
             text = value,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF007AFF)
+            color = StrmrConstants.Colors.PRIMARY_BLUE
         )
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
-            color = Color(0xFF888888)
+            color = StrmrConstants.Colors.TEXT_SECONDARY
         )
     }
 }

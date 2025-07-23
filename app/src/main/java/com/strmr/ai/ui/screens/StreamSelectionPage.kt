@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.strmr.ai.data.models.Stream
+import com.strmr.ai.ui.theme.StrmrConstants
 import com.strmr.ai.viewmodel.StreamSelectionViewModel
 
 @Composable
@@ -68,21 +69,21 @@ fun StreamSelectionPage(
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
-                    .blur(radius = 8.dp),
+                    .blur(radius = StrmrConstants.Blur.RADIUS_STANDARD),
                 contentScale = ContentScale.Crop,
-                alpha = 0.3f
+                alpha = StrmrConstants.Colors.Alpha.LIGHT
             )
         }
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(32.dp)
+                .padding(StrmrConstants.Dimensions.SPACING_SECTION)
         ) {
             // Header with logo
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.dp)
+                    .height(StrmrConstants.Dimensions.Components.HEADER_HEIGHT)
             ) {
                 // Back button positioned absolutely
                 //IconButton(
@@ -106,7 +107,7 @@ fun StreamSelectionPage(
                         contentDescription = mediaTitle,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(75.dp)
+                            .height(StrmrConstants.Dimensions.Components.LOGO_HEIGHT)
                             .align(Alignment.Center),
                         contentScale = ContentScale.Fit,
                         alignment = Alignment.Center
@@ -117,13 +118,13 @@ fun StreamSelectionPage(
                         text = mediaTitle,
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
+                        color = StrmrConstants.Colors.TEXT_PRIMARY,
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
             }
             
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
             
             // Content
             when {
@@ -136,14 +137,14 @@ fun StreamSelectionPage(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             CircularProgressIndicator(
-                                color = Color(0xFF007AFF),
-                                modifier = Modifier.size(48.dp)
+                                color = StrmrConstants.Colors.PRIMARY_BLUE,
+                                modifier = Modifier.size(StrmrConstants.Dimensions.Icons.EXTRA_LARGE)
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
                             Text(
                                 text = "Searching for streams...",
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = Color.White
+                                color = StrmrConstants.Colors.TEXT_PRIMARY
                             )
                         }
                     }
@@ -160,27 +161,27 @@ fun StreamSelectionPage(
                             Icon(
                                 imageVector = Icons.Default.Error,
                                 contentDescription = null,
-                                tint = Color(0xFFFF3B30),
-                                modifier = Modifier.size(48.dp)
+                                tint = StrmrConstants.Colors.ERROR_RED,
+                                modifier = Modifier.size(StrmrConstants.Dimensions.Icons.EXTRA_LARGE)
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
                             Text(
                                 text = "Error",
                                 style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFFFF3B30)
+                                color = StrmrConstants.Colors.ERROR_RED
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_SMALL))
                             Text(
                                 text = error ?: "Unknown error",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White
+                                color = StrmrConstants.Colors.TEXT_PRIMARY
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
                             Button(
                                 onClick = { viewModel.fetchStreams(imdbId, type, season, episode) },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF007AFF)
+                                    containerColor = StrmrConstants.Colors.PRIMARY_BLUE
                                 )
                             ) {
                                 Text("Retry")
@@ -200,21 +201,21 @@ fun StreamSelectionPage(
                             Icon(
                                 imageVector = Icons.Default.SearchOff,
                                 contentDescription = null,
-                                tint = Color(0xFF888888),
-                                modifier = Modifier.size(48.dp)
+                                tint = StrmrConstants.Colors.TEXT_SECONDARY,
+                                modifier = Modifier.size(StrmrConstants.Dimensions.Icons.EXTRA_LARGE)
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
                             Text(
                                 text = "No streams found",
                                 style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = StrmrConstants.Colors.TEXT_PRIMARY
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_SMALL))
                             Text(
                                 text = "Try again later or check your Premiumize account",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFF888888)
+                                color = StrmrConstants.Colors.TEXT_SECONDARY
                             )
                         }
                     }
@@ -223,7 +224,7 @@ fun StreamSelectionPage(
                 else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(StrmrConstants.Dimensions.SPACING_MEDIUM)
                     ) {
                         items(streams) { stream ->
                             StreamItem(
@@ -253,23 +254,23 @@ fun StreamItem(
             .focusable(interactionSource = interactionSource)
             .clickable { onClick() }
             .border(
-                width = 1.dp,
-                color = if (isFocused) Color.Transparent else Color.White.copy(alpha = 0.1f),
-                shape = RoundedCornerShape(12.dp)
+                width = StrmrConstants.Dimensions.Components.BORDER_WIDTH,
+                color = if (isFocused) Color.Transparent else StrmrConstants.Colors.TEXT_PRIMARY.copy(alpha = StrmrConstants.Colors.Alpha.SUBTLE),
+                shape = StrmrConstants.Shapes.CORNER_RADIUS_MEDIUM
             ),
         colors = CardDefaults.cardColors(
             containerColor = if (isFocused) 
-                Color.White.copy(alpha = 0.95f) 
+                StrmrConstants.Colors.TEXT_PRIMARY.copy(alpha = StrmrConstants.Colors.Alpha.FOCUS) 
             else 
-                Color.Black.copy(alpha = 0.6f)
+                Color.Black.copy(alpha = StrmrConstants.Colors.Alpha.MEDIUM)
         ),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        shape = StrmrConstants.Shapes.CORNER_RADIUS_MEDIUM,
+        elevation = CardDefaults.cardElevation(defaultElevation = StrmrConstants.Dimensions.Elevation.NONE)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
+                .padding(StrmrConstants.Dimensions.SPACING_LARGE),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Quality indicator
@@ -277,25 +278,25 @@ fun StreamItem(
                 modifier = Modifier
                     .background(
                         color = when (stream.displayQuality) {
-                            "4K" -> Color(0xFFEFC700)      // Gold
-                            "1080p" -> Color(0xFF2196F3)   // Blue
-                            "720p" -> Color(0xFFE53E3E)    // Red
-                            else -> Color(0xFF9E9E9E)      // Gray for Unknown/CAM/etc
+                            "4K" -> StrmrConstants.Colors.Quality.GOLD_4K
+                            "1080p" -> StrmrConstants.Colors.Quality.BLUE_1080P
+                            "720p" -> StrmrConstants.Colors.Quality.RED_720P
+                            else -> StrmrConstants.Colors.Quality.GRAY_UNKNOWN
                         },
-                        shape = RoundedCornerShape(6.dp)
+                        shape = StrmrConstants.Shapes.CORNER_RADIUS_SMALL
                     )
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .padding(horizontal = StrmrConstants.Dimensions.SPACING_SMALL, vertical = StrmrConstants.Dimensions.SPACING_TINY)
             ) {
                 Text(
                     text = stream.displayQuality,
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    fontSize = 10.sp
+                    color = StrmrConstants.Colors.TEXT_PRIMARY,
+                    fontSize = StrmrConstants.Typography.TEXT_SIZE_CAPTION
                 )
             }
             
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_STANDARD))
             
             // Stream info
             Column(
@@ -311,12 +312,12 @@ fun StreamItem(
                         text = stream.displayName,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = if (isFocused) FontWeight.Medium else FontWeight.SemiBold,
-                        color = if (isFocused) Color.Black else Color.White,
+                        color = if (isFocused) Color.Black else StrmrConstants.Colors.TEXT_PRIMARY,
                         maxLines = 1
                     )
                 }
                 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_TINY))
                 
                 Row(
                     verticalAlignment = Alignment.CenterVertically
@@ -324,35 +325,35 @@ fun StreamItem(
                     Text(
                         text = stream.displaySize,
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (isFocused) Color.Black.copy(alpha = 0.7f) else Color(0xFF888888)
+                        color = if (isFocused) Color.Black.copy(alpha = StrmrConstants.Colors.Alpha.MEDIUM) else StrmrConstants.Colors.TEXT_SECONDARY
                     )
                     
                     if (stream.seeders != null && stream.seeders > 0) {
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_MEDIUM))
                         Icon(
                             imageVector = Icons.Default.CloudUpload,
                             contentDescription = null,
-                            tint = if (isFocused) Color(0xFF2E7D32) else Color(0xFF4CAF50),
-                            modifier = Modifier.size(14.dp)
+                            tint = if (isFocused) StrmrConstants.Colors.SUCCESS_GREEN_DARK else StrmrConstants.Colors.SUCCESS_GREEN,
+                            modifier = Modifier.size(StrmrConstants.Dimensions.Icons.TINY)
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_TINY))
                         Text(
                             text = "${stream.seeders} seeders",
                             style = MaterialTheme.typography.bodySmall,
-                            color = if (isFocused) Color.Black.copy(alpha = 0.7f) else Color(0xFF888888)
+                            color = if (isFocused) Color.Black.copy(alpha = StrmrConstants.Colors.Alpha.MEDIUM) else StrmrConstants.Colors.TEXT_SECONDARY
                         )
                     }
                 }
             }
             
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_STANDARD))
             
             // Play icon
             Icon(
                 imageVector = Icons.Default.PlayArrow,
                 contentDescription = "Play",
-                tint = if (isFocused) Color.Black else Color(0xFF007AFF),
-                modifier = Modifier.size(24.dp)
+                tint = if (isFocused) Color.Black else StrmrConstants.Colors.PRIMARY_BLUE,
+                modifier = Modifier.size(StrmrConstants.Dimensions.Icons.STANDARD)
             )
         }
     }

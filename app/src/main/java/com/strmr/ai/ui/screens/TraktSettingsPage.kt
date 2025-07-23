@@ -31,6 +31,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.strmr.ai.ui.components.AuthStep
 import com.strmr.ai.ui.components.ModernErrorDialog
+import com.strmr.ai.ui.theme.StrmrConstants
 import com.strmr.ai.viewmodel.SettingsViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -89,9 +90,9 @@ fun TraktSettingsPage(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF0a0a0a),
-                        Color(0xFF1a1a1a),
-                        Color(0xFF0f0f0f)
+                        StrmrConstants.Colors.BACKGROUND_DARKER,
+                        StrmrConstants.Colors.SURFACE_DARK,
+                        StrmrConstants.Colors.BACKGROUND_DARK
                     )
                 )
             )
@@ -102,55 +103,55 @@ fun TraktSettingsPage(
             // Left Panel - Navigation
             Column(
                 modifier = Modifier
-                    .width(300.dp)
+                    .width(StrmrConstants.Dimensions.Components.SETTINGS_PANEL_WIDTH - StrmrConstants.Dimensions.SPACING_LARGE)
                     .fillMaxHeight()
                     .background(
-                        Color(0xFF151515),
-                        RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp)
+                        StrmrConstants.Colors.SURFACE_DARK.copy(alpha = 0.8f),
+                        StrmrConstants.Shapes.SETTINGS_PANEL_SHAPE
                     )
-                    .padding(24.dp)
+                    .padding(StrmrConstants.Dimensions.SPACING_EXTRA_LARGE)
             ) {
                 // Back Button
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(StrmrConstants.Shapes.CORNER_RADIUS_STANDARD)
                         .clickable { onBackPressed() }
-                        .background(Color(0xFF1f1f1f))
-                        .padding(12.dp),
+                        .background(StrmrConstants.Colors.CONTAINER_DARK)
+                        .padding(StrmrConstants.Dimensions.SPACING_MEDIUM),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
                         contentDescription = "Back",
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
+                        tint = StrmrConstants.Colors.TEXT_PRIMARY,
+                        modifier = Modifier.size(StrmrConstants.Dimensions.SPACING_LARGE)
                     )
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_MEDIUM))
                     Text(
                         text = "Back to Settings",
-                        color = Color.White,
-                        fontSize = 14.sp,
+                        color = StrmrConstants.Colors.TEXT_PRIMARY,
+                        fontSize = StrmrConstants.Typography.TEXT_SIZE_BODY,
                         fontWeight = FontWeight.Medium
                     )
                 }
                 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_SECTION))
                 
                 // Header
                 Text(
                     text = "Trakt",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    color = StrmrConstants.Colors.TEXT_PRIMARY,
+                    modifier = Modifier.padding(bottom = StrmrConstants.Dimensions.SPACING_SMALL)
                 )
                 
                 Text(
                     text = "Sync your watch history and ratings",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF888888),
-                    modifier = Modifier.padding(bottom = 32.dp)
+                    color = StrmrConstants.Colors.TEXT_SECONDARY,
+                    modifier = Modifier.padding(bottom = StrmrConstants.Dimensions.SPACING_SECTION)
                 )
                 
                 // Navigation Items
@@ -172,7 +173,7 @@ fun TraktSettingsPage(
                     }
                 )
                 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_EXTRA_LARGE))
                 
                 TraktNavSection(
                     title = "Sync Settings",
@@ -196,7 +197,7 @@ fun TraktSettingsPage(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(32.dp)
+                    .padding(StrmrConstants.Dimensions.SPACING_SECTION)
                     .verticalScroll(scrollState)
             ) {
                 // Connection Status Section
@@ -245,25 +246,25 @@ fun TraktSettingsPage(
                                         label = "Account Type",
                                         value = if (profile.vip) "VIP Member" else "Free Account",
                                         icon = if (profile.vip) Icons.Default.Star else Icons.Default.Person,
-                                        valueColor = if (profile.vip) Color(0xFF007AFF) else Color.White
+                                        valueColor = if (profile.vip) StrmrConstants.Colors.PRIMARY_BLUE else StrmrConstants.Colors.TEXT_PRIMARY
                                     )
                                 }
                                 
-                                Spacer(modifier = Modifier.height(16.dp))
+                                Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
                                 
                                 Button(
                                     onClick = { viewModel.logout() },
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFFFF3B30)
+                                        containerColor = StrmrConstants.Colors.ERROR_RED
                                     ),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Logout,
                                         contentDescription = null,
-                                        modifier = Modifier.size(18.dp)
+                                        modifier = Modifier.size(StrmrConstants.Dimensions.Icons.SMALL)
                                     )
-                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_SMALL))
                                     Text(
                                         text = "Disconnect Account",
                                         fontWeight = FontWeight.Medium
@@ -275,7 +276,7 @@ fun TraktSettingsPage(
                 }
                 
                 if (traktAuthState.isAuthorized && traktUserState.stats != null) {
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_SECTION))
                     
                     // Statistics Section
                     TraktContentSection(
@@ -302,10 +303,10 @@ fun TraktSettingsPage(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .background(
-                                                Color(0xFF222222),
-                                                RoundedCornerShape(12.dp)
+                                                StrmrConstants.Colors.CONTAINER_DARK,
+                                                StrmrConstants.Shapes.CORNER_RADIUS_MEDIUM
                                             )
-                                            .padding(20.dp),
+                                            .padding(StrmrConstants.Dimensions.SPACING_LARGE),
                                         horizontalArrangement = Arrangement.SpaceEvenly
                                     ) {
                                         TraktStatItem(
@@ -327,7 +328,7 @@ fun TraktSettingsPage(
                                         )
                                     }
                                     
-                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
                                     
                                     // Additional Stats
                                     TraktInfoRow(
@@ -356,7 +357,7 @@ fun TraktSettingsPage(
                 }
                 
                 if (traktAuthState.isAuthorized) {
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_SECTION))
                     
                     // Sync Settings Section
                     TraktContentSection(
@@ -385,7 +386,7 @@ fun TraktSettingsPage(
                                     icon = Icons.Default.Launch
                                 )
                                 
-                                Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_MEDIUM))
                                 
                                 TraktToggleRow(
                                     label = "Sync after playback",
@@ -396,7 +397,7 @@ fun TraktSettingsPage(
                                 )
                                 
                                 if (traktSettingsState.lastSyncTimestamp > 0) {
-                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
                                     
                                     val dateFormat = SimpleDateFormat("MMMM dd, yyyy 'at' hh:mm a", Locale.getDefault())
                                     val lastSync = dateFormat.format(Date(traktSettingsState.lastSyncTimestamp))
@@ -405,10 +406,10 @@ fun TraktSettingsPage(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .background(
-                                                Color(0xFF222222),
-                                                RoundedCornerShape(8.dp)
+                                                StrmrConstants.Colors.CONTAINER_DARK,
+                                                StrmrConstants.Shapes.CORNER_RADIUS_STANDARD
                                             )
-                                            .padding(16.dp)
+                                            .padding(StrmrConstants.Dimensions.SPACING_STANDARD)
                                     ) {
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically
@@ -416,22 +417,22 @@ fun TraktSettingsPage(
                                             Icon(
                                                 imageVector = Icons.Default.Schedule,
                                                 contentDescription = null,
-                                                tint = Color(0xFF888888),
-                                                modifier = Modifier.size(16.dp)
+                                                tint = StrmrConstants.Colors.TEXT_SECONDARY,
+                                                modifier = Modifier.size(StrmrConstants.Dimensions.Icons.SMALL)
                                             )
-                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_SMALL))
                                             Text(
                                                 text = "Last sync:",
                                                 style = MaterialTheme.typography.bodySmall,
-                                                color = Color(0xFF888888)
+                                                color = StrmrConstants.Colors.TEXT_SECONDARY
                                             )
                                         }
                                         
                                         Text(
                                             text = lastSync,
                                             style = MaterialTheme.typography.bodyMedium,
-                                            color = Color.White,
-                                            modifier = Modifier.padding(top = 4.dp)
+                                            color = StrmrConstants.Colors.TEXT_PRIMARY,
+                                            modifier = Modifier.padding(top = StrmrConstants.Dimensions.SPACING_TINY)
                                         )
                                     }
                                 }
@@ -471,10 +472,10 @@ fun TraktNavSection(
 ) {
     Text(
         text = title,
-        fontSize = 14.sp,
+        fontSize = StrmrConstants.Typography.TEXT_SIZE_BODY,
         fontWeight = FontWeight.SemiBold,
-        color = Color(0xFF888888),
-        modifier = Modifier.padding(bottom = 12.dp)
+        color = StrmrConstants.Colors.TEXT_SECONDARY,
+        modifier = Modifier.padding(bottom = StrmrConstants.Dimensions.SPACING_MEDIUM)
     )
     
     items.filter { it.isVisible }.forEach { item ->
@@ -483,7 +484,7 @@ fun TraktNavSection(
             isSelected = selectedSection == item.sectionId,
             onClick = { onSectionClick(item.sectionId) }
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_SMALL))
     }
 }
 
@@ -498,25 +499,25 @@ fun TraktNavItemRow(
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .background(
-                if (isSelected) Color(0xFF007AFF).copy(alpha = 0.15f) else Color(0xFF1f1f1f)
+                if (isSelected) StrmrConstants.Colors.PRIMARY_BLUE.copy(alpha = StrmrConstants.Colors.Alpha.SUBTLE) else StrmrConstants.Colors.CONTAINER_DARK
             )
             .clickable { onClick() }
-            .padding(12.dp),
+            .padding(StrmrConstants.Dimensions.SPACING_MEDIUM),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = item.icon,
             contentDescription = null,
-            tint = Color.White,
-            modifier = Modifier.size(20.dp)
+            tint = StrmrConstants.Colors.TEXT_PRIMARY,
+            modifier = Modifier.size(StrmrConstants.Dimensions.SPACING_LARGE)
         )
         
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_MEDIUM))
         
         Text(
             text = item.title,
-            color = Color.White,
-            fontSize = 14.sp,
+            color = StrmrConstants.Colors.TEXT_PRIMARY,
+            fontSize = StrmrConstants.Typography.TEXT_SIZE_BODY,
             fontWeight = FontWeight.Medium,
             modifier = Modifier.weight(1f)
         )
@@ -524,21 +525,21 @@ fun TraktNavItemRow(
         if (item.isConnected != null) {
             Box(
                 modifier = Modifier
-                    .size(8.dp)
+                    .size(StrmrConstants.Dimensions.SPACING_SMALL)
                     .background(
-                        color = if (item.isConnected) Color(0xFF007AFF) else Color.Gray,
+                        color = if (item.isConnected) StrmrConstants.Colors.PRIMARY_BLUE else Color.Gray,
                         shape = androidx.compose.foundation.shape.CircleShape
                     )
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_SMALL))
         }
         
         if (item.showArrow) {
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
-                tint = Color(0xFF666666),
-                modifier = Modifier.size(16.dp)
+                tint = StrmrConstants.Colors.TEXT_TERTIARY,
+                modifier = Modifier.size(StrmrConstants.Dimensions.Icons.SMALL)
             )
         }
     }
@@ -556,15 +557,15 @@ fun TraktContentSection(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
-            modifier = Modifier.padding(bottom = 4.dp)
+            color = StrmrConstants.Colors.TEXT_PRIMARY,
+            modifier = Modifier.padding(bottom = StrmrConstants.Dimensions.SPACING_TINY)
         )
         
         Text(
             text = subtitle,
             style = MaterialTheme.typography.bodyMedium,
-            color = Color(0xFF888888),
-            modifier = Modifier.padding(bottom = 20.dp)
+            color = StrmrConstants.Colors.TEXT_SECONDARY,
+            modifier = Modifier.padding(bottom = StrmrConstants.Dimensions.SPACING_LARGE)
         )
         
         content()
@@ -585,13 +586,13 @@ fun ModernTraktCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1a1a1a)
+            containerColor = StrmrConstants.Colors.SURFACE_DARK
         ),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        shape = StrmrConstants.Shapes.CORNER_RADIUS_MEDIUM,
+        elevation = CardDefaults.cardElevation(defaultElevation = StrmrConstants.Dimensions.Elevation.STANDARD)
     ) {
         Column(
-            modifier = Modifier.padding(20.dp)
+            modifier = Modifier.padding(StrmrConstants.Dimensions.SPACING_LARGE)
         ) {
             Row(
                 modifier = Modifier
@@ -606,46 +607,46 @@ fun ModernTraktCard(
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
+                    tint = StrmrConstants.Colors.TEXT_PRIMARY,
+                    modifier = Modifier.size(StrmrConstants.Dimensions.Icons.STANDARD)
                 )
                 
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_STANDARD))
                 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = title,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color.White
+                        color = StrmrConstants.Colors.TEXT_PRIMARY
                     )
                     
                     Text(
                         text = subtitle,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF888888),
-                        modifier = Modifier.padding(top = 2.dp)
+                        color = StrmrConstants.Colors.TEXT_SECONDARY,
+                        modifier = Modifier.padding(top = StrmrConstants.Dimensions.Components.BORDER_WIDTH * 2)
                     )
                 }
                 
                 if (isConnected != null) {
                     Box(
                         modifier = Modifier
-                            .size(12.dp)
+                            .size(StrmrConstants.Dimensions.SPACING_MEDIUM)
                             .background(
-                                color = if (isConnected) Color(0xFF007AFF) else Color.Gray,
+                                color = if (isConnected) StrmrConstants.Colors.PRIMARY_BLUE else Color.Gray,
                                 shape = androidx.compose.foundation.shape.CircleShape
                             )
                     )
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_MEDIUM))
                 }
                 
                 if (showArrow && onClick != null) {
                     Icon(
                         imageVector = Icons.Default.ChevronRight,
                         contentDescription = null,
-                        tint = Color(0xFF666666),
-                        modifier = Modifier.size(20.dp)
+                        tint = StrmrConstants.Colors.TEXT_TERTIARY,
+                        modifier = Modifier.size(StrmrConstants.Dimensions.SPACING_LARGE)
                     )
                 }
             }
@@ -660,27 +661,27 @@ fun TraktInfoRow(
     label: String,
     value: String,
     icon: ImageVector,
-    valueColor: Color = Color.White
+    valueColor: Color = StrmrConstants.Colors.TEXT_PRIMARY
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .padding(vertical = StrmrConstants.Dimensions.SPACING_TINY * 1.5f),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = Color(0xFF888888),
-            modifier = Modifier.size(16.dp)
+            tint = StrmrConstants.Colors.TEXT_SECONDARY,
+            modifier = Modifier.size(StrmrConstants.Dimensions.Icons.SMALL)
         )
         
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_MEDIUM))
         
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            color = Color(0xFF888888),
+            color = StrmrConstants.Colors.TEXT_SECONDARY,
             modifier = Modifier.weight(1f)
         )
         
@@ -708,11 +709,11 @@ fun TraktToggleRow(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = Color(0xFF888888),
-            modifier = Modifier.size(20.dp)
+            tint = StrmrConstants.Colors.TEXT_SECONDARY,
+            modifier = Modifier.size(StrmrConstants.Dimensions.SPACING_LARGE)
         )
         
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_MEDIUM))
         
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -724,8 +725,8 @@ fun TraktToggleRow(
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF888888),
-                modifier = Modifier.padding(top = 2.dp)
+                color = StrmrConstants.Colors.TEXT_SECONDARY,
+                modifier = Modifier.padding(top = StrmrConstants.Dimensions.Components.BORDER_WIDTH * 2)
             )
         }
         
@@ -734,9 +735,9 @@ fun TraktToggleRow(
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
-                checkedTrackColor = Color(0xFF007AFF),
+                checkedTrackColor = StrmrConstants.Colors.PRIMARY_BLUE,
                 uncheckedThumbColor = Color.Gray,
-                uncheckedTrackColor = Color(0xFF333333)
+                uncheckedTrackColor = StrmrConstants.Colors.BORDER_DARK
             )
         )
     }
@@ -754,17 +755,17 @@ fun TraktStatItem(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = Color(0xFF007AFF),
-            modifier = Modifier.size(24.dp)
+            tint = StrmrConstants.Colors.PRIMARY_BLUE,
+            modifier = Modifier.size(StrmrConstants.Dimensions.Icons.STANDARD)
         )
         
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_SMALL))
         
         Text(
             text = value,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF007AFF)
+            color = StrmrConstants.Colors.PRIMARY_BLUE
         )
         
         Text(
@@ -806,9 +807,9 @@ fun ModernTraktAuthDialog(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(32.dp),
+                .padding(StrmrConstants.Dimensions.SPACING_SECTION),
             colors = CardDefaults.cardColors(
-                containerColor = Color(0xFF1a1a1a)
+                containerColor = StrmrConstants.Colors.SURFACE_DARK
             ),
             shape = RoundedCornerShape(16.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
@@ -816,17 +817,17 @@ fun ModernTraktAuthDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(32.dp),
+                    .padding(StrmrConstants.Dimensions.SPACING_SECTION),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Header with icon
                 Icon(
                     imageVector = Icons.Default.Security,
                     contentDescription = null,
-                    tint = Color(0xFF007AFF),
+                    tint = StrmrConstants.Colors.PRIMARY_BLUE,
                     modifier = Modifier
-                        .size(48.dp)
-                        .padding(bottom = 16.dp)
+                        .size(StrmrConstants.Dimensions.Icons.EXTRA_LARGE)
+                        .padding(bottom = StrmrConstants.Dimensions.SPACING_STANDARD)
                 )
                 
                 Text(
@@ -835,15 +836,15 @@ fun ModernTraktAuthDialog(
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(bottom = StrmrConstants.Dimensions.SPACING_SMALL)
                 )
                 
                 Text(
                     text = "To connect your Trakt account:",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF888888),
+                    color = StrmrConstants.Colors.TEXT_SECONDARY,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(bottom = 24.dp)
+                    modifier = Modifier.padding(bottom = StrmrConstants.Dimensions.SPACING_EXTRA_LARGE)
                 )
                 
                 // Steps
@@ -851,17 +852,17 @@ fun ModernTraktAuthDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
-                            Color(0xFF222222),
-                            RoundedCornerShape(12.dp)
+                            StrmrConstants.Colors.CONTAINER_DARK,
+                            StrmrConstants.Shapes.CORNER_RADIUS_MEDIUM
                         )
-                        .padding(20.dp)
+                        .padding(StrmrConstants.Dimensions.SPACING_LARGE)
                 ) {
                     AuthStep(
                         number = "1",
                         text = "Go to trakt.tv/activate"
                     )
                     
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_MEDIUM))
                     
                     AuthStep(
                         number = "2",
@@ -869,29 +870,29 @@ fun ModernTraktAuthDialog(
                     )
                 }
                 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_EXTRA_LARGE))
                 
                 // Auth Code
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = Color(0xFF007AFF).copy(alpha = 0.1f)
+                        containerColor = StrmrConstants.Colors.PRIMARY_BLUE.copy(alpha = StrmrConstants.Colors.Alpha.SUBTLE)
                     ),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = StrmrConstants.Shapes.CORNER_RADIUS_MEDIUM
                 ) {
                     Text(
                         text = userCode,
                         style = MaterialTheme.typography.displaySmall,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF007AFF),
+                        color = StrmrConstants.Colors.PRIMARY_BLUE,
                         textAlign = TextAlign.Center,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(24.dp)
+                            .padding(StrmrConstants.Dimensions.SPACING_EXTRA_LARGE)
                     )
                 }
                 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_EXTRA_LARGE))
                 
                 // Countdown
                 Row(
@@ -900,26 +901,26 @@ fun ModernTraktAuthDialog(
                     Icon(
                         imageVector = Icons.Default.Timer,
                         contentDescription = null,
-                        tint = if (currentTimeLeft <= 30) Color(0xFFFF3B30) else Color(0xFF888888),
-                        modifier = Modifier.size(16.dp)
+                        tint = if (currentTimeLeft <= StrmrConstants.Time.TRAKT_WARNING_THRESHOLD_SECONDS) StrmrConstants.Colors.ERROR_RED else StrmrConstants.Colors.TEXT_SECONDARY,
+                        modifier = Modifier.size(StrmrConstants.Dimensions.Icons.SMALL)
                     )
                     
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_SMALL))
                     
                     Text(
                         text = "Expires in ${currentTimeLeft}s",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = if (currentTimeLeft <= 30) Color(0xFFFF3B30) else Color(0xFF888888)
+                        color = if (currentTimeLeft <= StrmrConstants.Time.TRAKT_WARNING_THRESHOLD_SECONDS) StrmrConstants.Colors.ERROR_RED else StrmrConstants.Colors.TEXT_SECONDARY
                     )
                 }
                 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_EXTRA_LARGE))
                 
                 // Cancel button
                 Button(
                     onClick = onCancel,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF333333)
+                        containerColor = StrmrConstants.Colors.BORDER_DARK
                     ),
                     modifier = Modifier.fillMaxWidth()
                 ) {

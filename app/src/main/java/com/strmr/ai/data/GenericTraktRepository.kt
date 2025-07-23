@@ -10,6 +10,7 @@ import com.strmr.ai.data.database.MovieEntity
 import com.strmr.ai.data.database.TvShowEntity
 import com.strmr.ai.data.Actor
 import com.strmr.ai.data.SimilarContent
+import com.strmr.ai.ui.theme.StrmrConstants
 import com.strmr.ai.data.BelongsToCollection
 import com.strmr.ai.domain.usecase.FetchLogoUseCase
 import com.strmr.ai.domain.usecase.MediaType as LogoMediaType
@@ -131,8 +132,8 @@ class GenericTraktRepository @Inject constructor(
             Log.d("GenericTraktRepository", "📥 Loading page $page for movie data source: ${config.endpoint}")
             
             val response = when {
-                config.endpoint == "movies/trending" -> traktApiService.getTrendingMovies(page = page, limit = 50)
-                config.endpoint == "movies/popular" -> traktApiService.getPopularMovies(page = page, limit = 50)
+                config.endpoint == "movies/trending" -> traktApiService.getTrendingMovies(page = page, limit = StrmrConstants.Api.LARGE_PAGE_SIZE)
+                config.endpoint == "movies/popular" -> traktApiService.getPopularMovies(page = page, limit = StrmrConstants.Api.LARGE_PAGE_SIZE)
                 config.endpoint.startsWith("users/") && config.endpoint.endsWith("/items") -> {
                     // Extract username and list slug from endpoint
                     val parts = config.endpoint.split("/")
@@ -157,7 +158,7 @@ class GenericTraktRepository @Inject constructor(
             }
             
             // Calculate proper order based on page and API position
-            val pageSize = 50
+            val pageSize = StrmrConstants.Api.LARGE_PAGE_SIZE
             val baseOrder = (page - 1) * pageSize
             
             // Transform and insert new data with TMDB enrichment
@@ -214,8 +215,8 @@ class GenericTraktRepository @Inject constructor(
             Log.d("GenericTraktRepository", "📥 Loading page $page for TV data source: ${config.endpoint}")
             
             val response = when (config.endpoint) {
-                "shows/trending" -> traktApiService.getTrendingTvShows(page = page, limit = 50)
-                "shows/popular" -> traktApiService.getPopularTvShows(page = page, limit = 50)
+                "shows/trending" -> traktApiService.getTrendingTvShows(page = page, limit = StrmrConstants.Api.LARGE_PAGE_SIZE)
+                "shows/popular" -> traktApiService.getPopularTvShows(page = page, limit = StrmrConstants.Api.LARGE_PAGE_SIZE)
                 else -> {
                     Log.w("GenericTraktRepository", "⚠️ Unknown TV endpoint: ${config.endpoint}")
                     return 0
@@ -223,7 +224,7 @@ class GenericTraktRepository @Inject constructor(
             }
             
             // Calculate proper order based on page and API position
-            val pageSize = 50
+            val pageSize = StrmrConstants.Api.LARGE_PAGE_SIZE
             val baseOrder = (page - 1) * pageSize
             
             // Transform and insert new data with TMDB enrichment
@@ -431,8 +432,8 @@ class GenericTraktRepository @Inject constructor(
                 tmdbId = tmdbId,
                 imdbId = movie.ids.imdb,
                 title = details.title ?: movie.title,
-                posterUrl = details.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" },
-                backdropUrl = details.backdrop_path?.let { "https://image.tmdb.org/t/p/w780$it" },
+                posterUrl = details.poster_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W500 + it },
+                backdropUrl = details.backdrop_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W780 + it },
                 overview = details.overview,
                 rating = details.vote_average,
                 year = movie.year,
@@ -499,8 +500,8 @@ class GenericTraktRepository @Inject constructor(
                 tmdbId = tmdbId,
                 imdbId = show.ids.imdb,
                 title = details.name ?: show.title,
-                posterUrl = details.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" },
-                backdropUrl = details.backdrop_path?.let { "https://image.tmdb.org/t/p/w780$it" },
+                posterUrl = details.poster_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W500 + it },
+                backdropUrl = details.backdrop_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W780 + it },
                 overview = details.overview,
                 rating = details.vote_average,
                 logoUrl = logoUrl,
@@ -546,8 +547,8 @@ class GenericTraktRepository @Inject constructor(
                 tmdbId = tmdbId,
                 imdbId = show.ids.imdb,
                 title = details.name ?: show.title,
-                posterUrl = details.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" },
-                backdropUrl = details.backdrop_path?.let { "https://image.tmdb.org/t/p/w780$it" },
+                posterUrl = details.poster_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W500 + it },
+                backdropUrl = details.backdrop_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W780 + it },
                 overview = details.overview,
                 rating = details.vote_average,
                 year = show.year,

@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import java.util.*
 import com.strmr.ai.data.RetrofitInstance
+import com.strmr.ai.ui.theme.StrmrConstants
 import okhttp3.logging.HttpLoggingInterceptor
 
 class AccountRepository(
@@ -105,7 +106,7 @@ class AccountRepository(
 
     suspend fun getContinueWatching(): List<ContinueWatchingItem> {
         // Always get a valid, refreshed token
-        val accessToken = refreshTokenIfNeeded("trakt")?.trim()
+        val accessToken = refreshTokenIfNeeded(StrmrConstants.Preferences.ACCOUNT_TYPE_TRAKT)?.trim()
         Log.d("AccountRepository", "🔑 Using access token for continue watching: ${accessToken?.take(8)}...")
         if (!accessToken.isNullOrEmpty()) {
             try {
@@ -132,7 +133,7 @@ class AccountRepository(
 
     suspend fun saveTraktTokens(accessToken: String, refreshToken: String, expiresIn: Int, createdAt: Long) {
         val accountEntity = AccountEntity(
-            accountType = "trakt",
+            accountType = StrmrConstants.Preferences.ACCOUNT_TYPE_TRAKT,
             accessToken = accessToken,
             refreshToken = refreshToken,
             expiresAt = (createdAt * 1000L) + (expiresIn * 1000L)
@@ -141,6 +142,6 @@ class AccountRepository(
     }
 
     suspend fun clearTraktTokens() {
-        accountDao.deleteAccount("trakt")
+        accountDao.deleteAccount(StrmrConstants.Preferences.ACCOUNT_TYPE_TRAKT)
     }
 } 

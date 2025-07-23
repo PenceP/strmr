@@ -19,6 +19,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.strmr.ai.ui.theme.StrmrConstants
 import com.strmr.ai.viewmodel.PremiumizeSettingsViewModel
 import kotlinx.coroutines.launch
 
@@ -43,9 +44,9 @@ fun SimplePremiumizeSettingsPage(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF0a0a0a),
-                        Color(0xFF1a1a1a),
-                        Color(0xFF0f0f0f)
+                        StrmrConstants.Colors.BACKGROUND_DARKER,
+                        StrmrConstants.Colors.SURFACE_DARK,
+                        StrmrConstants.Colors.BACKGROUND_DARK
                     )
                 )
             )
@@ -53,7 +54,7 @@ fun SimplePremiumizeSettingsPage(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(32.dp)
+                .padding(StrmrConstants.Dimensions.SPACING_SECTION)
         ) {
             // Header
             Row(
@@ -62,104 +63,104 @@ fun SimplePremiumizeSettingsPage(
             ) {
                 IconButton(
                     onClick = onBackPressed,
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
                 ) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
                         contentDescription = "Back",
-                        tint = Color.White,
-                        modifier = Modifier.size(24.dp)
+                        tint = StrmrConstants.Colors.TEXT_PRIMARY,
+                        modifier = Modifier.size(StrmrConstants.Dimensions.Icons.STANDARD)
                     )
                 }
                 
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_STANDARD))
                 
                 Column {
                     Text(
                         text = "Premiumize",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = StrmrConstants.Colors.TEXT_PRIMARY
                     )
                     
                     Text(
                         text = "Configure your Premiumize API key",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF888888)
+                        color = StrmrConstants.Colors.TEXT_SECONDARY
                     )
                 }
             }
             
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.Icons.EXTRA_LARGE))
             
             // Status Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFF1a1a1a)
+                    containerColor = StrmrConstants.Colors.SURFACE_DARK
                 ),
-                shape = RoundedCornerShape(12.dp)
+                shape = StrmrConstants.Shapes.CORNER_RADIUS_MEDIUM
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(20.dp),
+                        .padding(StrmrConstants.Dimensions.SPACING_LARGE),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = if (isConfigured) Icons.Default.CheckCircle else Icons.Default.Error,
                         contentDescription = null,
-                        tint = if (isConfigured) Color(0xFF4CAF50) else Color(0xFF888888),
-                        modifier = Modifier.size(24.dp)
+                        tint = if (isConfigured) StrmrConstants.Colors.SUCCESS_GREEN else StrmrConstants.Colors.TEXT_SECONDARY,
+                        modifier = Modifier.size(StrmrConstants.Dimensions.Icons.STANDARD)
                     )
                     
-                    Spacer(modifier = Modifier.width(16.dp))
+                    Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_STANDARD))
                     
                     Column {
                         Text(
                             text = if (isConfigured) "Configured" else "Not Configured",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color.White
+                            color = StrmrConstants.Colors.TEXT_PRIMARY
                         )
                         
                         Text(
                             text = if (isConfigured) "Ready to fetch streams" else "Enter your API key below",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color(0xFF888888)
+                            color = StrmrConstants.Colors.TEXT_SECONDARY
                         )
                     }
                 }
             }
             
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_SECTION))
             
             // API Key Section
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFF1a1a1a)
+                    containerColor = StrmrConstants.Colors.SURFACE_DARK
                 ),
-                shape = RoundedCornerShape(12.dp)
+                shape = StrmrConstants.Shapes.CORNER_RADIUS_MEDIUM
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(20.dp)
+                        .padding(StrmrConstants.Dimensions.SPACING_LARGE)
                 ) {
                     Text(
                         text = "API Key",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color.White,
-                        modifier = Modifier.padding(bottom = 8.dp)
+                        color = StrmrConstants.Colors.TEXT_PRIMARY,
+                        modifier = Modifier.padding(bottom = StrmrConstants.Dimensions.SPACING_SMALL)
                     )
                     
                     Text(
                         text = "Find your API key at premiumize.me/account",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF888888),
-                        modifier = Modifier.padding(bottom = 16.dp)
+                        color = StrmrConstants.Colors.TEXT_SECONDARY,
+                        modifier = Modifier.padding(bottom = StrmrConstants.Dimensions.SPACING_STANDARD)
                     )
                     
                     // API Key Input
@@ -177,34 +178,34 @@ fun SimplePremiumizeSettingsPage(
                                 Icon(
                                     imageVector = if (isApiKeyVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                                     contentDescription = if (isApiKeyVisible) "Hide API key" else "Show API key",
-                                    tint = Color(0xFF888888)
+                                    tint = StrmrConstants.Colors.TEXT_SECONDARY
                                 )
                             }
                         },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF007AFF),
-                            unfocusedBorderColor = Color(0xFF333333),
-                            focusedLabelColor = Color(0xFF007AFF),
-                            unfocusedLabelColor = Color(0xFF888888),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            cursorColor = Color(0xFF007AFF)
+                            focusedBorderColor = StrmrConstants.Colors.PRIMARY_BLUE,
+                            unfocusedBorderColor = StrmrConstants.Colors.BORDER_DARK,
+                            focusedLabelColor = StrmrConstants.Colors.PRIMARY_BLUE,
+                            unfocusedLabelColor = StrmrConstants.Colors.TEXT_SECONDARY,
+                            focusedTextColor = StrmrConstants.Colors.TEXT_PRIMARY,
+                            unfocusedTextColor = StrmrConstants.Colors.TEXT_PRIMARY,
+                            cursorColor = StrmrConstants.Colors.PRIMARY_BLUE
                         ),
                         modifier = Modifier.fillMaxWidth()
                     )
                     
                     // Error message
                     validationError?.let { error ->
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_SMALL))
                         Text(
                             text = error,
-                            color = Color(0xFFFF3B30),
+                            color = StrmrConstants.Colors.ERROR_RED,
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
                     
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
                     
                     // Save Button
                     Button(
@@ -231,33 +232,33 @@ fun SimplePremiumizeSettingsPage(
                         },
                         enabled = !isValidating && apiKey.isNotBlank(),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF007AFF),
-                            disabledContainerColor = Color(0xFF333333)
+                            containerColor = StrmrConstants.Colors.PRIMARY_BLUE,
+                            disabledContainerColor = StrmrConstants.Colors.BORDER_DARK
                         ),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         if (isValidating) {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                color = Color.White,
-                                strokeWidth = 2.dp
+                                modifier = Modifier.size(StrmrConstants.Dimensions.Icons.SMALL),
+                                color = StrmrConstants.Colors.TEXT_PRIMARY,
+                                strokeWidth = StrmrConstants.Dimensions.Components.BORDER_WIDTH * 2
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_SMALL))
                             Text("Validating...")
                         } else {
                             Icon(
                                 imageVector = Icons.Default.Save,
                                 contentDescription = null,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(StrmrConstants.Dimensions.Icons.SMALL)
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_SMALL))
                             Text("Save API Key")
                         }
                     }
                     
                     // Clear Button (if configured)
                     if (isConfigured) {
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_SMALL))
                         
                         OutlinedButton(
                             onClick = {
@@ -267,16 +268,16 @@ fun SimplePremiumizeSettingsPage(
                                 validationError = null
                             },
                             colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = Color(0xFFFF3B30)
+                                contentColor = StrmrConstants.Colors.ERROR_RED
                             ),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Delete,
                                 contentDescription = null,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(StrmrConstants.Dimensions.Icons.SMALL)
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_SMALL))
                             Text("Clear API Key")
                         }
                     }

@@ -20,6 +20,7 @@ import com.strmr.ai.data.database.EpisodeDao
 import com.strmr.ai.data.database.SeasonEntity
 import com.strmr.ai.data.database.EpisodeEntity
 import com.strmr.ai.utils.DateFormatter
+import com.strmr.ai.ui.theme.StrmrConstants
 
 class TvShowRepository(
     private val tvShowDao: TvShowDao,
@@ -124,8 +125,8 @@ class TvShowRepository(
                 tmdbId = tmdbId,
                 imdbId = imdbId,
                 title = details.name ?: show.title,
-                posterUrl = details.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" },
-                backdropUrl = details.backdrop_path?.let { "https://image.tmdb.org/t/p/w780$it" },
+                posterUrl = details.poster_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W500 + it },
+                backdropUrl = details.backdrop_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W780 + it },
                 overview = details.overview,
                 rating = details.vote_average,
                 logoUrl = cached?.logoUrl,
@@ -167,8 +168,8 @@ class TvShowRepository(
                 tmdbId = tmdbId,
                 imdbId = imdbId,
                 title = details.name ?: "",
-                posterUrl = details.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" },
-                backdropUrl = details.backdrop_path?.let { "https://image.tmdb.org/t/p/w780$it" },
+                posterUrl = details.poster_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W500 + it },
+                backdropUrl = details.backdrop_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W780 + it },
                 overview = details.overview,
                 rating = details.vote_average,
                 logoUrl = null, // Will be fetched on demand
@@ -234,7 +235,7 @@ class TvShowRepository(
             
             Log.d("TvShowRepository", "🌐 Selected logo for tmdbId=$tmdbId: iso=${logo?.iso_639_1}, path=${logo?.file_path}")
             
-            val logoUrl = logo?.file_path?.let { "https://image.tmdb.org/t/p/w500$it" }
+            val logoUrl = logo?.file_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W500 + it }
             Log.d("TvShowRepository", "🌐 Final logo URL for tmdbId=$tmdbId: $logoUrl")
             
             val imdbId = details.imdb_id
@@ -247,8 +248,8 @@ class TvShowRepository(
                 tmdbId = tmdbId,
                 imdbId = imdbId,
                 title = details.name ?: "",
-                posterUrl = details.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" },
-                backdropUrl = details.backdrop_path?.let { "https://image.tmdb.org/t/p/w780$it" },
+                posterUrl = details.poster_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W500 + it },
+                backdropUrl = details.backdrop_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W780 + it },
                 overview = details.overview,
                 rating = details.vote_average,
                 logoUrl = logoUrl,
@@ -321,7 +322,7 @@ class TvShowRepository(
                             seasonNumber = seasonDetails.season_number,
                             name = seasonDetails.name,
                             overview = seasonDetails.overview,
-                            posterUrl = seasonDetails.poster_path?.let { path -> "https://image.tmdb.org/t/p/w300$path" },
+                            posterUrl = seasonDetails.poster_path?.let { path -> StrmrConstants.Api.TMDB_IMAGE_BASE_W300 + path },
                             episodeCount = seasonDetails.episodes?.size ?: 0,
                             airDate = seasonDetails.air_date,
                             lastUpdated = now
@@ -354,7 +355,7 @@ class TvShowRepository(
                     episodeNumber = episode.episode_number,
                     name = episode.name,
                     overview = episode.overview,
-                    stillUrl = episode.still_path?.let { path -> "https://image.tmdb.org/t/p/w300$path" },
+                    stillUrl = episode.still_path?.let { path -> StrmrConstants.Api.TMDB_IMAGE_BASE_W300 + path },
                     airDate = episode.air_date,
                     runtime = episode.runtime,
                     lastUpdated = now
@@ -381,8 +382,8 @@ class TvShowRepository(
                 SimilarContent(
                     tmdbId = item.id,
                     title = item.name ?: "",
-                    posterUrl = item.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" },
-                    backdropUrl = item.backdrop_path?.let { "https://image.tmdb.org/t/p/w780$it" },
+                    posterUrl = item.poster_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W500 + it },
+                    backdropUrl = item.backdrop_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W780 + it },
                     rating = item.vote_average,
                     year = DateFormatter.extractYear(item.first_air_date),
                     mediaType = "tv"

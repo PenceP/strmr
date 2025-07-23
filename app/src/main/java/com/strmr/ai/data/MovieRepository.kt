@@ -17,6 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import com.strmr.ai.utils.DateFormatter
+import com.strmr.ai.ui.theme.StrmrConstants
 
 class MovieRepository(
     private val movieDao: MovieDao,
@@ -124,8 +125,8 @@ class MovieRepository(
                 tmdbId = tmdbId,
                 imdbId = imdbId,
                 title = details.title ?: movie.title,
-                posterUrl = details.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" },
-                backdropUrl = details.backdrop_path?.let { "https://image.tmdb.org/t/p/w780$it" },
+                posterUrl = details.poster_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W500 + it },
+                backdropUrl = details.backdrop_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W780 + it },
                 overview = details.overview,
                 rating = details.vote_average,
                 logoUrl = cached?.logoUrl, // Preserve existing logo
@@ -169,8 +170,8 @@ class MovieRepository(
                 tmdbId = tmdbId,
                 imdbId = imdbId,
                 title = details.title ?: "",
-                posterUrl = details.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" },
-                backdropUrl = details.backdrop_path?.let { "https://image.tmdb.org/t/p/w780$it" },
+                posterUrl = details.poster_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W500 + it },
+                backdropUrl = details.backdrop_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W780 + it },
                 overview = details.overview,
                 rating = details.vote_average,
                 logoUrl = null, // Will be fetched on demand
@@ -251,7 +252,7 @@ class MovieRepository(
             Log.d("MovieRepository", "🎬 Belongs to collection: ${details.belongs_to_collection}")
             val logo = images.logos.firstOrNull { it.iso_639_1 == "en" && !it.file_path.isNullOrBlank() }
                 ?: images.logos.firstOrNull { !it.file_path.isNullOrBlank() }
-            val logoUrl = logo?.file_path?.let { "https://image.tmdb.org/t/p/w500$it" }
+            val logoUrl = logo?.file_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W500 + it }
             val imdbId = details.imdb_id
             if (!logoUrl.isNullOrBlank()) {
                 movieDao.updateMovieLogo(tmdbId, logoUrl)
@@ -260,8 +261,8 @@ class MovieRepository(
                 tmdbId = tmdbId,
                 imdbId = imdbId,
                 title = details.title ?: "",
-                posterUrl = details.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" },
-                backdropUrl = details.backdrop_path?.let { "https://image.tmdb.org/t/p/w780$it" },
+                posterUrl = details.poster_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W500 + it },
+                backdropUrl = details.backdrop_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W780 + it },
                 overview = details.overview,
                 rating = details.vote_average,
                 logoUrl = logoUrl,
@@ -312,8 +313,8 @@ class MovieRepository(
                 SimilarContent(
                     tmdbId = item.id,
                     title = item.title ?: "",
-                    posterUrl = item.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" },
-                    backdropUrl = item.backdrop_path?.let { "https://image.tmdb.org/t/p/w780$it" },
+                    posterUrl = item.poster_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W500 + it },
+                    backdropUrl = item.backdrop_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W780 + it },
                     rating = item.vote_average,
                     year = DateFormatter.extractYear(item.release_date),
                     mediaType = "movie"
