@@ -101,6 +101,7 @@ fun DetailsPage(
     onAddToCollection: () -> Unit = {},
     onNavigateToSimilar: (String, Int) -> Unit = { _, _ -> }, // New navigation callback
     onTrailer: (String, String) -> Unit = { _, _ -> }, // Trailer navigation callback
+    onMoreEpisodes: () -> Unit = {},
     cachedSeason: Int? = null,
     cachedEpisode: Int? = null
 ) {
@@ -113,7 +114,17 @@ fun DetailsPage(
     when (mediaDetails) {
         is MediaDetailsType.Movie -> MovieDetailsView(mediaDetails.movie, viewModel, onPlay, onAddToCollection, onNavigateToSimilar, onTrailer)
         is MediaDetailsType.TvShow -> {
-            TvShowDetailsView(mediaDetails.show, viewModel, onPlay, onAddToCollection, onNavigateToSimilar, onTrailer, cachedSeason, cachedEpisode)
+            TvShowDetailsView(
+                mediaDetails.show,
+                viewModel,
+                onPlay,
+                onAddToCollection,
+                onNavigateToSimilar,
+                onTrailer,
+                onMoreEpisodes,
+                cachedSeason,
+                cachedEpisode
+            )
         }
     }
 }
@@ -280,13 +291,18 @@ fun MovieDetailsView(
             ) {
                 // Buttons row
                 Box(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.fillMaxWidth(0.4f).align(Alignment.CenterStart)) {
+                    Column(modifier = Modifier
+                        .fillMaxWidth(0.4f)
+                        .align(Alignment.CenterStart)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                             val playButtonInteractionSource = remember { MutableInteractionSource() }
                             val playButtonIsFocused by playButtonInteractionSource.collectIsFocusedAsState()
                             FrostedGlassButton(
                                 onClick = { onPlay(null, null) },
-                                modifier = Modifier.weight(1f).height(48.dp).focusRequester(playButtonFocusRequester),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                                    .focusRequester(playButtonFocusRequester),
                                 interactionSource = playButtonInteractionSource,
                                 isFocused = playButtonIsFocused,
                                 text = "Play",
@@ -307,7 +323,9 @@ fun MovieDetailsView(
                                         }
                                     }
                                 },
-                                modifier = Modifier.weight(1f).height(48.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp),
                                 interactionSource = trailerButtonInteractionSource,
                                 isFocused = trailerButtonIsFocused,
                                 text = "Trailer",
@@ -559,7 +577,9 @@ private fun HeaderSection(
             AsyncImage(
                 model = logoUrl,
                 contentDescription = movie.title,
-                modifier = Modifier.height(72.dp).padding(bottom = 16.dp)
+                modifier = Modifier
+                    .height(72.dp)
+                    .padding(bottom = 16.dp)
             )
         } else {
             Text(
@@ -618,13 +638,18 @@ private fun HeaderSection(
         
         // 4. Buttons (max width 40% of screen)
         Box(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.fillMaxWidth(0.4f).align(Alignment.CenterStart)) {
+            Column(modifier = Modifier
+                .fillMaxWidth(0.4f)
+                .align(Alignment.CenterStart)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     val playButtonInteractionSource = remember { MutableInteractionSource() }
                     val playButtonIsFocused by playButtonInteractionSource.collectIsFocusedAsState()
                     FrostedGlassButton(
                         onClick = { onPlay(null, null) },
-                        modifier = Modifier.weight(1f).height(48.dp).focusRequester(playButtonFocusRequester),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                            .focusRequester(playButtonFocusRequester),
                         interactionSource = playButtonInteractionSource,
                         isFocused = playButtonIsFocused,
                         text = "Play",
@@ -634,7 +659,9 @@ private fun HeaderSection(
                     val trailerButtonIsFocused by trailerButtonInteractionSource.collectIsFocusedAsState()
                     FrostedGlassButton(
                         onClick = { /* TODO: Trailer */ },
-                        modifier = Modifier.weight(1f).height(48.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
                         interactionSource = trailerButtonInteractionSource,
                         isFocused = trailerButtonIsFocused,
                         text = "Trailer",
@@ -647,7 +674,9 @@ private fun HeaderSection(
                     val collectionButtonIsFocused by collectionButtonInteractionSource.collectIsFocusedAsState()
                     FrostedGlassButton(
                         onClick = onAddToCollection,
-                        modifier = Modifier.weight(1f).height(48.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
                         interactionSource = collectionButtonInteractionSource,
                         isFocused = collectionButtonIsFocused,
                         text = "Collection",
@@ -675,7 +704,9 @@ private fun HeaderSection(
                     val watchlistButtonIsFocused by watchlistButtonInteractionSource.collectIsFocusedAsState()
                     FrostedGlassButton(
                         onClick = { /* TODO: Watchlist */ },
-                        modifier = Modifier.weight(1f).height(48.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
                         interactionSource = watchlistButtonInteractionSource,
                         isFocused = watchlistButtonIsFocused,
                         text = "Watchlist",
@@ -703,7 +734,9 @@ private fun HeaderSection(
                     val moreButtonIsFocused by moreButtonInteractionSource.collectIsFocusedAsState()
                     FrostedGlassButton(
                         onClick = { /* TODO: More */ },
-                        modifier = Modifier.weight(1f).height(48.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
                         interactionSource = moreButtonInteractionSource,
                         isFocused = moreButtonIsFocused,
                         text = "...",
@@ -723,6 +756,7 @@ fun TvShowDetailsView(
     onAddToCollection: () -> Unit,
     onNavigateToSimilar: (String, Int) -> Unit,
     onTrailer: (String, String) -> Unit,
+    onMoreEpisodes: () -> Unit = {},
     cachedSeason: Int? = null,
     cachedEpisode: Int? = null
 ) {
@@ -923,7 +957,9 @@ fun TvShowDetailsView(
             ) {
                 // Buttons row
                 Box(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.fillMaxWidth(0.4f).align(Alignment.CenterStart)) {
+                    Column(modifier = Modifier
+                        .fillMaxWidth(0.4f)
+                        .align(Alignment.CenterStart)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                             val playButtonInteractionSource = remember { MutableInteractionSource() }
                             val playButtonIsFocused by playButtonInteractionSource.collectIsFocusedAsState()
@@ -932,7 +968,10 @@ fun TvShowDetailsView(
                             Log.d("TvShowDetailsView", "🎯 DEBUG: Play button text: '$playButtonText' (selectedSeason: $selectedSeason, episodeNumber: $episodeNumber)")
                             FrostedGlassButton(
                                 onClick = { onPlay(selectedSeason, episodeNumber) },
-                                modifier = Modifier.weight(1f).height(48.dp).focusRequester(playButtonFocusRequester),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                                    .focusRequester(playButtonFocusRequester),
                                 interactionSource = playButtonInteractionSource,
                                 isFocused = playButtonIsFocused,
                                 text = playButtonText,
@@ -953,10 +992,24 @@ fun TvShowDetailsView(
                                         }
                                     }
                                 },
-                                modifier = Modifier.weight(1f).height(48.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp),
                                 interactionSource = trailerButtonInteractionSource,
                                 isFocused = trailerButtonIsFocused,
                                 text = "Trailer",
+                                textColor = Color.White
+                            )
+                            val moreEpisodesButtonInteractionSource = remember { MutableInteractionSource() }
+                            val moreEpisodesButtonIsFocused by moreEpisodesButtonInteractionSource.collectIsFocusedAsState()
+                            FrostedGlassButton(
+                                onClick = onMoreEpisodes,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp),
+                                interactionSource = moreEpisodesButtonInteractionSource,
+                                isFocused = moreEpisodesButtonIsFocused,
+                                text = "More Episodes",
                                 textColor = Color.White
                             )
                         }
@@ -1327,7 +1380,9 @@ fun FrostedGlassButton(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
-                    color = if (isFocused) Color.White.copy(alpha = 0.95f) else Color.Black.copy(alpha = 0.6f),
+                    color = if (isFocused) Color.White.copy(alpha = 0.95f) else Color.Black.copy(
+                        alpha = 0.6f
+                    ),
                     shape = RoundedCornerShape(cornerRadius)
                 )
         )

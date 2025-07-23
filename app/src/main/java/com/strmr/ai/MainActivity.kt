@@ -45,6 +45,7 @@ import com.strmr.ai.data.database.TvShowEntity
 import com.strmr.ai.ui.screens.DetailsPage
 import com.strmr.ai.ui.screens.MediaDetailsType
 import com.strmr.ai.ui.screens.VideoPlayerScreen
+import com.strmr.ai.ui.screens.EpisodeView
 import android.util.Log
 import dagger.hilt.android.AndroidEntryPoint
 import com.strmr.ai.viewmodel.HomeViewModel
@@ -55,6 +56,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import javax.inject.Inject
+import androidx.media3.common.util.UnstableApi
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -67,8 +69,8 @@ class MainActivity : ComponentActivity() {
     
     @Inject
     lateinit var youtubeExtractor: YouTubeExtractor
-    
-    @OptIn(ExperimentalTvMaterial3Api::class)
+
+    @OptIn(ExperimentalTvMaterial3Api::class, UnstableApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -282,7 +284,10 @@ fun MainScreen(youtubeExtractor: YouTubeExtractor) {
                                 navController.navigate("video_player/$encodedUrl/$encodedTitle")
                             },
                             cachedSeason = season,
-                            cachedEpisode = episode
+                            cachedEpisode = episode,
+                            onMoreEpisodes = {
+                                navController.navigate("episode_view/$tmdbId/${season ?: 1}/${episode ?: 1}")
+                            }
                         )
                     }
                 }
@@ -336,7 +341,10 @@ fun MainScreen(youtubeExtractor: YouTubeExtractor) {
                                 navController.navigate("video_player/$encodedUrl/$encodedTitle")
                             },
                             cachedSeason = season,
-                            cachedEpisode = episode
+                            cachedEpisode = episode,
+                            onMoreEpisodes = {
+                                navController.navigate("episode_view/$tmdbId/${season ?: 1}/${episode ?: 1}")
+                            }
                         )
                     }
                 }
@@ -359,6 +367,40 @@ fun MainScreen(youtubeExtractor: YouTubeExtractor) {
                         onBack = { navController.popBackStack() },
                         youtubeExtractor = youtubeExtractor
                     )
+                }
+                composable(
+                    route = "episode_view/{tmdbId}/{season}/{episode}",
+                    arguments = listOf(
+                        navArgument("tmdbId") { type = NavType.IntType },
+                        navArgument("season") { type = NavType.IntType },
+                        navArgument("episode") { type = NavType.IntType }
+                    )
+                ) { backStackEntry ->
+                    val tmdbId = backStackEntry.arguments?.getInt("tmdbId")
+                    val season = backStackEntry.arguments?.getInt("season")
+                    val episode = backStackEntry.arguments?.getInt("episode")
+
+                    val detailsViewModel: com.strmr.ai.viewmodel.DetailsViewModel = hiltViewModel()
+                    val show by detailsViewModel.tvShow.collectAsState()
+
+                    LaunchedEffect(tmdbId) {
+                        if (tmdbId != null) {
+                            detailsViewModel.loadTvShow(tmdbId)
+                        }
+                    }
+
+                    show?.let {
+                        EpisodeView(
+                            show = it,
+                            viewModel = detailsViewModel,
+                            onEpisodeClick = { selectedSeason, selectedEpisode ->
+                                navController.navigate("details/tvshow/$tmdbId/$selectedSeason/$selectedEpisode")
+                            },
+                            onBack = { navController.popBackStack() },
+                            initialSeason = season,
+                            initialEpisode = episode
+                        )
+                    }
                 }
             }
         }
