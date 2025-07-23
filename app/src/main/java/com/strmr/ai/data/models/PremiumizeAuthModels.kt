@@ -34,15 +34,25 @@ data class PremiumizeDeviceCodeResponse(
 // User account models
 data class PremiumizeAccount(
     @SerializedName("customer_id")
-    val customerId: String,
-    val email: String,
+    val customerId: String?,
+    val email: String?,
     @SerializedName("premium_until")
     val premiumUntil: Long,
     val status: String,
     @SerializedName("space_used")
-    val spaceUsed: Long,
+    val spaceUsed: Double,
     @SerializedName("limit_used")
-    val limitUsed: Long,
+    val limitUsed: Double,
     @SerializedName("space_limit")
-    val spaceLimit: Long? = 1099511627776L // 1TB default
-)
+    val spaceLimit: Double? = 1024.0 // 1TB default in GB
+) {
+    // Helper properties to convert GB to bytes for UI consistency
+    val spaceUsedBytes: Long
+        get() = (spaceUsed * 1073741824).toLong() // Convert GB to bytes
+    
+    val limitUsedBytes: Long
+        get() = (limitUsed * 1073741824).toLong() // Convert GB to bytes
+    
+    val spaceLimitBytes: Long
+        get() = ((spaceLimit ?: 1024.0) * 1073741824).toLong() // Convert GB to bytes
+}

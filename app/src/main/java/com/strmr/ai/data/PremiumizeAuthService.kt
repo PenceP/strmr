@@ -6,7 +6,7 @@ import retrofit2.http.*
 interface PremiumizeAuthService {
     companion object {
         const val BASE_URL = "https://www.premiumize.me/"
-        const val CLIENT_ID = "strmr-androidtv" // You'll need to register your app with Premiumize
+        const val CLIENT_ID = "784355782"
         const val REDIRECT_URI = "urn:ietf:wg:oauth:2.0:oob"
     }
     

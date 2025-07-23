@@ -28,9 +28,10 @@ import com.strmr.ai.ui.screens.MoviesPage
 import com.strmr.ai.ui.screens.PlaceholderPage
 import com.strmr.ai.ui.screens.SearchPage
 import com.strmr.ai.ui.screens.SettingsPage
+import com.strmr.ai.ui.screens.StreamSelectionPage
 import com.strmr.ai.ui.screens.TvShowsPage
 import com.strmr.ai.ui.screens.TraktSettingsPage
-import com.strmr.ai.ui.screens.PremiumizeSettingsPage
+import com.strmr.ai.ui.screens.SimplePremiumizeSettingsPage
 import com.strmr.ai.ui.screens.RealDebridSettingsPage
 import com.strmr.ai.ui.screens.SplashScreen
 import com.strmr.ai.ui.theme.StrmrTheme
@@ -221,7 +222,7 @@ fun MainScreen(youtubeExtractor: YouTubeExtractor) {
                     )
                 }
                 composable("premiumize_settings") {
-                    PremiumizeSettingsPage(
+                    SimplePremiumizeSettingsPage(
                         onBackPressed = { navController.popBackStack() }
                     )
                 }
@@ -259,6 +260,14 @@ fun MainScreen(youtubeExtractor: YouTubeExtractor) {
                         "movie" -> DetailsPage(
                             mediaDetails = movie?.let { MediaDetailsType.Movie(it) },
                             viewModel = detailsViewModel,
+                            onPlay = { _, _ ->
+                                movie?.let { movieEntity ->
+                                    val imdbId = movieEntity.imdbId ?: ""
+                                    val title = movieEntity.title ?: "Unknown Movie"
+                                    Log.d("MainActivity", "🎬 Play button clicked for movie: $title (IMDB: $imdbId)")
+                                    navController.navigate("stream_selection/movie/$imdbId/$title")
+                                }
+                            },
                             onNavigateToSimilar = { mediaType, tmdbId ->
                                 val route = "details/$mediaType/$tmdbId"
                                 navController.navigate(route)
@@ -272,6 +281,14 @@ fun MainScreen(youtubeExtractor: YouTubeExtractor) {
                         "tvshow" -> DetailsPage(
                             mediaDetails = show?.let { MediaDetailsType.TvShow(it) },
                             viewModel = detailsViewModel,
+                            onPlay = { selectedSeason, selectedEpisode ->
+                                show?.let { showEntity ->
+                                    val imdbId = showEntity.imdbId ?: ""
+                                    val title = showEntity.title ?: "Unknown TV Show"
+                                    Log.d("MainActivity", "📺 Play button clicked for TV show: $title (IMDB: $imdbId) S${selectedSeason}E${selectedEpisode}")
+                                    navController.navigate("stream_selection/tvshow/$imdbId/$title/$selectedSeason/$selectedEpisode")
+                                }
+                            },
                             onNavigateToSimilar = { mediaType, tmdbId ->
                                 val route = "details/$mediaType/$tmdbId"
                                 navController.navigate(route)
@@ -317,6 +334,14 @@ fun MainScreen(youtubeExtractor: YouTubeExtractor) {
                         "movie" -> DetailsPage(
                             mediaDetails = movie?.let { MediaDetailsType.Movie(it) },
                             viewModel = detailsViewModel,
+                            onPlay = { _, _ ->
+                                movie?.let { movieEntity ->
+                                    val imdbId = movieEntity.imdbId ?: ""
+                                    val title = movieEntity.title ?: "Unknown Movie"
+                                    Log.d("MainActivity", "🎬 Play button clicked for movie: $title (IMDB: $imdbId)")
+                                    navController.navigate("stream_selection/movie/$imdbId/$title")
+                                }
+                            },
                             onNavigateToSimilar = { mediaType, tmdbId ->
                                 val route = "details/$mediaType/$tmdbId"
                                 navController.navigate(route)
@@ -330,6 +355,14 @@ fun MainScreen(youtubeExtractor: YouTubeExtractor) {
                         "tvshow" -> DetailsPage(
                             mediaDetails = show?.let { MediaDetailsType.TvShow(it) },
                             viewModel = detailsViewModel,
+                            onPlay = { selectedSeason, selectedEpisode ->
+                                show?.let { showEntity ->
+                                    val imdbId = showEntity.imdbId ?: ""
+                                    val title = showEntity.title ?: "Unknown TV Show"
+                                    Log.d("MainActivity", "📺 Play button clicked for TV show: $title (IMDB: $imdbId) S${selectedSeason}E${selectedEpisode}")
+                                    navController.navigate("stream_selection/tvshow/$imdbId/$title/$selectedSeason/$selectedEpisode")
+                                }
+                            },
                             onTrailer = { videoUrl, title ->
                                 val encodedUrl = java.net.URLEncoder.encode(videoUrl, "UTF-8")
                                 val encodedTitle = java.net.URLEncoder.encode(title, "UTF-8")
@@ -339,6 +372,62 @@ fun MainScreen(youtubeExtractor: YouTubeExtractor) {
                             cachedEpisode = episode
                         )
                     }
+                }
+                // Stream Selection Routes
+                composable(
+                    route = "stream_selection/movie/{imdbId}/{title}",
+                    arguments = listOf(
+                        navArgument("imdbId") { type = NavType.StringType },
+                        navArgument("title") { type = NavType.StringType }
+                    )
+                ) { backStackEntry ->
+                    val imdbId = backStackEntry.arguments?.getString("imdbId") ?: ""
+                    val title = backStackEntry.arguments?.getString("title") ?: "Unknown Movie"
+                    
+                    StreamSelectionPage(
+                        mediaTitle = title,
+                        imdbId = imdbId,
+                        type = "movie",
+                        onBackPressed = { navController.popBackStack() },
+                        onStreamSelected = { stream ->
+                            stream.url?.let { url ->
+                                val encodedUrl = java.net.URLEncoder.encode(url, "UTF-8")
+                                val encodedTitle = java.net.URLEncoder.encode(title, "UTF-8")
+                                navController.navigate("video_player/$encodedUrl/$encodedTitle")
+                            }
+                        }
+                    )
+                }
+                composable(
+                    route = "stream_selection/tvshow/{imdbId}/{title}/{season}/{episode}",
+                    arguments = listOf(
+                        navArgument("imdbId") { type = NavType.StringType },
+                        navArgument("title") { type = NavType.StringType },
+                        navArgument("season") { type = NavType.IntType },
+                        navArgument("episode") { type = NavType.IntType }
+                    )
+                ) { backStackEntry ->
+                    val imdbId = backStackEntry.arguments?.getString("imdbId") ?: ""
+                    val title = backStackEntry.arguments?.getString("title") ?: "Unknown TV Show"
+                    val season = backStackEntry.arguments?.getInt("season") ?: 1
+                    val episode = backStackEntry.arguments?.getInt("episode") ?: 1
+                    
+                    StreamSelectionPage(
+                        mediaTitle = title,
+                        imdbId = imdbId,
+                        type = "tvshow",
+                        season = season,
+                        episode = episode,
+                        onBackPressed = { navController.popBackStack() },
+                        onStreamSelected = { stream ->
+                            stream.url?.let { url ->
+                                val encodedUrl = java.net.URLEncoder.encode(url, "UTF-8")
+                                val streamTitle = "$title S${season}E${episode}"
+                                val encodedTitle = java.net.URLEncoder.encode(streamTitle, "UTF-8")
+                                navController.navigate("video_player/$encodedUrl/$encodedTitle")
+                            }
+                        }
+                    )
                 }
                 composable(
                     route = "video_player/{videoUrl}/{title}",
