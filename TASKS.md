@@ -330,7 +330,7 @@
     - [ ] Create Retrofit service for Premiumize API endpoints
     - [ ] Add secure storage for Premiumize API keys using EncryptedSharedPreferences (or in accounts db with trakt api)
     - [ ] Implement API key validation and refresh mechanisms
-    - [ ] Add user settings screen for debrid service configuration
+    - [x] Add user settings screen for debrid service configuration
 
 - [ ] **Alternative Debrid Services Support**
     - [ ] Research and document Real-Debrid API integration
@@ -428,3 +428,8 @@
 ### 22. Branding
 - [ ] All logos (different size for all Android TVs, circle, square, landscape, etc)
 - [ ] Splash Screen display with animation while background loading completes (rows load/init db/etc)
+
+### 23. Links Select Page
+- [ ] Proper Style
+- [ ] Get rid of play button icon, move Filesze to that location
+
