@@ -20,6 +20,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -82,19 +85,19 @@ fun StreamSelectionPage(
                     .height(120.dp)
             ) {
                 // Back button positioned absolutely
-                IconButton(
-                    onClick = onBackPressed,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .align(Alignment.CenterStart)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+                //IconButton(
+                //    onClick = onBackPressed,
+                //    modifier = Modifier
+                //        .size(48.dp)
+                //        .align(Alignment.CenterStart)
+                //) {
+                //    Icon(
+                //        imageVector = Icons.Default.ArrowBack,
+                //        contentDescription = "Back",
+                //        tint = Color.White,
+                //        modifier = Modifier.size(24.dp)
+                //    )
+                //}
                 
                 // Logo centered in the box
                 logoUrl?.let { url ->
@@ -241,17 +244,24 @@ fun StreamItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
+    
     Card(
         modifier = modifier
             .fillMaxWidth()
+            .focusable(interactionSource = interactionSource)
             .clickable { onClick() }
             .border(
                 width = 1.dp,
-                color = Color.White.copy(alpha = 0.1f),
+                color = if (isFocused) Color.Transparent else Color.White.copy(alpha = 0.1f),
                 shape = RoundedCornerShape(12.dp)
             ),
         colors = CardDefaults.cardColors(
-            containerColor = Color.Black.copy(alpha = 0.4f)
+            containerColor = if (isFocused) 
+                Color.White.copy(alpha = 0.95f) 
+            else 
+                Color.Black.copy(alpha = 0.6f)
         ),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -300,8 +310,8 @@ fun StreamItem(
                     Text(
                         text = stream.displayName,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White,
+                        fontWeight = if (isFocused) FontWeight.Medium else FontWeight.SemiBold,
+                        color = if (isFocused) Color.Black else Color.White,
                         maxLines = 1
                     )
                 }
@@ -314,7 +324,7 @@ fun StreamItem(
                     Text(
                         text = stream.displaySize,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFF888888)
+                        color = if (isFocused) Color.Black.copy(alpha = 0.7f) else Color(0xFF888888)
                     )
                     
                     if (stream.seeders != null && stream.seeders > 0) {
@@ -322,14 +332,14 @@ fun StreamItem(
                         Icon(
                             imageVector = Icons.Default.CloudUpload,
                             contentDescription = null,
-                            tint = Color(0xFF4CAF50),
+                            tint = if (isFocused) Color(0xFF2E7D32) else Color(0xFF4CAF50),
                             modifier = Modifier.size(14.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "${stream.seeders} seeders",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF888888)
+                            color = if (isFocused) Color.Black.copy(alpha = 0.7f) else Color(0xFF888888)
                         )
                     }
                 }
@@ -341,7 +351,7 @@ fun StreamItem(
             Icon(
                 imageVector = Icons.Default.PlayArrow,
                 contentDescription = "Play",
-                tint = Color(0xFF007AFF),
+                tint = if (isFocused) Color.Black else Color(0xFF007AFF),
                 modifier = Modifier.size(24.dp)
             )
         }
