@@ -422,5 +422,9 @@
 - Design with scalability in mind for adding more scraper services in the future
 
 
-### 21. Update Continue Watching Logig
+### 21. Update Continue Watching Logic
 - [ ] Do not show episode in row if episode is not yet released 
+
+### 22. Branding
+- [ ] All logos (different size for all Android TVs, circle, square, landscape, etc)
+- [ ] Splash Screen display with animation while background loading completes (rows load/init db/etc)
