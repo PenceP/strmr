@@ -74,7 +74,18 @@ data class Stream(
         get() = size ?: title?.let { extractSize(it) } ?: "Unknown"
     
     val displayName: String
-        get() = name ?: title ?: "Unknown Source"
+        get() {
+            // Prefer title (actual torrent name) over generic name
+            val baseName = title ?: name ?: "Unknown Source"
+            
+            // If we have Premiumize processing indicators, keep them
+            return if (behaviorHints?.proxyHeaders?.containsKey("X-Cached") == true) {
+                val prefix = "[PM+]"
+                if (baseName.startsWith(prefix)) baseName else "$prefix $baseName"
+            } else {
+                baseName
+            }
+        }
     
     private fun extractSize(title: String): String {
         val sizeRegex = """(\d+\.?\d*)\s*(GB|MB)""".toRegex(RegexOption.IGNORE_CASE)

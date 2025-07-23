@@ -311,8 +311,6 @@ class ScraperRepository @Inject constructor(
     }
     
     private fun filterAndSortStreams(streams: List<Stream>): List<Stream> {
-        val qualityPref = encryptedPrefs.getString(KEY_QUALITY_PREFERENCE, "1080p") ?: "1080p"
-        
         return streams
             .filter { stream ->
                 // Filter out CAM/TS releases
@@ -320,13 +318,11 @@ class ScraperRepository @Inject constructor(
                 !title.contains("cam") && !title.contains("ts") && !title.contains("telesync")
             }
             .sortedWith(compareBy(
-                // Prioritize streams with direct URLs (ready to play)
+                // 1. Prioritize streams with direct URLs (ready to play)
                 { stream -> stream.url.isNullOrBlank() },
-                // Then prioritize cached streams
+                // 2. Then prioritize cached streams
                 { it.behaviorHints?.proxyHeaders?.get("X-Cached") != "true" },
-                // Then by quality match
-                { it.displayQuality != qualityPref },
-                // Then by quality order
+                // 3. Sort by quality: 4K -> 1080p -> 720p -> 480p -> Unknown
                 { 
                     when (it.displayQuality) {
                         "4K" -> 0
@@ -336,9 +332,34 @@ class ScraperRepository @Inject constructor(
                         else -> 4
                     }
                 },
-                // Then by seeders
-                { -(it.seeders ?: 0) }
+                // 4. Within each quality, sort by file size (largest first)
+                { -parseFileSizeInBytes(it.displaySize) }
             ))
+    }
+    
+    private fun parseFileSizeInBytes(sizeString: String): Long {
+        return try {
+            val regex = """(\d+\.?\d*)\s*(GB|MB|KB|TB)""".toRegex(RegexOption.IGNORE_CASE)
+            val matchResult = regex.find(sizeString)
+            
+            if (matchResult != null) {
+                val size = matchResult.groupValues[1].toDoubleOrNull() ?: 0.0
+                val unit = matchResult.groupValues[2].uppercase()
+                
+                when (unit) {
+                    "TB" -> (size * 1024 * 1024 * 1024 * 1024).toLong()
+                    "GB" -> (size * 1024 * 1024 * 1024).toLong()
+                    "MB" -> (size * 1024 * 1024).toLong()
+                    "KB" -> (size * 1024).toLong()
+                    else -> 0L
+                }
+            } else {
+                0L
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to parse file size: $sizeString", e)
+            0L
+        }
     }
     
     private fun buildTorrentioConfig(apiKey: String): String {

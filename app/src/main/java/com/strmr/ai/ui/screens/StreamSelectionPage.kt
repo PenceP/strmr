@@ -2,9 +2,11 @@ package com.strmr.ai.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -12,14 +14,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.strmr.ai.data.models.Stream
 import com.strmr.ai.viewmodel.StreamSelectionViewModel
 
@@ -28,6 +33,7 @@ fun StreamSelectionPage(
     mediaTitle: String,
     imdbId: String,
     type: String,
+    backdropUrl: String? = null,
     season: Int? = null,
     episode: Int? = null,
     onBackPressed: () -> Unit,
@@ -48,16 +54,35 @@ fun StreamSelectionPage(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF0a0a0a),
-                        Color(0xFF1a1a1a),
-                        Color(0xFF0f0f0f)
+            .background(Color.Black.copy(alpha = 0.8f))
+    ) {
+        // Backdrop
+        backdropUrl?.let {
+            AsyncImage(
+                model = it,
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blur(radius = 8.dp),
+                contentScale = ContentScale.Crop,
+                alpha = 0.9f
+            )
+        }
+        
+        // Gradient overlay
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Black.copy(alpha = 0.0f),
+                            Color.Black.copy(alpha = 0.0f),
+                            Color.Black.copy(alpha = 0.0f)
+                        )
                     )
                 )
-            )
-    ) {
+        )
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -231,7 +256,7 @@ fun StreamItem(
             .fillMaxWidth()
             .clickable { onClick() },
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1a1a1a)
+            containerColor = Color(0xCC1a1a1a)
         ),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -247,10 +272,10 @@ fun StreamItem(
                 modifier = Modifier
                     .background(
                         color = when (stream.displayQuality) {
-                            "4K" -> Color(0xFF4CAF50)
-                            "1080p" -> Color(0xFF2196F3)
-                            "720p" -> Color(0xFFFF9800)
-                            else -> Color(0xFF9E9E9E)
+                            "4K" -> Color(0xFFEFC700)      // Gold
+                            "1080p" -> Color(0xFF2196F3)   // Blue
+                            "720p" -> Color(0xFFE53E3E)    // Red
+                            else -> Color(0xFF9E9E9E)      // Gray for Unknown/CAM/etc
                         },
                         shape = RoundedCornerShape(6.dp)
                     )
@@ -271,14 +296,20 @@ fun StreamItem(
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                Text(
-                    text = stream.displayName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.White,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                // Horizontally scrollable title text
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                ) {
+                    Text(
+                        text = stream.displayName,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White,
+                        maxLines = 1
+                    )
+                }
                 
                 Spacer(modifier = Modifier.height(4.dp))
                 

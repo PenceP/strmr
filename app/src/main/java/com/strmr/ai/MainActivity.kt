@@ -266,8 +266,10 @@ fun MainScreen(youtubeExtractor: YouTubeExtractor) {
                                 movie?.let { movieEntity ->
                                     val imdbId = movieEntity.imdbId ?: ""
                                     val title = movieEntity.title ?: "Unknown Movie"
+                                    val backdrop = movieEntity.backdropUrl ?: ""
                                     Log.d("MainActivity", "🎬 Play button clicked for movie: $title (IMDB: $imdbId)")
-                                    navController.navigate("stream_selection/movie/$imdbId/$title")
+                                    val encodedBackdrop = java.net.URLEncoder.encode(backdrop, "UTF-8")
+                                    navController.navigate("stream_selection/movie/$imdbId/$title/$encodedBackdrop")
                                 }
                             },
                             onNavigateToSimilar = { mediaType, tmdbId ->
@@ -287,8 +289,10 @@ fun MainScreen(youtubeExtractor: YouTubeExtractor) {
                                 show?.let { showEntity ->
                                     val imdbId = showEntity.imdbId ?: ""
                                     val title = showEntity.title ?: "Unknown TV Show"
+                                    val backdrop = showEntity.backdropUrl ?: ""
                                     Log.d("MainActivity", "📺 Play button clicked for TV show: $title (IMDB: $imdbId) S${selectedSeason}E${selectedEpisode}")
-                                    navController.navigate("stream_selection/tvshow/$imdbId/$title/$selectedSeason/$selectedEpisode")
+                                    val encodedBackdrop = java.net.URLEncoder.encode(backdrop, "UTF-8")
+                                    navController.navigate("stream_selection/tvshow/$imdbId/$title/$encodedBackdrop/$selectedSeason/$selectedEpisode")
                                 }
                             },
                             onNavigateToSimilar = { mediaType, tmdbId ->
@@ -343,8 +347,10 @@ fun MainScreen(youtubeExtractor: YouTubeExtractor) {
                                 movie?.let { movieEntity ->
                                     val imdbId = movieEntity.imdbId ?: ""
                                     val title = movieEntity.title ?: "Unknown Movie"
+                                    val backdrop = movieEntity.backdropUrl ?: ""
                                     Log.d("MainActivity", "🎬 Play button clicked for movie: $title (IMDB: $imdbId)")
-                                    navController.navigate("stream_selection/movie/$imdbId/$title")
+                                    val encodedBackdrop = java.net.URLEncoder.encode(backdrop, "UTF-8")
+                                    navController.navigate("stream_selection/movie/$imdbId/$title/$encodedBackdrop")
                                 }
                             },
                             onNavigateToSimilar = { mediaType, tmdbId ->
@@ -364,8 +370,10 @@ fun MainScreen(youtubeExtractor: YouTubeExtractor) {
                                 show?.let { showEntity ->
                                     val imdbId = showEntity.imdbId ?: ""
                                     val title = showEntity.title ?: "Unknown TV Show"
+                                    val backdrop = showEntity.backdropUrl ?: ""
                                     Log.d("MainActivity", "📺 Play button clicked for TV show: $title (IMDB: $imdbId) S${selectedSeason}E${selectedEpisode}")
-                                    navController.navigate("stream_selection/tvshow/$imdbId/$title/$selectedSeason/$selectedEpisode")
+                                    val encodedBackdrop = java.net.URLEncoder.encode(backdrop, "UTF-8")
+                                    navController.navigate("stream_selection/tvshow/$imdbId/$title/$encodedBackdrop/$selectedSeason/$selectedEpisode")
                                 }
                             },
                             onTrailer = { videoUrl, title ->
@@ -383,19 +391,25 @@ fun MainScreen(youtubeExtractor: YouTubeExtractor) {
                 }
                 // Stream Selection Routes
                 composable(
-                    route = "stream_selection/movie/{imdbId}/{title}",
+                    route = "stream_selection/movie/{imdbId}/{title}/{backdrop}",
                     arguments = listOf(
                         navArgument("imdbId") { type = NavType.StringType },
-                        navArgument("title") { type = NavType.StringType }
+                        navArgument("title") { type = NavType.StringType },
+                        navArgument("backdrop") { type = NavType.StringType }
                     )
                 ) { backStackEntry ->
                     val imdbId = backStackEntry.arguments?.getString("imdbId") ?: ""
                     val title = backStackEntry.arguments?.getString("title") ?: "Unknown Movie"
+                    val encodedBackdrop = backStackEntry.arguments?.getString("backdrop") ?: ""
+                    val backdropUrl = if (encodedBackdrop.isNotEmpty()) {
+                        java.net.URLDecoder.decode(encodedBackdrop, "UTF-8")
+                    } else null
                     
                     StreamSelectionPage(
                         mediaTitle = title,
                         imdbId = imdbId,
                         type = "movie",
+                        backdropUrl = backdropUrl,
                         onBackPressed = { navController.popBackStack() },
                         onStreamSelected = { stream ->
                             stream.url?.let { url ->
@@ -407,16 +421,21 @@ fun MainScreen(youtubeExtractor: YouTubeExtractor) {
                     )
                 }
                 composable(
-                    route = "stream_selection/tvshow/{imdbId}/{title}/{season}/{episode}",
+                    route = "stream_selection/tvshow/{imdbId}/{title}/{backdrop}/{season}/{episode}",
                     arguments = listOf(
                         navArgument("imdbId") { type = NavType.StringType },
                         navArgument("title") { type = NavType.StringType },
+                        navArgument("backdrop") { type = NavType.StringType },
                         navArgument("season") { type = NavType.IntType },
                         navArgument("episode") { type = NavType.IntType }
                     )
                 ) { backStackEntry ->
                     val imdbId = backStackEntry.arguments?.getString("imdbId") ?: ""
                     val title = backStackEntry.arguments?.getString("title") ?: "Unknown TV Show"
+                    val encodedBackdrop = backStackEntry.arguments?.getString("backdrop") ?: ""
+                    val backdropUrl = if (encodedBackdrop.isNotEmpty()) {
+                        java.net.URLDecoder.decode(encodedBackdrop, "UTF-8")
+                    } else null
                     val season = backStackEntry.arguments?.getInt("season") ?: 1
                     val episode = backStackEntry.arguments?.getInt("episode") ?: 1
                     
@@ -424,6 +443,7 @@ fun MainScreen(youtubeExtractor: YouTubeExtractor) {
                         mediaTitle = title,
                         imdbId = imdbId,
                         type = "tvshow",
+                        backdropUrl = backdropUrl,
                         season = season,
                         episode = episode,
                         onBackPressed = { navController.popBackStack() },
