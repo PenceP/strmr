@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.border
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -34,6 +35,7 @@ fun StreamSelectionPage(
     imdbId: String,
     type: String,
     backdropUrl: String? = null,
+    logoUrl: String? = null,
     season: Int? = null,
     episode: Int? = null,
     onBackPressed: () -> Unit,
@@ -54,9 +56,9 @@ fun StreamSelectionPage(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.8f))
+            .background(Color.Black)
     ) {
-        // Backdrop
+        // Backdrop with single transparency layer
         backdropUrl?.let {
             AsyncImage(
                 model = it,
@@ -65,37 +67,26 @@ fun StreamSelectionPage(
                     .fillMaxSize()
                     .blur(radius = 8.dp),
                 contentScale = ContentScale.Crop,
-                alpha = 0.9f
+                alpha = 0.3f
             )
         }
-        
-        // Gradient overlay
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Black.copy(alpha = 0.0f),
-                            Color.Black.copy(alpha = 0.0f),
-                            Color.Black.copy(alpha = 0.0f)
-                        )
-                    )
-                )
-        )
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(32.dp)
         ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+            // Header with logo
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
             ) {
+                // Back button positioned absolutely
                 IconButton(
                     onClick = onBackPressed,
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier
+                        .size(48.dp)
+                        .align(Alignment.CenterStart)
                 ) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
@@ -105,32 +96,31 @@ fun StreamSelectionPage(
                     )
                 }
                 
-                Spacer(modifier = Modifier.width(16.dp))
-                
-                Column {
-                    Text(
-                        text = "Stream Selection",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                // Logo centered in the box
+                logoUrl?.let { url ->
+                    AsyncImage(
+                        model = url,
+                        contentDescription = mediaTitle,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(75.dp)
+                            .align(Alignment.Center),
+                        contentScale = ContentScale.Fit,
+                        alignment = Alignment.Center
                     )
-                    
-                    val subtitle = buildString {
-                        append(mediaTitle)
-                        if (season != null && episode != null) {
-                            append(" • S${season}E${episode}")
-                        }
-                    }
-                    
+                } ?: run {
+                    // Fallback if no logo URL
                     Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF888888)
+                        text = mediaTitle,
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.align(Alignment.Center)
                     )
                 }
             }
             
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(18.dp))
             
             // Content
             when {
@@ -254,12 +244,17 @@ fun StreamItem(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onClick() },
+            .clickable { onClick() }
+            .border(
+                width = 1.dp,
+                color = Color.White.copy(alpha = 0.1f),
+                shape = RoundedCornerShape(12.dp)
+            ),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xCC1a1a1a)
+            containerColor = Color.Black.copy(alpha = 0.4f)
         ),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
