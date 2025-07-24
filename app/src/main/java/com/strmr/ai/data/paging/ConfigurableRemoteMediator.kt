@@ -9,6 +9,7 @@ import androidx.room.withTransaction
 import com.strmr.ai.data.DataSourceConfig
 import com.strmr.ai.data.GenericTraktRepository
 import com.strmr.ai.data.database.StrmrDatabase
+import com.strmr.ai.ui.theme.StrmrConstants
 import com.strmr.ai.data.database.MovieEntity
 import com.strmr.ai.data.database.TvShowEntity
 
@@ -90,7 +91,7 @@ class ConfigurableRemoteMediator<T : Any>(
                     }
                     
                     // Calculate next page based on actual page size from config
-                    val pageSize = 50  // Should match PagingConfig pageSize
+                    val pageSize = StrmrConstants.Paging.PAGE_SIZE_STANDARD  // Should match PagingConfig pageSize
                     val nextPage = (dbCount / pageSize) + 1
                     
                     // Log current position for debugging

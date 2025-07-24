@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.strmr.ai.data.OnboardingService
 
 /**
  * Base ViewModel that handles configuration-driven data loading
@@ -22,7 +23,8 @@ import kotlinx.coroutines.launch
  */
 abstract class BaseConfigurableViewModel<T : Any>(
     private val genericRepository: GenericTraktRepository,
-    private val mediaType: MediaType
+    private val mediaType: MediaType,
+    private val onboardingService: OnboardingService
 ) : ViewModel() {
     
     protected val _uiState = MutableStateFlow(UiState<T>())
@@ -126,6 +128,13 @@ abstract class BaseConfigurableViewModel<T : Any>(
     private fun checkAndRefreshEmptyDataSources() {
         viewModelScope.launch {
             try {
+                // Skip if onboarding was completed - data should already be populated
+                if (onboardingService.isOnboardingCompleted()) {
+                    Log.d("BaseConfigurableViewModel", "✅ Onboarding completed, data should already be populated")
+                    initialLoadComplete = true
+                    return@launch
+                }
+                
                 pageConfiguration?.let { config ->
                     val enabledRows = config.rows.filter { it.enabled }
                     for (row in enabledRows) {

@@ -4,11 +4,13 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
+import com.strmr.ai.ui.theme.StrmrConstants
 import androidx.paging.cachedIn
 import com.strmr.ai.data.DataSourceConfig
 import com.strmr.ai.data.GenericTraktRepository
 import com.strmr.ai.data.MediaType
 import com.strmr.ai.data.OmdbRepository
+import com.strmr.ai.data.OnboardingService
 import com.strmr.ai.data.OmdbResponse
 import com.strmr.ai.data.database.TvShowEntity
 import com.strmr.ai.domain.usecase.FetchLogoUseCase
@@ -29,8 +31,9 @@ import android.util.Log
 class GenericTvShowsViewModel @Inject constructor(
     private val genericRepository: GenericTraktRepository,
     private val fetchLogoUseCase: FetchLogoUseCase,
-    private val omdbRepository: OmdbRepository
-) : BaseConfigurableViewModel<TvShowEntity>(genericRepository, MediaType.TV_SHOW) {
+    private val omdbRepository: OmdbRepository,
+    onboardingService: OnboardingService
+) : BaseConfigurableViewModel<TvShowEntity>(genericRepository, MediaType.TV_SHOW, onboardingService) {
     
     // Track logo URLs separately for immediate UI updates
     private val _logoUrls = MutableStateFlow<Map<Int, String>>(emptyMap())
@@ -45,10 +48,10 @@ class GenericTvShowsViewModel @Inject constructor(
     ): Flow<PagingData<TvShowEntity>> {
         return Pager(
             config = PagingConfig(
-                pageSize = 20,
+                pageSize = StrmrConstants.Paging.PAGE_SIZE_SMALL,
                 enablePlaceholders = false,
-                prefetchDistance = 10,  // Prefetch when within 10 items of the end
-                initialLoadSize = 20  // Load same size for initial load
+                prefetchDistance = StrmrConstants.Paging.PREFETCH_DISTANCE_STANDARD,  // Prefetch when within 10 items of the end
+                initialLoadSize = StrmrConstants.Paging.PAGE_SIZE_SMALL  // Load same size for initial load
             ),
             remoteMediator = com.strmr.ai.data.paging.ConfigurableRemoteMediator(
                 config = config,

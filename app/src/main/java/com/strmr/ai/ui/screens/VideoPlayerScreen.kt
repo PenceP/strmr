@@ -16,7 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.strmr.ai.ui.components.VideoPlayer
+import com.strmr.ai.ui.components.CleanVideoPlayer
 import com.strmr.ai.ui.components.YouTubeWebPlayer
 import com.strmr.ai.data.YouTubeExtractor
 import android.content.Intent
@@ -148,8 +148,8 @@ fun VideoPlayerScreen(
                 )
             }
             else -> {
-                // Use ExoPlayer for direct video URLs
-                VideoPlayer(
+                // Use CleanVideoPlayer for direct video URLs
+                CleanVideoPlayer(
                     videoUrl = actualVideoUrl,
                     modifier = Modifier.fillMaxSize(),
                     onPlayerError = { error ->

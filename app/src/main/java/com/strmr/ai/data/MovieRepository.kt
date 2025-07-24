@@ -12,7 +12,6 @@ import com.strmr.ai.data.database.CollectionEntity
 import com.strmr.ai.data.database.StrmrDatabase
 import com.strmr.ai.data.database.TraktRatingsDao
 import com.strmr.ai.data.database.TraktRatingsEntity
-import com.strmr.ai.data.paging.MoviesRemoteMediator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -26,7 +25,8 @@ class MovieRepository(
     tmdbApi: TmdbApiService,
     database: StrmrDatabase,
     traktRatingsDao: TraktRatingsDao,
-    private val trailerService: TrailerService
+    private val trailerService: TrailerService,
+    private val tmdbEnrichmentService: TmdbEnrichmentService
 ) : BaseMediaRepository<MovieEntity, Movie, TrendingMovie>(
     traktApi, tmdbApi, database, traktRatingsDao
 ) {
@@ -35,62 +35,6 @@ class MovieRepository(
     fun getTrendingMovies(): Flow<List<MovieEntity>> = movieDao.getTrendingMovies()
     fun getPopularMovies(): Flow<List<MovieEntity>> = movieDao.getPopularMovies()
     
-    @OptIn(ExperimentalPagingApi::class)
-    fun getTrendingMoviesPager(): Flow<PagingData<MovieEntity>> {
-        return createPager(
-            contentType = ContentType.TRENDING,
-            remoteMediator = MoviesRemoteMediator(
-                contentType = MoviesRemoteMediator.ContentType.TRENDING,
-                database = database,
-                traktApi = traktApi,
-                tmdbApi = tmdbApi,
-                movieRepository = this
-            ),
-            pagingSourceFactory = { movieDao.getTrendingMoviesPagingSource() }
-        )
-    }
-    
-    @OptIn(ExperimentalPagingApi::class)
-    fun getPopularMoviesPager(): Flow<PagingData<MovieEntity>> {
-        return createPager(
-            contentType = ContentType.POPULAR,
-            remoteMediator = MoviesRemoteMediator(
-                contentType = MoviesRemoteMediator.ContentType.POPULAR,
-                database = database,
-                traktApi = traktApi,
-                tmdbApi = tmdbApi,
-                movieRepository = this
-            ),
-            pagingSourceFactory = { movieDao.getPopularMoviesPagingSource() }
-        )
-    }
-    
-    suspend fun loadMoreTrendingMovies() {
-        refreshContent(
-            contentType = ContentType.TRENDING,
-            fetchTrendingFromTrakt = { page, limit -> traktApi.getTrendingMovies(page, limit) },
-            fetchPopularFromTrakt = { _, _ -> emptyList() }, // Not used for trending
-            mapTrendingToEntity = { trendingMovie, order -> 
-                fetchAndMapToEntity(trendingMovie.movie, trendingOrder = order)
-            },
-            mapPopularToEntity = { _, _ -> null } // Not used for trending
-        )
-    }
-    
-    suspend fun loadMorePopularMovies() {
-        refreshContent(
-            contentType = ContentType.POPULAR,
-            fetchTrendingFromTrakt = { _, _ -> emptyList() }, // Not used for popular
-            fetchPopularFromTrakt = { page, limit -> traktApi.getPopularMovies(page, limit) },
-            mapTrendingToEntity = { _, _ -> null }, // Not used for popular
-            mapPopularToEntity = { movie, order -> 
-                fetchAndMapToEntity(movie, popularOrder = order)
-            }
-        )
-    }
-
-    suspend fun refreshTrendingMovies() = loadMoreTrendingMovies()
-    suspend fun refreshPopularMovies() = loadMorePopularMovies()
 
     suspend fun mapTraktMovieToEntity(
         movie: Movie,
@@ -105,53 +49,18 @@ class MovieRepository(
         trendingOrder: Int? = null,
         popularOrder: Int? = null
     ): MovieEntity? {
-        val tmdbId = movie.ids.tmdb ?: return null
-        val traktId = movie.ids.trakt ?: return null
-        val imdbId = movie.ids.imdb
-        return try {
-            val details = tmdbApi.getMovieDetails(tmdbId)
-            val credits = tmdbApi.getMovieCredits(tmdbId)
-            
-            // Use cached Trakt ratings instead of direct API call
-            val traktRatings = getTraktRatings(traktId)
-            val cached = movieDao.getMovieByTmdbId(tmdbId)
-            
-            // Fetch collection data if available
-            val collection = details.belongs_to_collection?.let { belongsToCollection ->
-                getOrFetchCollection(belongsToCollection.id)
-            }
-            
-            MovieEntity(
-                tmdbId = tmdbId,
-                imdbId = imdbId,
-                title = details.title ?: movie.title,
-                posterUrl = details.poster_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W500 + it },
-                backdropUrl = details.backdrop_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W780 + it },
-                overview = details.overview,
-                rating = details.vote_average,
-                logoUrl = cached?.logoUrl, // Preserve existing logo
-                traktRating = traktRatings?.rating,
-                traktVotes = traktRatings?.votes,
-                year = DateFormatter.extractYear(details.release_date),
-                releaseDate = details.release_date,
-                runtime = details.runtime,
-                genres = details.genres.map { it.name },
-                cast = credits.cast.take(15).map { 
-                    Actor(
-                        id = it.id,
-                        name = it.name,
-                        character = it.character,
-                        profilePath = it.profile_path
-                    )
-                },
-                belongsToCollection = details.belongs_to_collection,
-                trendingOrder = trendingOrder ?: cached?.trendingOrder, // Preserve other order
-                popularOrder = popularOrder ?: cached?.popularOrder
-            )
-        } catch (e: Exception) {
-            Log.e("MovieRepository", "Error fetching details for ${movie.title}", e)
-            null
+        val dataSourceId = when {
+            trendingOrder != null -> "trending"
+            popularOrder != null -> "popular"
+            else -> null
         }
+        val orderValue = trendingOrder ?: popularOrder
+        
+        return tmdbEnrichmentService.enrichMovie(
+            movie = movie,
+            dataSourceId = dataSourceId,
+            orderValue = orderValue
+        )
     }
 
     suspend fun getOrFetchMovie(tmdbId: Int): MovieEntity? {
@@ -159,39 +68,19 @@ class MovieRepository(
         if (cachedMovie != null) {
             return cachedMovie
         }
+        
         return try {
-            val details = tmdbApi.getMovieDetails(tmdbId)
-            val credits = tmdbApi.getMovieCredits(tmdbId)
-            val imdbId = details.imdb_id
-            Log.d("MovieRepository", "🎬 Movie details fetched for TMDB ID: $tmdbId")
-            Log.d("MovieRepository", "🎬 Movie title: ${details.title}")
-            Log.d("MovieRepository", "🎬 Belongs to collection: ${details.belongs_to_collection}")
-            val entity = MovieEntity(
-                tmdbId = tmdbId,
-                imdbId = imdbId,
-                title = details.title ?: "",
-                posterUrl = details.poster_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W500 + it },
-                backdropUrl = details.backdrop_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W780 + it },
-                overview = details.overview,
-                rating = details.vote_average,
-                logoUrl = null, // Will be fetched on demand
-                traktRating = 0f, // No Trakt rating available here
-                traktVotes = 0,   // No Trakt votes available here
-                year = DateFormatter.extractYear(details.release_date),
-                releaseDate = details.release_date,
-                runtime = details.runtime,
-                genres = details.genres.map { it.name },
-                cast = credits.cast.take(15).map { 
-                    Actor(
-                        id = it.id,
-                        name = it.name,
-                        character = it.character,
-                        profilePath = it.profile_path
-                    )
-                },
-                belongsToCollection = details.belongs_to_collection
+            // Create a minimal Movie object for enrichment
+            val basicMovie = Movie(
+                title = "", // Will be filled by enrichment service
+                year = null,
+                ids = MovieIds(tmdb = tmdbId, trakt = null, imdb = null, slug = null)
             )
-            movieDao.insertMovies(listOf(entity))
+            
+            val entity = tmdbEnrichmentService.enrichMovie(basicMovie)
+            entity?.let {
+                movieDao.insertMovies(listOf(it))
+            }
             entity
         } catch (e: Exception) {
             Log.e("MovieRepository", "Error fetching movie with tmdbId $tmdbId", e)
@@ -242,49 +131,13 @@ class MovieRepository(
         if (cachedMovie != null && !cachedMovie.logoUrl.isNullOrBlank()) {
             return cachedMovie
         }
-        // Fetch logo from TMDB if missing
+        
+        // Use TmdbEnrichmentService to fetch with logo
         return try {
-            val details = tmdbApi.getMovieDetails(tmdbId)
-            val credits = tmdbApi.getMovieCredits(tmdbId)
-            val images = tmdbApi.getMovieImages(tmdbId)
-            Log.d("MovieRepository", "🎬 Movie details fetched for TMDB ID: $tmdbId (with logo)")
-            Log.d("MovieRepository", "🎬 Movie title: ${details.title}")
-            Log.d("MovieRepository", "🎬 Belongs to collection: ${details.belongs_to_collection}")
-            val logo = images.logos.firstOrNull { it.iso_639_1 == "en" && !it.file_path.isNullOrBlank() }
-                ?: images.logos.firstOrNull { !it.file_path.isNullOrBlank() }
-            val logoUrl = logo?.file_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W500 + it }
-            val imdbId = details.imdb_id
-            if (!logoUrl.isNullOrBlank()) {
-                movieDao.updateMovieLogo(tmdbId, logoUrl)
+            val entity = tmdbEnrichmentService.enrichMovieWithLogo(tmdbId)
+            entity?.let {
+                movieDao.insertMovies(listOf(it))
             }
-            val entity = MovieEntity(
-                tmdbId = tmdbId,
-                imdbId = imdbId,
-                title = details.title ?: "",
-                posterUrl = details.poster_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W500 + it },
-                backdropUrl = details.backdrop_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W780 + it },
-                overview = details.overview,
-                rating = details.vote_average,
-                logoUrl = logoUrl,
-                traktRating = cachedMovie?.traktRating,
-                traktVotes = cachedMovie?.traktVotes,
-                year = DateFormatter.extractYear(details.release_date),
-                releaseDate = details.release_date,
-                runtime = details.runtime,
-                genres = details.genres.map { it.name },
-                cast = credits.cast.take(15).map { 
-                    Actor(
-                        id = it.id,
-                        name = it.name,
-                        character = it.character,
-                        profilePath = it.profile_path
-                    )
-                },
-                belongsToCollection = details.belongs_to_collection,
-                trendingOrder = cachedMovie?.trendingOrder,
-                popularOrder = cachedMovie?.popularOrder
-            )
-            movieDao.insertMovies(listOf(entity))
             entity
         } catch (e: Exception) {
             Log.e("MovieRepository", "Error fetching logo for movie $tmdbId", e)
@@ -309,7 +162,7 @@ class MovieRepository(
         
         return try {
             val similarResponse = tmdbApi.getSimilarMovies(tmdbId)
-            val similarContent = similarResponse.results.take(10).map { item ->
+            val similarContent = similarResponse.results.take(StrmrConstants.UI.MAX_SIMILAR_ITEMS).map { item ->
                 SimilarContent(
                     tmdbId = item.id,
                     title = item.title ?: "",

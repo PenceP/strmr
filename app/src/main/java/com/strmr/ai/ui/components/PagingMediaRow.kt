@@ -1,32 +1,110 @@
 package com.strmr.ai.ui.components
 
-import android.util.Log
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.paging.LoadState
 import androidx.paging.PagingData
-import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
-import androidx.compose.material3.Text
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.foundation.focusable
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 
 /**
- * A paging-aware media row that handles infinite scrolling for any media type.
- * This component automatically loads more items when approaching the end of the list.
+ * Refactored PagingMediaRow with better separation of concerns
+ * 
+ * Key improvements:
+ * - Reduced from 15+ parameters to a single config object
+ * - Extracted key event handling to separate class
+ * - Separated load state logging
+ * - Isolated media row rendering logic
+ * - Better testability through smaller components
+ */
+@Composable
+fun <T : MediaItem> RefactoredPagingMediaRow(
+    pagingFlow: Flow<PagingData<T>>,
+    config: PagingMediaRowConfig<T>,
+    modifier: Modifier = Modifier
+) {
+    val lazyPagingItems = pagingFlow.collectAsLazyPagingItems()
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+    
+    // Handle scroll synchronization
+    ScrollSyncHandler(
+        selectedIndex = config.selectedIndex,
+        itemCount = lazyPagingItems.itemCount,
+        listState = listState
+    )
+    
+    // Handle position reporting
+    PositionReporter(
+        selectedIndex = config.selectedIndex,
+        itemCount = lazyPagingItems.itemCount,
+        isRowSelected = config.isRowSelected,
+        onPositionChanged = config.onPositionChanged
+    )
+    
+    // Handle load state logging
+    LoadStateLogger(
+        lazyPagingItems = lazyPagingItems,
+        title = config.title,
+        logTag = config.logTag
+    )
+    
+    Box(modifier = modifier.fillMaxWidth()) {
+        Column {
+            // Title
+            Text(
+                text = config.title,
+                color = Color.White,
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+            )
+            
+            // Media items row
+            MediaRowContent(
+                config = config,
+                lazyPagingItems = lazyPagingItems,
+                listState = listState,
+                coroutineScope = coroutineScope
+            )
+        }
+    }
+}
+
+@Composable
+private fun ScrollSyncHandler(
+    selectedIndex: Int,
+    itemCount: Int,
+    listState: androidx.compose.foundation.lazy.LazyListState
+) {
+    LaunchedEffect(selectedIndex, itemCount) {
+        if (selectedIndex >= 0 && selectedIndex < itemCount) {
+            listState.animateScrollToItem(selectedIndex)
+        }
+    }
+}
+
+@Composable
+private fun PositionReporter(
+    selectedIndex: Int,
+    itemCount: Int,
+    isRowSelected: Boolean,
+    onPositionChanged: ((Int, Int) -> Unit)?
+) {
+    LaunchedEffect(selectedIndex, itemCount) {
+        if (isRowSelected && itemCount > 0) {
+            onPositionChanged?.invoke(selectedIndex, itemCount)
+        }
+    }
+}
+
+/**
+ * Maintains backward compatibility with the original PagingMediaRow API
+ * All existing usage should work without changes
  */
 @Composable
 fun <T : MediaItem> PagingMediaRow(
@@ -43,238 +121,28 @@ fun <T : MediaItem> PagingMediaRow(
     currentRowIndex: Int = 0,
     totalRowCount: Int = 1,
     onItemClick: ((T) -> Unit)? = null,
-    onPositionChanged: ((Int, Int) -> Unit)? = null,  // Reports (currentPosition, totalItems)
-    logTag: String = "PagingMediaRow"  // For distinguishing between movie/tv logs
+    onPositionChanged: ((Int, Int) -> Unit)? = null,
+    logTag: String = "PagingMediaRow"
 ) {
-    val lazyPagingItems = pagingFlow.collectAsLazyPagingItems()
-    val listState = rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
+    val config = PagingMediaRowConfig(
+        title = title,
+        selectedIndex = selectedIndex,
+        isRowSelected = isRowSelected,
+        onSelectionChanged = onSelectionChanged,
+        focusRequester = focusRequester,
+        onUpDown = onUpDown,
+        isContentFocused = isContentFocused,
+        onContentFocusChanged = onContentFocusChanged,
+        currentRowIndex = currentRowIndex,
+        totalRowCount = totalRowCount,
+        onItemClick = onItemClick,
+        onPositionChanged = onPositionChanged,
+        logTag = logTag
+    )
     
-    var localHasFocus by remember { mutableStateOf(false) }
-    
-    // Sync scroll position when selected index changes
-    LaunchedEffect(selectedIndex, lazyPagingItems.itemCount) {
-        if (selectedIndex >= 0 && selectedIndex < lazyPagingItems.itemCount) {
-            listState.animateScrollToItem(selectedIndex)
-        }
-    }
-    
-    // Report position changes
-    LaunchedEffect(selectedIndex, lazyPagingItems.itemCount) {
-        if (isRowSelected && lazyPagingItems.itemCount > 0) {
-            onPositionChanged?.invoke(selectedIndex, lazyPagingItems.itemCount)
-        }
-    }
-    
-    // Log paging state changes
-    LaunchedEffect(lazyPagingItems.loadState) {
-        when (val refresh = lazyPagingItems.loadState.refresh) {
-            is LoadState.Loading -> {
-                Log.d(logTag, "📥 Loading initial data for '$title'")
-            }
-            is LoadState.Error -> {
-                Log.e(logTag, "❌ Error loading '$title'", refresh.error)
-            }
-            is LoadState.NotLoading -> {
-                Log.d(logTag, "✅ Initial load complete for '$title', items: ${lazyPagingItems.itemCount}")
-            }
-        }
-        
-        when (val append = lazyPagingItems.loadState.append) {
-            is LoadState.Loading -> {
-                Log.d(logTag, "📥 Loading next page for '$title'")
-            }
-            is LoadState.Error -> {
-                Log.e(logTag, "❌ Error loading next page for '$title'", append.error)
-            }
-            is LoadState.NotLoading -> {
-                if (append.endOfPaginationReached) {
-                    Log.d(logTag, "📄 No more pages for '$title'")
-                }
-            }
-        }
-    }
-    
-    Box(
-        modifier = modifier.fillMaxWidth()
-    ) {
-        Column {
-            // Title
-            Text(
-                text = title,
-                color = Color.White,
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
-            )
-            
-            // Media items row
-            LazyRow(
-                state = listState,
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                contentPadding = PaddingValues(horizontal = 10.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .then(
-                        if (isRowSelected && focusRequester != null) {
-                            Modifier
-                                .focusRequester(focusRequester)
-                                .onFocusChanged { focusState ->
-                                    localHasFocus = focusState.hasFocus
-                                    if (focusState.hasFocus) {
-                                        onContentFocusChanged?.invoke(true)
-                                    }
-                                    Log.d(logTag, "🎯 Focus changed for '$title': ${focusState.hasFocus}")
-                                }
-                        } else {
-                            Modifier
-                        }
-                    )
-                    .focusable(enabled = isRowSelected)
-                    .onKeyEvent { event ->
-                        if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN && isRowSelected) {
-                            when (event.nativeKeyEvent.keyCode) {
-                                android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
-                                    if (selectedIndex > 0) {
-                                        val newIndex = selectedIndex - 1
-                                        onSelectionChanged(newIndex)
-                                        coroutineScope.launch {
-                                            listState.animateScrollToItem(newIndex)
-                                        }
-                                        
-                                        // Report position change
-                                        onPositionChanged?.invoke(newIndex, lazyPagingItems.itemCount)
-                                        
-                                        // Proactive loading check even when going left
-                                        val currentIdx = newIndex
-                                        val numLoadedItems = lazyPagingItems.itemCount
-                                        if (currentIdx + 6 >= numLoadedItems) {
-                                            Log.d(logTag, "🚀 Proactive load trigger (left): currentIdx($currentIdx) + 6 >= numLoadedItems($numLoadedItems)")
-                                            // Force Paging3 to load more by accessing an item near the end
-                                            val triggerIndex = minOf(currentIdx + 3, numLoadedItems - 1)
-                                            lazyPagingItems[triggerIndex] // This access triggers Paging3 to load more
-                                        }
-                                        
-                                        true
-                                    } else false
-                                }
-                                android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                                    if (selectedIndex < lazyPagingItems.itemCount - 1) {
-                                        val newIndex = selectedIndex + 1
-                                        onSelectionChanged(newIndex)
-                                        coroutineScope.launch {
-                                            listState.animateScrollToItem(newIndex)
-                                        }
-                                        
-                                        // Log position for debugging
-                                        val remainingItems = lazyPagingItems.itemCount - newIndex - 1
-                                        val item = lazyPagingItems[newIndex]
-                                        Log.d(logTag, "📊 Row '$title' - Position: ${newIndex + 1}/${lazyPagingItems.itemCount}, Remaining: $remainingItems")
-                                        Log.d(logTag, "   Selected: ${item?.title}")
-                                        
-                                        // Report position change
-                                        onPositionChanged?.invoke(newIndex, lazyPagingItems.itemCount)
-                                        
-                                        // Proactive loading check: if (currentIdx + 6) > numLoadedItems, trigger load
-                                        val currentIdx = newIndex
-                                        val numLoadedItems = lazyPagingItems.itemCount
-                                        if (currentIdx + 6 >= numLoadedItems) {
-                                            Log.d(logTag, "🚀 Proactive load trigger: currentIdx($currentIdx) + 6 >= numLoadedItems($numLoadedItems)")
-                                            // Force Paging3 to load more by accessing an item near the end
-                                            val triggerIndex = minOf(currentIdx + 3, numLoadedItems - 1)
-                                            lazyPagingItems[triggerIndex] // This access triggers Paging3 to load more
-                                        }
-                                        
-                                        true
-                                    } else false
-                                }
-                                android.view.KeyEvent.KEYCODE_DPAD_UP -> {
-                                    onUpDown?.invoke(-1)
-                                    true
-                                }
-                                android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
-                                    onUpDown?.invoke(1)
-                                    true
-                                }
-                                android.view.KeyEvent.KEYCODE_DPAD_CENTER,
-                                android.view.KeyEvent.KEYCODE_ENTER -> {
-                                    lazyPagingItems[selectedIndex]?.let { item ->
-                                        onItemClick?.invoke(item)
-                                    }
-                                    true
-                                }
-                                else -> false
-                            }
-                        } else false
-                    }
-            ) {
-                items(
-                    count = lazyPagingItems.itemCount,
-                    key = { index -> lazyPagingItems[index]?.tmdbId ?: index }
-                ) { index ->
-                    lazyPagingItems[index]?.let { mediaItem ->
-                        val isSelected = index == selectedIndex && isRowSelected
-                        
-                        Box(
-                            modifier = Modifier
-                                .width(130.dp)
-                                .height(200.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            MediaCard(
-                                title = mediaItem.title,
-                                posterUrl = mediaItem.posterUrl,
-                                isSelected = isSelected,
-                                onClick = {
-                                    onItemClick?.invoke(mediaItem)
-                                }
-                            )
-                        }
-                    } ?: run {
-                        // Placeholder while loading
-                        Box(
-                            modifier = Modifier
-                                .width(130.dp)
-                                .height(200.dp)
-                        ) {
-                            MediaCardSkeleton()
-                        }
-                    }
-                }
-                
-                // Handle different load states
-                when (lazyPagingItems.loadState.append) {
-                    is LoadState.Loading -> {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .width(130.dp)
-                                    .height(200.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(color = Color.White)
-                            }
-                        }
-                    }
-                    is LoadState.Error -> {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .width(130.dp)
-                                    .height(200.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Button(
-                                    onClick = { lazyPagingItems.retry() }
-                                ) {
-                                    Text("Retry", color = Color.White)
-                                }
-                            }
-                        }
-                    }
-                    is LoadState.NotLoading -> {
-                        // Nothing to show
-                    }
-                }
-            }
-        }
-    }
+    RefactoredPagingMediaRow(
+        pagingFlow = pagingFlow,
+        config = config,
+        modifier = modifier
+    )
 }

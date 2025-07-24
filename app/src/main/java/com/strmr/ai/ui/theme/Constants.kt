@@ -222,4 +222,36 @@ object StrmrConstants {
         const val TRAKT_WARNING_THRESHOLD_SECONDS = 30
         const val BACKGROUND_SYNC_INTERVAL_DAYS = 1
     }
+    
+    object Paging {
+        // Page sizes
+        const val PAGE_SIZE_SMALL = 20
+        const val PAGE_SIZE_STANDARD = 50     // Used for TV apps
+        
+        // Prefetch distances  
+        const val PREFETCH_DISTANCE_SMALL = 3
+        const val PREFETCH_DISTANCE_STANDARD = 10
+        
+        // Cache limits
+        const val MAX_CACHE_SIZE = 200
+        
+        // Proactive loading thresholds
+        const val LOAD_AHEAD_THRESHOLD = 6    // Load when currentIdx + 6 >= numLoadedItems
+        const val TRIGGER_OFFSET = 3          // Trigger at currentIdx + 3
+    }
+    
+    object UI {
+        // List item limits
+        const val MAX_CAST_ITEMS = 15
+        const val MAX_SIMILAR_ITEMS = 10
+        const val MAX_COLLECTION_PARTS = 50
+        
+        // Animation durations
+        const val ANIMATION_DURATION_SHORT = 200
+        const val ANIMATION_DURATION_STANDARD = 300
+        
+        // Loading thresholds
+        const val LAZY_LOADING_THRESHOLD = 5
+        const val BUFFER_SIZE = 3
+    }
 }

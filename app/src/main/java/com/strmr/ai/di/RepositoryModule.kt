@@ -25,9 +25,10 @@ object RepositoryModule {
         tmdbApi: TmdbApiService,
         database: StrmrDatabase,
         traktRatingsDao: TraktRatingsDao,
-        trailerService: TrailerService
+        trailerService: TrailerService,
+        tmdbEnrichmentService: TmdbEnrichmentService
     ): MovieRepository {
-        return MovieRepository(movieDao, collectionDao, traktApi, tmdbApi, database, traktRatingsDao, trailerService)
+        return MovieRepository(movieDao, collectionDao, traktApi, tmdbApi, database, traktRatingsDao, trailerService, tmdbEnrichmentService)
     }
     
     @Provides
@@ -40,9 +41,10 @@ object RepositoryModule {
         episodeDao: EpisodeDao,
         database: StrmrDatabase,
         traktRatingsDao: TraktRatingsDao,
-        trailerService: TrailerService
+        trailerService: TrailerService,
+        tmdbEnrichmentService: TmdbEnrichmentService
     ): TvShowRepository {
-        return TvShowRepository(tvShowDao, traktApiService, tmdbApiService, seasonDao, episodeDao, database, traktRatingsDao, trailerService)
+        return TvShowRepository(tvShowDao, traktApiService, tmdbApiService, seasonDao, episodeDao, database, traktRatingsDao, trailerService, tmdbEnrichmentService)
     }
     
     @Provides
@@ -94,13 +96,31 @@ object RepositoryModule {
     
     @Provides
     @Singleton
+    fun provideDataSourceService(
+        database: StrmrDatabase
+    ): DataSourceService {
+        return DataSourceService(database)
+    }
+    
+    @Provides
+    @Singleton
+    fun provideTmdbEnrichmentService(
+        tmdbApiService: TmdbApiService,
+        database: StrmrDatabase
+    ): TmdbEnrichmentService {
+        return TmdbEnrichmentService(tmdbApiService, database)
+    }
+    
+    @Provides
+    @Singleton
     fun provideGenericTraktRepository(
         database: StrmrDatabase,
         traktApiService: TraktApiService,
-        tmdbApiService: TmdbApiService,
+        dataSourceService: DataSourceService,
+        tmdbEnrichmentService: TmdbEnrichmentService,
         fetchLogoUseCase: FetchLogoUseCase
     ): GenericTraktRepository {
-        return GenericTraktRepository(database, traktApiService, tmdbApiService, fetchLogoUseCase)
+        return GenericTraktRepository(database, traktApiService, dataSourceService, tmdbEnrichmentService, fetchLogoUseCase)
     }
     
     @Provides
@@ -109,5 +129,15 @@ object RepositoryModule {
         tmdbApiService: TmdbApiService
     ): TrailerService {
         return TrailerService(tmdbApiService)
+    }
+    
+    @Provides
+    @Singleton
+    fun provideOnboardingService(
+        @ApplicationContext context: Context,
+        database: StrmrDatabase,
+        genericRepository: GenericTraktRepository
+    ): OnboardingService {
+        return OnboardingService(context, database, genericRepository)
     }
 } 

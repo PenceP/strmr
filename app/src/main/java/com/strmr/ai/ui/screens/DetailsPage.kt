@@ -1212,7 +1212,7 @@ fun ActorsRow(
     
     CenteredMediaRow(
         title = "Actors",
-        mediaItems = actors.take(15),
+        mediaItems = actors.take(StrmrConstants.UI.MAX_CAST_ITEMS),
         selectedIndex = selectedIndex,
         isRowSelected = isRowSelected,
         onSelectionChanged = onSelectionChanged,

@@ -34,8 +34,11 @@ import com.strmr.ai.ui.screens.TraktSettingsPage
 import com.strmr.ai.ui.screens.SimplePremiumizeSettingsPage
 import com.strmr.ai.ui.screens.RealDebridSettingsPage
 import com.strmr.ai.ui.screens.SplashScreen
+import com.strmr.ai.ui.screens.OnboardingScreen
 import com.strmr.ai.ui.theme.StrmrTheme
 import androidx.compose.ui.focus.FocusRequester
+import com.strmr.ai.data.OnboardingService
+import com.strmr.ai.viewmodel.OnboardingViewModel
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.zIndex
@@ -70,6 +73,9 @@ class MainActivity : ComponentActivity() {
     
     @Inject
     lateinit var youtubeExtractor: YouTubeExtractor
+    
+    @Inject
+    lateinit var onboardingService: OnboardingService
 
     @OptIn(ExperimentalTvMaterial3Api::class, UnstableApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -89,13 +95,29 @@ class MainActivity : ComponentActivity() {
                     shape = RectangleShape
                 ) {
                     var showSplash by remember { mutableStateOf(true) }
+                    var showOnboarding by remember { mutableStateOf(false) }
                     
-                    if (showSplash) {
-                        SplashScreen(
-                            onSplashComplete = { showSplash = false }
-                        )
-                    } else {
-                        MainScreen(youtubeExtractor = youtubeExtractor)
+                    // Check onboarding status after splash completes
+                    LaunchedEffect(showSplash) {
+                        if (!showSplash) {
+                            showOnboarding = !onboardingService.isOnboardingCompleted()
+                        }
+                    }
+                    
+                    when {
+                        showSplash -> {
+                            SplashScreen(
+                                onSplashComplete = { showSplash = false }
+                            )
+                        }
+                        showOnboarding -> {
+                            OnboardingScreen(
+                                onOnboardingComplete = { showOnboarding = false }
+                            )
+                        }
+                        else -> {
+                            MainScreen(youtubeExtractor = youtubeExtractor)
+                        }
                     }
                 }
             }

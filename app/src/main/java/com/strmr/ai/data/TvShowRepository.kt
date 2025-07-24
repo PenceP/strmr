@@ -10,7 +10,6 @@ import com.strmr.ai.data.database.TvShowEntity
 import com.strmr.ai.data.database.StrmrDatabase
 import com.strmr.ai.data.database.TraktRatingsDao
 import com.strmr.ai.data.database.TraktRatingsEntity
-import com.strmr.ai.data.paging.TvShowsRemoteMediator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -30,7 +29,8 @@ class TvShowRepository(
     private val episodeDao: EpisodeDao,
     database: StrmrDatabase,
     traktRatingsDao: TraktRatingsDao,
-    private val trailerService: TrailerService
+    private val trailerService: TrailerService,
+    private val tmdbEnrichmentService: TmdbEnrichmentService
 ) : BaseMediaRepository<TvShowEntity, Show, TrendingShow>(
     traktApiService, tmdbApi, database, traktRatingsDao
 ) {
@@ -40,62 +40,7 @@ class TvShowRepository(
     
     fun getPopularTvShows(): Flow<List<TvShowEntity>> = tvShowDao.getPopularTvShows()
     
-    @OptIn(ExperimentalPagingApi::class)
-    fun getTrendingTvShowsPager(): Flow<PagingData<TvShowEntity>> {
-        return createPager(
-            contentType = ContentType.TRENDING,
-            remoteMediator = TvShowsRemoteMediator(
-                contentType = TvShowsRemoteMediator.ContentType.TRENDING,
-                database = database,
-                traktApi = traktApi,
-                tmdbApi = tmdbApi,
-                tvShowRepository = this
-            ),
-            pagingSourceFactory = { tvShowDao.getTrendingTvShowsPagingSource() }
-        )
-    }
     
-    @OptIn(ExperimentalPagingApi::class)
-    fun getPopularTvShowsPager(): Flow<PagingData<TvShowEntity>> {
-        return createPager(
-            contentType = ContentType.POPULAR,
-            remoteMediator = TvShowsRemoteMediator(
-                contentType = TvShowsRemoteMediator.ContentType.POPULAR,
-                database = database,
-                traktApi = traktApi,
-                tmdbApi = tmdbApi,
-                tvShowRepository = this
-            ),
-            pagingSourceFactory = { tvShowDao.getPopularTvShowsPagingSource() }
-        )
-    }
-    
-    suspend fun loadMoreTrendingTvShows() {
-        refreshContent(
-            contentType = ContentType.TRENDING,
-            fetchTrendingFromTrakt = { page, limit -> traktApi.getTrendingTvShows(page, limit) },
-            fetchPopularFromTrakt = { _, _ -> emptyList() }, // Not used for trending
-            mapTrendingToEntity = { trendingShow, order -> 
-                fetchAndMapToEntity(trendingShow.show, trendingOrder = order)
-            },
-            mapPopularToEntity = { _, _ -> null } // Not used for trending
-        )
-    }
-    
-    suspend fun loadMorePopularTvShows() {
-        refreshContent(
-            contentType = ContentType.POPULAR,
-            fetchTrendingFromTrakt = { _, _ -> emptyList() }, // Not used for popular
-            fetchPopularFromTrakt = { page, limit -> traktApi.getPopularTvShows(page, limit) },
-            mapTrendingToEntity = { _, _ -> null }, // Not used for popular
-            mapPopularToEntity = { show, order -> 
-                fetchAndMapToEntity(show, popularOrder = order)
-            }
-        )
-    }
-
-    suspend fun refreshTrendingTvShows() = loadMoreTrendingTvShows()
-    suspend fun refreshPopularTvShows() = loadMorePopularTvShows()
 
     suspend fun mapTraktShowToEntity(
         show: Show,
@@ -110,48 +55,18 @@ class TvShowRepository(
         trendingOrder: Int? = null,
         popularOrder: Int? = null
     ): TvShowEntity? {
-        val tmdbId = show.ids.tmdb ?: return null
-        val traktId = show.ids.trakt ?: return null
-        val imdbId = show.ids.imdb
-        return try {
-            val details = tmdbApi.getTvShowDetails(tmdbId)
-            val credits = tmdbApi.getTvShowCredits(tmdbId)
-            
-            // Use cached Trakt ratings instead of direct API call
-            val traktRatings = getTraktRatings(traktId)
-            val cached = tvShowDao.getTvShowByTmdbId(tmdbId)
-            
-            TvShowEntity(
-                tmdbId = tmdbId,
-                imdbId = imdbId,
-                title = details.name ?: show.title,
-                posterUrl = details.poster_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W500 + it },
-                backdropUrl = details.backdrop_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W780 + it },
-                overview = details.overview,
-                rating = details.vote_average,
-                logoUrl = cached?.logoUrl,
-                traktRating = traktRatings?.rating,
-                traktVotes = traktRatings?.votes,
-                year = DateFormatter.extractYear(details.first_air_date),
-                firstAirDate = details.first_air_date,
-                lastAirDate = details.last_air_date,
-                runtime = details.episode_run_time?.firstOrNull(),
-                genres = details.genres.map { it.name },
-                cast = credits.cast.take(15).map { 
-                    Actor(
-                        id = it.id,
-                        name = it.name,
-                        character = it.character,
-                        profilePath = it.profile_path
-                    )
-                },
-                trendingOrder = trendingOrder ?: cached?.trendingOrder,
-                popularOrder = popularOrder ?: cached?.popularOrder
-            )
-        } catch (e: Exception) {
-            Log.e("TvShowRepository", "Error fetching details for ${show.title}", e)
-            null
+        val dataSourceId = when {
+            trendingOrder != null -> "trending"
+            popularOrder != null -> "popular"
+            else -> null
         }
+        val orderValue = trendingOrder ?: popularOrder
+        
+        return tmdbEnrichmentService.enrichTvShow(
+            show = show,
+            dataSourceId = dataSourceId,
+            orderValue = orderValue
+        )
     }
 
     suspend fun getOrFetchTvShow(tmdbId: Int): TvShowEntity? {
@@ -161,35 +76,17 @@ class TvShowRepository(
         }
 
         return try {
-            val details = tmdbApi.getTvShowDetails(tmdbId)
-            val credits = tmdbApi.getTvShowCredits(tmdbId)
-            val imdbId = details.imdb_id
-            val entity = TvShowEntity(
-                tmdbId = tmdbId,
-                imdbId = imdbId,
-                title = details.name ?: "",
-                posterUrl = details.poster_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W500 + it },
-                backdropUrl = details.backdrop_path?.let { StrmrConstants.Api.TMDB_IMAGE_BASE_W780 + it },
-                overview = details.overview,
-                rating = details.vote_average,
-                logoUrl = null, // Will be fetched on demand
-                traktRating = 0f, // No Trakt rating available here
-                traktVotes = 0,   // No Trakt votes available here
-                year = DateFormatter.extractYear(details.first_air_date),
-                firstAirDate = details.first_air_date,
-                lastAirDate = details.last_air_date,
-                runtime = details.episode_run_time?.firstOrNull(),
-                genres = details.genres.map { it.name },
-                cast = credits.cast.take(15).map { 
-                    Actor(
-                        id = it.id,
-                        name = it.name,
-                        character = it.character,
-                        profilePath = it.profile_path
-                    )
-                }
+            // Create a minimal Show object for enrichment
+            val basicShow = Show(
+                title = "", // Will be filled by enrichment service
+                year = null,
+                ids = ShowIds(tmdb = tmdbId, trakt = null, imdb = null, slug = null)
             )
-            tvShowDao.insertTvShows(listOf(entity))
+            
+            val entity = tmdbEnrichmentService.enrichTvShow(basicShow)
+            entity?.let {
+                tvShowDao.insertTvShows(listOf(it))
+            }
             entity
         } catch (e: Exception) {
             Log.e("TvShowRepository", "Error fetching tv show with tmdbId $tmdbId", e)
@@ -260,7 +157,7 @@ class TvShowRepository(
                 lastAirDate = details.last_air_date,
                 runtime = details.episode_run_time?.firstOrNull(),
                 genres = details.genres.map { it.name },
-                cast = credits.cast.take(15).map { 
+                cast = credits.cast.take(StrmrConstants.UI.MAX_CAST_ITEMS).map { 
                     Actor(
                         id = it.id,
                         name = it.name,
@@ -378,7 +275,7 @@ class TvShowRepository(
         
         return try {
             val similarResponse = tmdbApi.getSimilarTvShows(tmdbId)
-            val similarContent = similarResponse.results.take(10).map { item ->
+            val similarContent = similarResponse.results.take(StrmrConstants.UI.MAX_SIMILAR_ITEMS).map { item ->
                 SimilarContent(
                     tmdbId = item.id,
                     title = item.name ?: "",

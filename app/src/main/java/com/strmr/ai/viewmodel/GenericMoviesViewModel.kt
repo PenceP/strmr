@@ -4,11 +4,13 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
+import com.strmr.ai.ui.theme.StrmrConstants
 import androidx.paging.cachedIn
 import com.strmr.ai.data.DataSourceConfig
 import com.strmr.ai.data.GenericTraktRepository
 import com.strmr.ai.data.MediaType
 import com.strmr.ai.data.OmdbRepository
+import com.strmr.ai.data.OnboardingService
 import com.strmr.ai.data.OmdbResponse
 import com.strmr.ai.data.database.MovieEntity
 import com.strmr.ai.domain.usecase.FetchLogoUseCase
@@ -29,8 +31,9 @@ import android.util.Log
 class GenericMoviesViewModel @Inject constructor(
     private val genericRepository: GenericTraktRepository,
     private val fetchLogoUseCase: FetchLogoUseCase,
-    private val omdbRepository: OmdbRepository
-) : BaseConfigurableViewModel<MovieEntity>(genericRepository, MediaType.MOVIE) {
+    private val omdbRepository: OmdbRepository,
+    onboardingService: OnboardingService
+) : BaseConfigurableViewModel<MovieEntity>(genericRepository, MediaType.MOVIE, onboardingService) {
     
     // Track logo URLs separately for immediate UI updates
     private val _logoUrls = MutableStateFlow<Map<Int, String>>(emptyMap())
@@ -45,11 +48,11 @@ class GenericMoviesViewModel @Inject constructor(
     ): Flow<PagingData<MovieEntity>> {
         return Pager(
             config = PagingConfig(
-                pageSize = 50,  // Larger page size for TV app
+                pageSize = StrmrConstants.Paging.PAGE_SIZE_STANDARD,  // Larger page size for TV app
                 enablePlaceholders = false,
-                prefetchDistance = 10,  // Much smaller to prevent excessive loading
-                initialLoadSize = 50,  // Same as page size to avoid over-loading
-                maxSize = 200,  // Limit memory usage to prevent excessive caching
+                prefetchDistance = StrmrConstants.Paging.PREFETCH_DISTANCE_STANDARD,  // Much smaller to prevent excessive loading
+                initialLoadSize = StrmrConstants.Paging.PAGE_SIZE_STANDARD,  // Same as page size to avoid over-loading
+                maxSize = StrmrConstants.Paging.MAX_CACHE_SIZE,  // Limit memory usage to prevent excessive caching
                 jumpThreshold = Int.MAX_VALUE  // Disable jump threshold to prevent unnecessary loads
             ),
             remoteMediator = com.strmr.ai.data.paging.ConfigurableRemoteMediator(
