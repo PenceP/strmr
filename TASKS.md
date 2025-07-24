@@ -436,3 +436,123 @@
 - [ ] Get rid of play button icon, move Filesze to that location
 - [ ] After selecting a stream the loading screen now says "loading trailer". instead i want the same blurred backdrop & a large, centered logo (of the media we're loading), fading in and out until the stream loads
 
+### 24. Trakt Scrobbling Integration
+**Priority:** High - Core feature for tracking watch progress and syncing with Trakt ecosystem
+
+#### Phase 1: Core Scrobbling Infrastructure
+- [ ] **Scrobble API Implementation**
+    - [ ] Create Retrofit service for Trakt scrobbling endpoints (/scrobble/start, /scrobble/pause, /scrobble/stop)
+    - [ ] Implement data models for scrobble requests and responses
+    - [ ] Add proper OAuth token handling for authenticated scrobble requests
+    - [ ] Create ScrobbleManager singleton to handle all scrobbling operations
+    - [ ] Implement secure storage for scrobble session data and sync state
+
+- [ ] **Check-in System**
+    - [ ] Implement automatic check-in when video playback starts
+    - [ ] Send initial scrobble with media ID, progress (0%), and timestamp
+    - [ ] Handle check-in conflicts (user watching on multiple devices)
+    - [ ] Add manual check-in option for users who want to mark "currently watching"
+    - [ ] Implement check-in cancellation when user stops before completion
+
+#### Phase 2: Progress Tracking & Synchronization
+- [ ] **Real-time Progress Monitoring**
+    - [ ] Integrate progress tracking with ExoPlayer playback position
+    - [ ] Send progress updates to Trakt every 5 minutes during active playback
+    - [ ] Handle playback interruptions (pause, seek, app backgrounding)
+    - [ ] Implement progress validation to prevent invalid time stamps
+    - [ ] Add network failure handling with offline progress caching
+
+- [ ] **Session Management**
+    - [ ] Track viewing sessions with start/end timestamps
+    - [ ] Handle session resumption when app is reopened during playback
+    - [ ] Manage multiple concurrent sessions (different episodes/movies)
+    - [ ] Implement session timeout handling for abandoned playback
+    - [ ] Add session conflict resolution for multi-device usage
+
+#### Phase 3: Completion & Watch Status
+- [ ] **Automatic Completion Detection**
+    - [ ] Mark content as "watched" when progress reaches 90% completion
+    - [ ] Send final scrobble/stop request with completion percentage
+    - [ ] Handle early termination (user stops before 90% - still send progress)
+    - [ ] Implement different completion thresholds for movies vs TV episodes
+    - [ ] Add user preference for custom completion percentage threshold
+
+- [ ] **Watch Status Synchronization**
+    - [ ] Update local database with watched status after successful scrobble
+    - [ ] Sync watch status across all app screens (Continue Watching, etc.)
+    - [ ] Handle watched status conflicts between local and Trakt data
+    - [ ] Implement batch sync for multiple completed items
+    - [ ] Add manual "Mark as Watched/Unwatched" with immediate scrobble
+
+#### Phase 4: Advanced Scrobbling Features
+- [ ] **Smart Scrobbling Logic**
+    - [ ] Implement intelligent episode progression for TV series
+    - [ ] Auto-advance to next episode with seamless scrobbling transition
+    - [ ] Handle season finale completion and series completion tracking
+    - [ ] Add binge-watching detection with optimized scrobbling frequency
+    - [ ] Implement rewatch detection and proper scrobbling for rewatches
+
+- [ ] **Offline Scrobbling Support**
+    - [ ] Cache scrobble data when network is unavailable
+    - [ ] Implement background sync when connectivity is restored
+    - [ ] Handle timestamp conflicts for delayed scrobbles
+    - [ ] Add queue management for pending scrobble requests
+    - [ ] Provide user feedback for successful/failed offline sync
+
+#### Phase 5: Error Handling & User Experience
+- [ ] **Robust Error Management**
+    - [ ] Handle Trakt API rate limiting with exponential backoff
+    - [ ] Implement retry logic for failed scrobble requests
+    - [ ] Add graceful degradation when Trakt is unavailable
+    - [ ] Handle authentication expiration during active sessions
+    - [ ] Provide clear error messages for scrobbling failures
+
+- [ ] **User Interface Integration**
+    - [ ] Add scrobbling status indicators in video player overlay
+    - [ ] Show "Currently Watching" status in Continue Watching row
+    - [ ] Display sync status in user profile/settings area
+    - [ ] Add scrobbling history view for debugging and user awareness
+    - [ ] Implement manual scrobble correction tools for edge cases
+
+#### Phase 6: Settings & Customization
+- [ ] **Scrobbling Preferences**
+    - [ ] Add toggle to enable/disable automatic scrobbling
+    - [ ] Create completion percentage threshold setting (default 90%)
+    - [ ] Implement progress update frequency setting (default 5 minutes)
+    - [ ] Add privacy settings for public vs private scrobbling
+    - [ ] Create manual vs automatic scrobbling mode selection
+
+- [ ] **Advanced Configuration**
+    - [ ] Add scrobbling exclusions for specific content types
+    - [ ] Implement device-specific scrobbling settings
+    - [ ] Create scrobbling analytics and statistics view
+    - [ ] Add bulk scrobbling tools for importing watch history
+    - [ ] Implement scrobbling backup and restore functionality
+
+#### Phase 7: Integration with Existing Features
+- [ ] **Continue Watching Enhancement**
+    - [ ] Update Continue Watching logic to use scrobble progress data
+    - [ ] Remove completed items from Continue Watching automatically
+    - [ ] Show accurate progress percentages from scrobble data
+    - [ ] Implement cross-device progress synchronization
+    - [ ] Add "Resume from last position" using scrobble timestamps
+
+- [ ] **Collection & Watchlist Integration**
+    - [ ] Auto-remove completed movies from Watchlist (user preference)
+    - [ ] Update Collection completion statistics based on scrobbles
+    - [ ] Sync scrobbling data with Trakt Collection/Watchlist changes
+    - [ ] Add completion badges to poster overlays based on scrobble data
+    - [ ] Implement "Watched" filtering for all content rows
+
+**Technical Implementation Notes:**
+- Integrate scrobbling service with existing ExoPlayer implementation
+- Use Room database to cache scrobble data for offline scenarios
+- Implement WorkManager for background scrobble synchronization
+- Consider using Foreground Service for critical scrobbling during playback
+- Add comprehensive logging for debugging scrobbling issues without exposing sensitive data
+
+**Testing Priority:**
+- Test scrobbling across app suspension/restoration cycles
+- Verify progress accuracy with different playback speeds and seeking
+- Test multi-device conflict scenarios
+- Validate offline/online sync reliability
