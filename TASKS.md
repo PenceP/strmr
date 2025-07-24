@@ -404,6 +404,7 @@
     - [ ] Add provider priority configuration (YTS, EZTV, 1337x, etc.)
     - [ ] Implement quality preference sliders and bandwidth settings
     - [ ] Filter stream by type (Cam, Dolby Vision, others)
+    - [ ] Buffer size selector (small, medium, large)
     - [ ] Add language and subtitle preference configuration
     - [ ] Create debrid service management interface
 
@@ -433,4 +434,5 @@
 ### 23. Links Select Page
 - [ ] Proper Style
 - [ ] Get rid of play button icon, move Filesze to that location
+- [ ] After selecting a stream the loading screen now says "loading trailer". instead i want the same blurred backdrop & a large, centered logo (of the media we're loading), fading in and out until the stream loads
 
