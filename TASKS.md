@@ -64,7 +64,8 @@
 ### 8. MediaDetails Page Implementation
 - [x] Create dedicated details page for movies and TV shows (shown when poster is clicked)
 - [x] Large backdrop image with title, logo, year, runtime, genres, rating, summary/overview
-- [x] Trakt actions: add/remove from watchlist, add/remove from collections (show correct state if already added)
+- [ ] Trakt actions: this will turn into 1 button called "My Lists" with a trakt logo on the left. a popup with checkboxes for colledtion and watchlists will show (if clicked it means its added) (show correct state if already added). okay and cancel are also present, send the updates to trakt on "okay" press.
+- [ ] Add "Viewers also liked" row from tmdb api (under similar row)
 - [x] Actor list (cast)
 - [x] Similar movies/TV shows (horizontal row, context-aware)
 - [x] TV show specific features:
