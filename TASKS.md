@@ -1,6 +1,16 @@
 # TASKS.md
 
 ## Android TV App: Netflix-Style UI with Trakt & TMDB
+### Princeples to follow for everything
+- SOLID
+ - Single Responsibility Principle
+ - Open/Closed Principle
+ - Liskov Substitution Principle
+ - Interface Segregation Principle
+ - Dependency Inversion Principle
+-DRY - Don't Repeat Yourself
+-KISS - Keep It Simple, Stupid
+-YAGNI - You Aren't Gonna Need It
 
 ### 1. Project Setup
 - [x] Create a new Android TV project in Android Studio
