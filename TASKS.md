@@ -403,6 +403,7 @@
     - [ ] Create comprehensive settings page for stream preferences
     - [ ] Add provider priority configuration (YTS, EZTV, 1337x, etc.)
     - [ ] Implement quality preference sliders and bandwidth settings
+    - [ ] Filter stream by type (Cam, Dolby Vision, others)
     - [ ] Add language and subtitle preference configuration
     - [ ] Create debrid service management interface
 

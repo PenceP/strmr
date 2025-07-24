@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
+import com.strmr.ai.utils.DeviceCapabilities
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -307,28 +308,62 @@ class ScraperRepository @Inject constructor(
     }
     
     private fun filterAndSortStreams(streams: List<Stream>): List<Stream> {
+        val supportsAdvancedCodecs = DeviceCapabilities.supportsAdvancedCodecs()
+        Log.d(TAG, "🔧 Device info: ${DeviceCapabilities.getDeviceInfo()}")
+        Log.d(TAG, "🎬 Advanced codec support: $supportsAdvancedCodecs")
+        
         return streams
             .filter { stream ->
-                // Filter out CAM/TS releases
                 val title = stream.title?.lowercase() ?: ""
-                !title.contains("cam") && !title.contains("ts") && !title.contains("telesync")
+                val name = stream.name?.lowercase() ?: ""
+                
+                // Always filter out CAM/TS releases
+                val isCamOrTS = title.contains("cam") || title.contains("ts") || title.contains("telesync")
+                if (isCamOrTS) return@filter false
+                
+                // If device supports advanced codecs, allow everything else
+                if (supportsAdvancedCodecs) {
+                    return@filter true
+                }
+                
+                // For emulators/low-end devices, filter problematic formats
+                val isDolbyVision = title.contains("dv") || title.contains("dolby") || 
+                                   name.contains("dolby-vision") || name.contains("dvhe")
+                
+                val isProblematicHEVC = title.contains("hevc") || title.contains("x265") || 
+                                       title.contains("10bit") || title.contains("hdr")
+                
+                // Only allow simple formats on emulators
+                !isDolbyVision && !isProblematicHEVC
             }
             .sortedWith(compareBy(
                 // 1. Prioritize streams with direct URLs (ready to play)
                 { stream -> stream.url.isNullOrBlank() },
                 // 2. Then prioritize cached streams
                 { it.behaviorHints?.proxyHeaders?.get("X-Cached") != "true" },
-                // 3. Sort by quality: 4K -> 1080p -> 720p -> 480p -> Unknown
+                // 3. On emulators, prefer H.264/AVC over HEVC
+                { stream ->
+                    if (!supportsAdvancedCodecs) {
+                        val title = stream.title?.lowercase() ?: ""
+                        when {
+                            title.contains("h264") || title.contains("avc") -> 0
+                            title.contains("x264") -> 1
+                            !title.contains("hevc") && !title.contains("x265") -> 2
+                            else -> 3
+                        }
+                    } else 0
+                },
+                // 4. Sort by quality: 4K -> 1080p -> 720p -> 480p -> Unknown
                 { 
                     when (it.displayQuality) {
-                        "4K" -> 0
+                        "4K" -> if (supportsAdvancedCodecs) 0 else 4 // De-prioritize 4K on emulators
                         "1080p" -> 1
                         "720p" -> 2
                         "480p" -> 3
                         else -> 4
                     }
                 },
-                // 4. Within each quality, sort by file size (largest first)
+                // 5. Within each quality, sort by file size (largest first)
                 { -parseFileSizeInBytes(it.displaySize) }
             ))
     }

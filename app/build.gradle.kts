@@ -109,6 +109,12 @@ dependencies {
     implementation("androidx.media3:media3-ui:1.6.1")
     implementation("androidx.media3:media3-datasource-okhttp:1.6.1")
     
+    // LibVLC for Android - alternative player with better codec support
+    implementation("org.videolan.android:libvlc-all:4.0.0-eap15")
+    
+    // Additional ExoPlayer decoders (experimental)
+    implementation("androidx.media3:media3-exoplayer-smoothstreaming:1.6.1")
+    
     // OkHttp for network requests
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     
