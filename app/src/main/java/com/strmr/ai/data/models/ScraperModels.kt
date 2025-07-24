@@ -78,12 +78,23 @@ data class Stream(
             // Prefer title (actual torrent name) over generic name
             val baseName = title ?: name ?: "Unknown Source"
             
-            // If we have Premiumize processing indicators, keep them
-            return if (behaviorHints?.proxyHeaders?.containsKey("X-Cached") == true) {
-                val prefix = "[PM+]"
-                if (baseName.startsWith(prefix)) baseName else "$prefix $baseName"
-            } else {
-                baseName
+            // Handle Premiumize cache indicators
+            val cachedStatus = behaviorHints?.proxyHeaders?.get("X-Cached")
+            
+            return when {
+                // If stream name already has PM indicators, preserve them
+                baseName.contains("[PM+]", ignoreCase = true) || baseName.contains("[PM]", ignoreCase = true) -> {
+                    baseName
+                }
+                // Add cache status indicators based on behaviorHints
+                cachedStatus == "true" -> {
+                    "[PM+] $baseName"
+                }
+                cachedStatus == "false" -> {
+                    "[PM] $baseName"
+                }
+                // No cache info available
+                else -> baseName
             }
         }
     

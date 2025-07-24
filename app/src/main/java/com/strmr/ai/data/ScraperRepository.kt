@@ -237,70 +237,69 @@ class ScraperRepository @Inject constructor(
         try {
             Log.d(TAG, "🔄 Processing ${streams.size} streams through Premiumize")
             
-            // First check cache for instant availability
-            val hashes = streams.mapNotNull { it.infoHash }.distinct()
-            if (hashes.isEmpty()) {
-                Log.w(TAG, "No info hashes found in streams")
-                return@withContext streams
-            }
-            
-            val cacheResult = premiumizeApi.checkCache("Bearer $apiKey", hashes)
-            Log.d(TAG, "📦 Cache check result: ${cacheResult.response.count { it }} cached out of ${hashes.size}")
-            
-            // Process each stream
-            streams.mapNotNull { stream ->
-                val infoHash = stream.infoHash
-                if (infoHash == null) {
-                    Log.w(TAG, "⚠️ Stream has no infoHash: ${stream.name}")
-                    return@mapNotNull stream
-                }
+            // Check for Torrentio's built-in cache indicators in stream names
+            val processedStreams = streams.map { stream ->
+                val streamName = stream.name ?: ""
+                val isCachedByName = streamName.contains("[PM+]", ignoreCase = true)
+                val isNotCachedByName = streamName.contains("[PM]", ignoreCase = true) && !streamName.contains("[PM+]", ignoreCase = true)
                 
-                val hashIndex = hashes.indexOf(infoHash)
-                val isCached = hashIndex >= 0 && hashIndex < cacheResult.response.size && cacheResult.response[hashIndex]
-                
-                if (isCached) {
-                    // For cached torrents, we can get direct links
-                    try {
-                        val magnetLink = "magnet:?xt=urn:btih:$infoHash"
-                        Log.d(TAG, "🧲 Getting direct link for cached torrent: $infoHash")
-                        
-                        // Use Premiumize transfer/directdl endpoint for instant links
-                        val directLinkResponse = premiumizeApi.getDirectDownloadLink("Bearer $apiKey", magnetLink)
-                        val directUrl = directLinkResponse["location"] as? String
-                        
-                        if (directUrl != null) {
-                            Log.d(TAG, "✅ Got direct URL for ${stream.name}: $directUrl")
-                            stream.copy(
-                                url = directUrl,
-                                behaviorHints = stream.behaviorHints?.copy(
-                                    proxyHeaders = mapOf("X-Cached" to "true", "X-Direct" to "true")
-                                ) ?: StreamBehaviorHints(null, mapOf("X-Cached" to "true", "X-Direct" to "true"))
-                            )
-                        } else {
-                            Log.w(TAG, "⚠️ No direct URL in Premiumize response for ${stream.name}")
-                            stream.copy(
-                                behaviorHints = stream.behaviorHints?.copy(
-                                    proxyHeaders = mapOf("X-Cached" to "true", "X-Direct" to "false")
-                                ) ?: StreamBehaviorHints(null, mapOf("X-Cached" to "true", "X-Direct" to "false"))
-                            )
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "❌ Error getting direct link for ${stream.name}", e)
+                when {
+                    isCachedByName -> {
+                        Log.d(TAG, "✅ Stream marked as cached by Torrentio: ${stream.name}")
                         stream.copy(
                             behaviorHints = stream.behaviorHints?.copy(
-                                proxyHeaders = mapOf("X-Cached" to "true", "X-Error" to (e.message ?: "Unknown"))
-                            ) ?: StreamBehaviorHints(null, mapOf("X-Cached" to "true", "X-Error" to (e.message ?: "Unknown")))
+                                proxyHeaders = mapOf("X-Cached" to "true", "X-Direct" to "true")
+                            ) ?: StreamBehaviorHints(null, mapOf("X-Cached" to "true", "X-Direct" to "true"))
                         )
                     }
-                } else {
-                    Log.d(TAG, "⏳ Stream not cached, would need download: ${stream.name}")
-                    stream.copy(
-                        behaviorHints = stream.behaviorHints?.copy(
-                            proxyHeaders = mapOf("X-Cached" to "false")
-                        ) ?: StreamBehaviorHints(null, mapOf("X-Cached" to "false"))
-                    )
+                    isNotCachedByName -> {
+                        Log.d(TAG, "⏳ Stream marked as not cached by Torrentio: ${stream.name}")
+                        stream.copy(
+                            behaviorHints = stream.behaviorHints?.copy(
+                                proxyHeaders = mapOf("X-Cached" to "false")
+                            ) ?: StreamBehaviorHints(null, mapOf("X-Cached" to "false"))
+                        )
+                    }
+                    else -> {
+                        // Fallback to hash-based checking if available
+                        stream
+                    }
                 }
             }
+            
+            // For streams without cache indicators in name, try hash-based checking
+            val streamsWithoutCacheInfo = processedStreams.filter { stream ->
+                val streamName = stream.name ?: ""
+                !streamName.contains("[PM+]", ignoreCase = true) && !streamName.contains("[PM]", ignoreCase = true) && stream.infoHash != null
+            }
+            
+            if (streamsWithoutCacheInfo.isNotEmpty()) {
+                val hashes = streamsWithoutCacheInfo.mapNotNull { it.infoHash }.distinct()
+                if (hashes.isNotEmpty()) {
+                    Log.d(TAG, "🔍 Hash-based cache check for ${hashes.size} streams without cache indicators")
+                    
+                    val cacheResult = premiumizeApi.checkCache("Bearer $apiKey", hashes)
+                    Log.d(TAG, "📦 Cache check result: ${cacheResult.response.count { it }} cached out of ${hashes.size}")
+                    
+                    // Update streams based on cache results
+                    return@withContext processedStreams.map { stream ->
+                        if (streamsWithoutCacheInfo.contains(stream) && stream.infoHash != null) {
+                            val hashIndex = hashes.indexOf(stream.infoHash)
+                            val isCached = hashIndex >= 0 && hashIndex < cacheResult.response.size && cacheResult.response[hashIndex]
+                            
+                            stream.copy(
+                                behaviorHints = stream.behaviorHints?.copy(
+                                    proxyHeaders = mapOf("X-Cached" to isCached.toString())
+                                ) ?: StreamBehaviorHints(null, mapOf("X-Cached" to isCached.toString()))
+                            )
+                        } else {
+                            stream
+                        }
+                    }
+                }
+            }
+            
+            processedStreams
         } catch (e: Exception) {
             Log.e(TAG, "❌ Error processing Premiumize streams", e)
             streams
