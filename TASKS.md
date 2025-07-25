@@ -109,11 +109,11 @@
 - [ ] Hero/details section at the top (similar to MediaPage layout)
 - [ ] Single long row of posters for all movies/shows in that network/collection
 - [ ] Reuse MediaPage/MediaHero logic where possible
-- [ ] Reuse paging and database 
+- [ ] Reuse paging and cache lists, images, ratings,details, etc to database 
 - [ ] use omdb/logos as well. for all intents and purposes make this look like (front end and back) trending movies (or movies page with only 1 row and no nav bar i guess.)
-- [ ] Ensure proper navigation back to previous page and forward to MediaDetails
-- [ ] The data source is in the HOME.json, Netflix has an example trakt list, i will fill the trest in later
-- [ ] Ensure "Trakt Lists" row sub items go to their respective pages, pulling from Trakt api
+- [ ] Ensure proper navigation back to previous page (HOME in this case) and forward to MediaDetails
+- [ ] The data source is in the HOME.json, Netflix has an example trakt list, i will fill the rest in later
+- [ ] Ensure "Trakt Lists" row sub-items go to their respective pages (Movie collection, movie watchlist, tv collection, tv watchlit), pulling from Trakt api
 
 ### 13. Season/Episode View Enhancement
 - [ ] Create modern episode view with:
