@@ -97,19 +97,23 @@
 ## Current Tasks
 
 ### 11. Video Player Integration
-- [ ] Add ExoPlayer [https://github.com/androidx/media]
+- [x] Add ExoPlayer [https://github.com/androidx/media]
 - [ ] Add ffmpeg support, that's what handles various encode types
-- [ ] Integrate TMDB API for trailers [api.themoviedb.org/3/movie/120/videos?language=en-US]
+- [x] Integrate TMDB API for trailers [api.themoviedb.org/3/movie/120/videos?language=en-US]
 - [ ] Implement trailers button functionality from MediaDetails page
 - [ ] Use videos marked as "official" and "Trailer" type
 - [ ] Create video player overlay with proper TV navigation controls
 
-### 12. Intermediate View for Networks & Collections
+### 12. Intermediate View for Networks & Collections & Directors
 - [ ] Create intermediate page for when user clicks a network or collection
 - [ ] Hero/details section at the top (similar to MediaPage layout)
 - [ ] Single long row of posters for all movies/shows in that network/collection
 - [ ] Reuse MediaPage/MediaHero logic where possible
+- [ ] Reuse paging and database 
+- [ ] use omdb/logos as well. for all intents and purposes make this look like (front end and back) trending movies (or movies page with only 1 row and no nav bar i guess.)
 - [ ] Ensure proper navigation back to previous page and forward to MediaDetails
+- [ ] The data source is in the HOME.json, Netflix has an example trakt list, i will fill the trest in later
+- [ ] Ensure "Trakt Lists" row sub items go to their respective pages, pulling from Trakt api
 
 ### 13. Season/Episode View Enhancement
 - [ ] Create modern episode view with:
@@ -127,11 +131,11 @@
 - [x] Add loading indicators for pagination
 
 ### 15. Auto-Update System
-- [ ] Implement app versioning system
-- [ ] Create server endpoint to check for updates
-- [ ] Add update checking on app startup
-- [ ] Implement automatic download and installation of updates
-- [ ] Add user notification system for available updates
+- [x] Implement app versioning system
+- [x] Create server endpoint to check for updates
+- [x] Add update checking on app startup
+- [x] Implement automatic download and installation of updates
+- [x] Add user notification system for available updates
 - [ ] **Note: Should be implemented after CI/CD system (Task 16)**
 
 ### 16. CI/CD Pipeline with GitHub Actions
@@ -139,8 +143,9 @@
 - [x] Implement automated testing stage
 - [x] Configure APK compilation with version number in filename
 - [x] Add artifacts upload for release builds
-- [ ] **Optional:** Set up emulator testing with basic smoke tests
+- [x] **Optional:** Set up emulator testing with basic smoke tests
 - [ ] Configure release deployment workflow
+- [ ] Separate "BETA" channel for development testing. enable in settings
 - [ ] **Must be completed before auto-update functionality**
 
 ### 17. Watched Indicators
@@ -350,12 +355,14 @@
     - [ ] Implement debrid service selection in user settings
 
 #### Phase 3: Scraper Service Implementation
-- [ ] **Primary Scraper Integration (Torrentio vs Comet Decision)**
-    - [ ] Implement chosen scraper's API client using Retrofit
-    - [ ] Create data models for scraper responses (stream links, quality, size, etc.)
-    - [ ] Map IMDb IDs from TMDB/Trakt data to scraper requests
+- [x] **Primary Scraper Integration (Torrentio vs Comet Decision)**
+    - [x] Implement Torrentio scraper's API client using Retrofit
+    - [x] Create data models for scraper responses (stream links, quality, size, etc.)
+    - [x] Map IMDb IDs from TMDB/Trakt data to scraper requests
     - [ ] Handle scraper rate limiting and error responses gracefully
     - [ ] Implement caching strategy for scraper results to avoid redundant requests
+    - [ ] Implement Comet scraper as a backup, only running if torrentio pulls less than 12 links.
+    - [ ] Cache streams in db for instant display in future
 
 - [ ] **Stream Resolution & Quality Management**
     - [ ] Parse scraper responses for available stream qualities (4K, 1080p, 720p, etc.)
@@ -413,11 +420,15 @@
 - [ ] **Stream Preferences Configuration**
     - [ ] Create comprehensive settings page for stream preferences
     - [ ] Add provider priority configuration (YTS, EZTV, 1337x, etc.)
-    - [ ] Implement quality preference sliders and bandwidth settings
+    - [ ] Implement quality preference sliders and bitrate settings
     - [ ] Filter stream by type (Cam, Dolby Vision, others)
     - [ ] Buffer size selector (small, medium, large)
     - [ ] Add language and subtitle preference configuration
     - [ ] Create debrid service management interface
+
+- [ ] **Autoplay Settings** 
+    - [ ] Enable autoplay next episode (slider 1-75 seconds before episode end)
+    - [ ] If enabled, prefetch next episode links from scraper
 
 - [ ] **Stream History & Analytics**
     - [ ] Implement watch history with stream source tracking
@@ -440,7 +451,7 @@
 
 ### 22. Branding
 - [ ] All logos (different size for all Android TVs, circle, square, landscape, etc)
-- [ ] Splash Screen display with animation while background loading completes (rows load/init db/etc)
+- [x] Splash Screen display with animation while background loading completes (rows load/init db/etc)
 
 ### 23. Links Select Page
 - [ ] Proper Style

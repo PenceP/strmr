@@ -86,7 +86,7 @@
       "displayOptions": {
         "showOverlays": false,
         "showProgress": false,
-        "clickable": false,
+        "clickable": true,
         "supportedTypes": ["network"]
       }
     },
@@ -103,7 +103,7 @@
       "displayOptions": {
         "showOverlays": false,
         "showProgress": false,
-        "clickable": false,
+        "clickable": true,
         "supportedTypes": ["collection"]
       }
     },
@@ -120,7 +120,7 @@
       "displayOptions": {
         "showOverlays": false,
         "showProgress": false,
-        "clickable": false,
+        "clickable": true,
         "supportedTypes": ["director"]
       }
     }
