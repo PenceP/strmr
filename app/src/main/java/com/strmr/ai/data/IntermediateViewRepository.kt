@@ -103,7 +103,15 @@ class IntermediateViewRepository @Inject constructor(
     ): List<HomeMediaItem> {
         val homeMediaItems = when (viewType) {
             "network" -> loadNetworkContent(itemId, dataUrl)
-            "collection" -> loadCollectionContent(itemId)
+            "collection" -> {
+                // Collections now use Trakt lists just like networks and directors
+                if (!dataUrl.isNullOrBlank()) {
+                    loadTraktListContent(dataUrl)
+                } else {
+                    Log.w(TAG, "⚠️ No data URL provided for collection $itemId")
+                    emptyList()
+                }
+            }
             "director" -> {
                 // Directors use Trakt lists just like networks
                 if (!dataUrl.isNullOrBlank()) {
@@ -204,7 +212,8 @@ class IntermediateViewRepository @Inject constructor(
     }
     
     private suspend fun loadCollectionContent(collectionId: String): List<HomeMediaItem> {
-        Log.w(TAG, "⚠️ Collection content not yet implemented for $collectionId")
+        // This method is deprecated - collections now use Trakt lists via loadTraktListContent
+        Log.w(TAG, "⚠️ Collection content should use dataUrl and loadTraktListContent for $collectionId")
         return emptyList()
     }
     
@@ -283,7 +292,7 @@ class IntermediateViewRepository @Inject constructor(
                 when (item.type) {
                     "movie" -> {
                         item.movie?.let { traktMovie ->
-                            val enrichedMovie = tmdbEnrichmentService.enrichMovie(traktMovie)
+                            val enrichedMovie = tmdbEnrichmentService.enrichMovieWithLogo(traktMovie)
                             enrichedMovie?.let { movie ->
                                 homeMediaItems.add(HomeMediaItem.Movie(movie, null))
                                 moviesToSave.add(movie)
@@ -292,7 +301,7 @@ class IntermediateViewRepository @Inject constructor(
                     }
                     "show" -> {
                         item.show?.let { traktShow ->
-                            val enrichedShow = tmdbEnrichmentService.enrichTvShow(traktShow)
+                            val enrichedShow = tmdbEnrichmentService.enrichTvShowWithLogo(traktShow)
                             enrichedShow?.let { show ->
                                 homeMediaItems.add(HomeMediaItem.TvShow(show, null))
                                 showsToSave.add(show)
@@ -400,7 +409,15 @@ class IntermediateViewRepository @Inject constructor(
     ): List<HomeMediaItem> {
         val newItems = when (viewType) {
             "network" -> loadNetworkContentPage(itemId, dataUrl, page)
-            "collection" -> emptyList() // Not implemented yet
+            "collection" -> {
+                // Collections now use Trakt lists just like networks and directors
+                if (!dataUrl.isNullOrBlank()) {
+                    loadTraktListContentPage(dataUrl, page)
+                } else {
+                    Log.w(TAG, "⚠️ No data URL provided for collection $itemId pagination")
+                    emptyList()
+                }
+            }
             "director" -> {
                 // Directors use Trakt lists just like networks
                 if (!dataUrl.isNullOrBlank()) {

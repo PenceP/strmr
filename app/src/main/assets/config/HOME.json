@@ -130,163 +130,162 @@
       "id": "007",
       "name": "007",
       "backgroundImageUrl": "drawable://collection_007",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/proturbo18/lists/007?sort=released,desc"
     },
     {
       "id": "avatar",
       "name": "Avatar",
       "backgroundImageUrl": "drawable://collection_avatar",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/totes30/lists/avatar?sort=released,asc"
     },
     {
       "id": "back-to-the-future",
       "name": "Back to the Future",
       "backgroundImageUrl": "drawable://collection_back_to_the_future",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/james-marsh/lists/back-to-the-future?sort=released,desc"
     },
     {
       "id": "breaking-bad",
       "name": "Breaking Bad",
       "backgroundImageUrl": "drawable://collection_breaking_bad",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/all11/lists/breaking-bad?sort=rank,asc"
     },
     {
       "id": "dc-comics",
       "name": "DC Comics",
       "backgroundImageUrl": "drawable://collection_dc_comics",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/ziggy73701/lists/dcu?sort=released,asc"
     },
     {
       "id": "dune",
       "name": "Dune",
       "backgroundImageUrl": "drawable://collection_dune",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/hriday-80ce1824-23e8-4fee-99e5-8edc661aed32/lists/dune?sort=released,asc"
     },
     {
       "id": "fast-and-furious",
       "name": "Fast & Furious",
       "backgroundImageUrl": "drawable://collection_fast_and_furious",
-      "nameDisplayMode": "Hidden"
-    },
-    {
-      "id": "game-of-thrones",
-      "name": "Game of Thrones",
-      "backgroundImageUrl": "drawable://collection_game_of_thrones",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/janpesta/lists/fast-furious-the-fast-and-the-furious-copy?sort=released,desc"
     },
     {
       "id": "harry-potter",
       "name": "Harry Potter",
       "backgroundImageUrl": "drawable://collection_harry_potter",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/tvcinelover/lists/harry-potter?sort=rank,asc"
     },
     {
       "id": "indiana-jones",
       "name": "Indiana Jones",
       "backgroundImageUrl": "drawable://collection_indiana_jones",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/cinhd/lists/indiana-jones?sort=rank,asc"
     },
     {
       "id": "jurassic-park",
       "name": "Jurassic Park",
       "backgroundImageUrl": "drawable://collection_jurassic_park",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/foxbot/lists/jurassic-park?sort=rank,asc"
     },
     {
       "id": "john-wick",
       "name": "John Wick",
       "backgroundImageUrl": "drawable://collection_john_wick",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/drjenkins/lists/john-wick?sort=released,desc"
     },
     {
       "id": "matrix",
       "name": "Matrix",
       "backgroundImageUrl": "drawable://collection_matrix",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/julienicoletv/lists/matrix?sort=rank,asc"
     },
     {
       "id": "marvel",
       "name": "Marvel",
       "backgroundImageUrl": "drawable://collection_marvel",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/goingnineteen/lists/mcu?sort=rank,asc"
     },
     {
       "id": "mission-impossible",
       "name": "Mission Impossible",
       "backgroundImageUrl": "drawable://collection_mission_impossible",
-      "nameDisplayMode": "Hidden"
-    },
-    {
-      "id": "monsterverse",
-      "name": "MonsterVerse",
-      "backgroundImageUrl": "drawable://collection_monsterverse",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/drjenkins/lists/mission-impossible?sort=released,desc"
     },
     {
       "id": "pirates-of-the-caribbean",
       "name": "Pirates of the Caribbean",
       "backgroundImageUrl": "drawable://collection_pirates_of_the_caribbean",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/drjenkins/lists/pirates-of-the-caribbean?sort=released,desc"
     },
     {
       "id": "rambo",
       "name": "Rambo",
       "backgroundImageUrl": "drawable://collection_rambo",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/arachn0id/lists/rambo?sort=released,desc"
     },
     {
       "id": "rocky",
       "name": "Rocky",
       "backgroundImageUrl": "drawable://collection_rocky",
-      "nameDisplayMode": "Hidden"
-    },
-    {
-      "id": "scooby-doo",
-      "name": "Scooby-Doo",
-      "backgroundImageUrl": "drawable://collection_scooby_doo",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/estemitad/lists/rocky?sort=rank,asc"
     },
     {
       "id": "star-trek",
       "name": "Star Trek",
       "backgroundImageUrl": "drawable://collection_star_trek",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/mazelon/lists/star-trek?sort=rank,asc"
     },
     {
       "id": "star-wars",
       "name": "Star Wars",
       "backgroundImageUrl": "drawable://collection_star_wars",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/turkeyfx/lists/star-wars?sort=rank,asc"
     },
     {
       "id": "the-hunger-games",
       "name": "The Hunger Games",
       "backgroundImageUrl": "drawable://collection_the_hunger_games",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/grelipe/lists/hunger-games?sort=released,desc"
     },
     {
       "id": "the-lord-of-the-rings",
       "name": "The Lord of the Rings",
       "backgroundImageUrl": "drawable://collection_the_lord_of_the_rings",
-      "nameDisplayMode": "Hidden"
-    },
-    {
-      "id": "tom-and-jerry",
-      "name": "Tom & Jerry",
-      "backgroundImageUrl": "drawable://collection_tom_and_jerry",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/monkeeman/lists/lord-of-the-rings?sort=rank,asc"
     },
     {
       "id": "transformers",
       "name": "Transformers",
       "backgroundImageUrl": "drawable://collection_transformers",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/drjenkins/lists/transformers?sort=released,desc"
     },
     {
       "id": "x-men",
       "name": "X-Men",
       "backgroundImageUrl": "drawable://collection_x_men",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/rdurdle/lists/xmen?sort=released,desc"
     }
   ],
   "directors": [

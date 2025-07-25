@@ -106,7 +106,9 @@ data class CollectionConfig(
     @SerializedName("backgroundImageUrl")
     val backgroundImageUrl: String,
     @SerializedName("nameDisplayMode")
-    val nameDisplayMode: String
+    val nameDisplayMode: String,
+    @SerializedName("dataUrl")
+    val dataUrl: String? = null
 )
 
 /**

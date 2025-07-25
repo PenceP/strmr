@@ -57,6 +57,7 @@ import com.strmr.ai.viewmodel.HomeViewModel
 import com.strmr.ai.data.MovieRepository
 import com.strmr.ai.data.TvShowRepository
 import com.strmr.ai.data.YouTubeExtractor
+import com.strmr.ai.data.ScraperRepository
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -77,6 +78,10 @@ class MainActivity : ComponentActivity() {
     
     @Inject
     lateinit var onboardingService: OnboardingService
+    
+    @Inject
+    lateinit var scraperRepository: ScraperRepository
+    
 
     @OptIn(ExperimentalTvMaterial3Api::class, UnstableApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -117,7 +122,10 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         else -> {
-                            MainScreen(youtubeExtractor = youtubeExtractor)
+                            MainScreen(
+                                youtubeExtractor = youtubeExtractor,
+                                scraperRepository = scraperRepository
+                            )
                         }
                     }
                 }
@@ -146,11 +154,17 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MainScreen(youtubeExtractor: YouTubeExtractor) {
+fun MainScreen(
+    youtubeExtractor: YouTubeExtractor,
+    scraperRepository: ScraperRepository
+) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val mainDestinations = setOf("search", "home", "movies", "tvshows", "debridcloud", "settings")
+    
+    // State for debrid authorization dialog
+    var showDebridDialog by remember { mutableStateOf(false) }
     
     // Create focus requesters for navigation and main content
     val navFocusRequester = remember { FocusRequester() }
@@ -294,14 +308,18 @@ fun MainScreen(youtubeExtractor: YouTubeExtractor) {
                             viewModel = detailsViewModel,
                             onPlay = { _, _ ->
                                 movie?.let { movieEntity ->
-                                    val imdbId = movieEntity.imdbId ?: ""
-                                    val title = movieEntity.title ?: "Unknown Movie"
-                                    val backdrop = movieEntity.backdropUrl ?: ""
-                                    val logo = movieEntity.logoUrl ?: ""
-                                    Log.d("MainActivity", "🎬 Play button clicked for movie: $title (IMDB: $imdbId)")
-                                    val encodedBackdrop = java.net.URLEncoder.encode(backdrop, "UTF-8")
-                                    val encodedLogo = java.net.URLEncoder.encode(logo, "UTF-8")
-                                    navController.navigate("stream_selection/movie/$imdbId/$title/$encodedBackdrop/$encodedLogo")
+                                    if (!scraperRepository.isPremiumizeConfigured()) {
+                                        showDebridDialog = true
+                                    } else {
+                                        val imdbId = movieEntity.imdbId ?: ""
+                                        val title = movieEntity.title ?: "Unknown Movie"
+                                        val backdrop = movieEntity.backdropUrl ?: ""
+                                        val logo = movieEntity.logoUrl ?: ""
+                                        Log.d("MainActivity", "🎬 Play button clicked for movie: $title (IMDB: $imdbId)")
+                                        val encodedBackdrop = java.net.URLEncoder.encode(backdrop, "UTF-8")
+                                        val encodedLogo = java.net.URLEncoder.encode(logo.ifEmpty { "EMPTY" }, "UTF-8")
+                                        navController.navigate("stream_selection/movie/$imdbId/$title/$encodedBackdrop/$encodedLogo")
+                                    }
                                 }
                             },
                             onNavigateToSimilar = { mediaType, tmdbId ->
@@ -319,14 +337,18 @@ fun MainScreen(youtubeExtractor: YouTubeExtractor) {
                             viewModel = detailsViewModel,
                             onPlay = { selectedSeason, selectedEpisode ->
                                 show?.let { showEntity ->
-                                    val imdbId = showEntity.imdbId ?: ""
-                                    val title = showEntity.title ?: "Unknown TV Show"
-                                    val backdrop = showEntity.backdropUrl ?: ""
-                                    val logo = showEntity.logoUrl ?: ""
-                                    Log.d("MainActivity", "📺 Play button clicked for TV show: $title (IMDB: $imdbId) S${selectedSeason}E${selectedEpisode}")
-                                    val encodedBackdrop = java.net.URLEncoder.encode(backdrop, "UTF-8")
-                                    val encodedLogo = java.net.URLEncoder.encode(logo, "UTF-8")
-                                    navController.navigate("stream_selection/tvshow/$imdbId/$title/$encodedBackdrop/$encodedLogo/$selectedSeason/$selectedEpisode")
+                                    if (!scraperRepository.isPremiumizeConfigured()) {
+                                        showDebridDialog = true
+                                    } else {
+                                        val imdbId = showEntity.imdbId ?: ""
+                                        val title = showEntity.title ?: "Unknown TV Show"
+                                        val backdrop = showEntity.backdropUrl ?: ""
+                                        val logo = showEntity.logoUrl ?: ""
+                                        Log.d("MainActivity", "📺 Play button clicked for TV show: $title (IMDB: $imdbId) S${selectedSeason}E${selectedEpisode}")
+                                        val encodedBackdrop = java.net.URLEncoder.encode(backdrop, "UTF-8")
+                                        val encodedLogo = java.net.URLEncoder.encode(logo.ifEmpty { "EMPTY" }, "UTF-8")
+                                        navController.navigate("stream_selection/tvshow/$imdbId/$title/$encodedBackdrop/$encodedLogo/$selectedSeason/$selectedEpisode")
+                                    }
                                 }
                             },
                             onNavigateToSimilar = { mediaType, tmdbId ->
@@ -379,14 +401,18 @@ fun MainScreen(youtubeExtractor: YouTubeExtractor) {
                             viewModel = detailsViewModel,
                             onPlay = { _, _ ->
                                 movie?.let { movieEntity ->
-                                    val imdbId = movieEntity.imdbId ?: ""
-                                    val title = movieEntity.title ?: "Unknown Movie"
-                                    val backdrop = movieEntity.backdropUrl ?: ""
-                                    val logo = movieEntity.logoUrl ?: ""
-                                    Log.d("MainActivity", "🎬 Play button clicked for movie: $title (IMDB: $imdbId)")
-                                    val encodedBackdrop = java.net.URLEncoder.encode(backdrop, "UTF-8")
-                                    val encodedLogo = java.net.URLEncoder.encode(logo, "UTF-8")
-                                    navController.navigate("stream_selection/movie/$imdbId/$title/$encodedBackdrop/$encodedLogo")
+                                    if (!scraperRepository.isPremiumizeConfigured()) {
+                                        showDebridDialog = true
+                                    } else {
+                                        val imdbId = movieEntity.imdbId ?: ""
+                                        val title = movieEntity.title ?: "Unknown Movie"
+                                        val backdrop = movieEntity.backdropUrl ?: ""
+                                        val logo = movieEntity.logoUrl ?: ""
+                                        Log.d("MainActivity", "🎬 Play button clicked for movie: $title (IMDB: $imdbId)")
+                                        val encodedBackdrop = java.net.URLEncoder.encode(backdrop, "UTF-8")
+                                        val encodedLogo = java.net.URLEncoder.encode(logo.ifEmpty { "EMPTY" }, "UTF-8")
+                                        navController.navigate("stream_selection/movie/$imdbId/$title/$encodedBackdrop/$encodedLogo")
+                                    }
                                 }
                             },
                             onNavigateToSimilar = { mediaType, tmdbId ->
@@ -404,14 +430,18 @@ fun MainScreen(youtubeExtractor: YouTubeExtractor) {
                             viewModel = detailsViewModel,
                             onPlay = { selectedSeason, selectedEpisode ->
                                 show?.let { showEntity ->
-                                    val imdbId = showEntity.imdbId ?: ""
-                                    val title = showEntity.title ?: "Unknown TV Show"
-                                    val backdrop = showEntity.backdropUrl ?: ""
-                                    val logo = showEntity.logoUrl ?: ""
-                                    Log.d("MainActivity", "📺 Play button clicked for TV show: $title (IMDB: $imdbId) S${selectedSeason}E${selectedEpisode}")
-                                    val encodedBackdrop = java.net.URLEncoder.encode(backdrop, "UTF-8")
-                                    val encodedLogo = java.net.URLEncoder.encode(logo, "UTF-8")
-                                    navController.navigate("stream_selection/tvshow/$imdbId/$title/$encodedBackdrop/$encodedLogo/$selectedSeason/$selectedEpisode")
+                                    if (!scraperRepository.isPremiumizeConfigured()) {
+                                        showDebridDialog = true
+                                    } else {
+                                        val imdbId = showEntity.imdbId ?: ""
+                                        val title = showEntity.title ?: "Unknown TV Show"
+                                        val backdrop = showEntity.backdropUrl ?: ""
+                                        val logo = showEntity.logoUrl ?: ""
+                                        Log.d("MainActivity", "📺 Play button clicked for TV show: $title (IMDB: $imdbId) S${selectedSeason}E${selectedEpisode}")
+                                        val encodedBackdrop = java.net.URLEncoder.encode(backdrop, "UTF-8")
+                                        val encodedLogo = java.net.URLEncoder.encode(logo.ifEmpty { "EMPTY" }, "UTF-8")
+                                        navController.navigate("stream_selection/tvshow/$imdbId/$title/$encodedBackdrop/$encodedLogo/$selectedSeason/$selectedEpisode")
+                                    }
                                 }
                             },
                             onTrailer = { videoUrl, title ->
@@ -612,6 +642,37 @@ fun MainScreen(youtubeExtractor: YouTubeExtractor) {
                     android.util.Log.d("MainActivity", "🎯 NavigationBar right pressed, setting isContentFocused = true")
                     isContentFocused = true
                 }
+            )
+        }
+        
+        // Debrid authorization dialog
+        if (showDebridDialog) {
+            AlertDialog(
+                onDismissRequest = { showDebridDialog = false },
+                title = {
+                    Text(
+                        text = "Debrid Not Authorized",
+                        color = Color.White
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Debrid not authorized. Please authorize in settings.",
+                        color = Color.White
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = { showDebridDialog = false }
+                    ) {
+                        Text(
+                            text = "Okay",
+                            color = Color.White
+                        )
+                    }
+                },
+                containerColor = Color.Black.copy(alpha = 0.9f),
+                tonalElevation = 8.dp
             )
         }
     }

@@ -47,7 +47,8 @@ class ConfigurationLoader(private val context: Context) {
                 id = collectionConfig.id,
                 name = collectionConfig.name,
                 backgroundImageUrl = collectionConfig.backgroundImageUrl,
-                nameDisplayMode = collectionConfig.nameDisplayMode
+                nameDisplayMode = collectionConfig.nameDisplayMode,
+                dataUrl = collectionConfig.dataUrl
             )
         } ?: emptyList()
     }
