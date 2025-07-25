@@ -276,6 +276,7 @@ fun MainScreen(youtubeExtractor: YouTubeExtractor) {
                     
                     // Debug logging for navigation parameters
                     Log.d("MainActivity", "🎯 DEBUG: Navigation to details - mediaType: $mediaType, tmdbId: $tmdbId, season: $season, episode: $episode")
+                    Log.d("MainActivity", "🎯 Current navigation stack: ${navController.currentBackStackEntry?.destination?.route}")
                     val detailsViewModel: com.strmr.ai.viewmodel.DetailsViewModel = hiltViewModel()
                     val movie by detailsViewModel.movie.collectAsState()
                     val show by detailsViewModel.tvShow.collectAsState()

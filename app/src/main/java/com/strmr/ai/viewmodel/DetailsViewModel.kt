@@ -25,13 +25,33 @@ class DetailsViewModel @Inject constructor(
     
     fun loadMovie(tmdbId: Int) {
         viewModelScope.launch {
-            _movie.value = movieRepository.getMovieByTmdbId(tmdbId)
+            android.util.Log.d("DetailsViewModel", "🎬 Loading movie with tmdbId: $tmdbId")
+            var movieEntity = movieRepository.getMovieByTmdbId(tmdbId)
+            
+            // If movie not in database, fetch it
+            if (movieEntity == null) {
+                android.util.Log.d("DetailsViewModel", "🌐 Movie not in database, fetching from API")
+                movieEntity = movieRepository.getOrFetchMovie(tmdbId)
+            }
+            
+            android.util.Log.d("DetailsViewModel", "🎬 Movie loaded: ${movieEntity?.title ?: "null"}")
+            _movie.value = movieEntity
         }
     }
     
     fun loadTvShow(tmdbId: Int) {
         viewModelScope.launch {
-            _tvShow.value = tvShowRepository.getTvShowByTmdbId(tmdbId)
+            android.util.Log.d("DetailsViewModel", "📺 Loading TV show with tmdbId: $tmdbId")
+            var tvShowEntity = tvShowRepository.getTvShowByTmdbId(tmdbId)
+            
+            // If TV show not in database, fetch it
+            if (tvShowEntity == null) {
+                android.util.Log.d("DetailsViewModel", "🌐 TV show not in database, fetching from API")
+                tvShowEntity = tvShowRepository.getOrFetchTvShow(tmdbId)
+            }
+            
+            android.util.Log.d("DetailsViewModel", "📺 TV show loaded: ${tvShowEntity?.title ?: "null"}")
+            _tvShow.value = tvShowEntity
         }
     }
     

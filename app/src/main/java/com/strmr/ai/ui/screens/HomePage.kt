@@ -721,7 +721,7 @@ fun HomePage(
                                             "directors" -> "director"
                                             else -> "collection"
                                         }
-                                        onNavigateToIntermediateView?.invoke(viewType, item.id, item.name, item.backgroundImageUrl, null)
+                                        onNavigateToIntermediateView?.invoke(viewType, item.id, item.name, item.backgroundImageUrl, item.dataUrl)
                                     }
                                 }
                             } else null

@@ -75,7 +75,8 @@ class ConfigurationLoader(private val context: Context) {
                 id = directorConfig.id,
                 name = directorConfig.name,
                 backgroundImageUrl = directorConfig.backgroundImageUrl,
-                nameDisplayMode = directorConfig.nameDisplayMode
+                nameDisplayMode = directorConfig.nameDisplayMode,
+                dataUrl = directorConfig.dataUrl
             )
         } ?: emptyList()
     }

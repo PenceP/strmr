@@ -27,6 +27,8 @@ class IntermediateViewRepository @Inject constructor(
     }
     
     private val intermediateViewDao = database.intermediateViewDao()
+    private val movieDao = database.movieDao()
+    private val tvShowDao = database.tvShowDao()
     
     /**
      * Get cached data for an intermediate view, or fetch from API if cache is expired/missing
@@ -102,7 +104,15 @@ class IntermediateViewRepository @Inject constructor(
         val homeMediaItems = when (viewType) {
             "network" -> loadNetworkContent(itemId, dataUrl)
             "collection" -> loadCollectionContent(itemId)
-            "director" -> loadDirectorContent(itemId)
+            "director" -> {
+                // Directors use Trakt lists just like networks
+                if (!dataUrl.isNullOrBlank()) {
+                    loadTraktListContent(dataUrl)
+                } else {
+                    Log.w(TAG, "⚠️ No data URL provided for director $itemId")
+                    emptyList()
+                }
+            }
             "trakt_list" -> loadTraktListContent(dataUrl)
             else -> {
                 Log.w(TAG, "⚠️ Unknown view type: $viewType")
@@ -199,7 +209,8 @@ class IntermediateViewRepository @Inject constructor(
     }
     
     private suspend fun loadDirectorContent(directorId: String): List<HomeMediaItem> {
-        Log.w(TAG, "⚠️ Director content not yet implemented for $directorId")
+        // Directors don't have their own content, this should not be called
+        Log.w(TAG, "⚠️ Director content requires dataUrl, but was called without it for $directorId")
         return emptyList()
     }
     
@@ -265,6 +276,8 @@ class IntermediateViewRepository @Inject constructor(
             
             // Convert Trakt list items to HomeMediaItems and enrich with TMDB data
             val homeMediaItems = mutableListOf<HomeMediaItem>()
+            val moviesToSave = mutableListOf<MovieEntity>()
+            val showsToSave = mutableListOf<TvShowEntity>()
             
             for (item in listItems) {
                 when (item.type) {
@@ -273,6 +286,7 @@ class IntermediateViewRepository @Inject constructor(
                             val enrichedMovie = tmdbEnrichmentService.enrichMovie(traktMovie)
                             enrichedMovie?.let { movie ->
                                 homeMediaItems.add(HomeMediaItem.Movie(movie, null))
+                                moviesToSave.add(movie)
                             }
                         }
                     }
@@ -281,6 +295,7 @@ class IntermediateViewRepository @Inject constructor(
                             val enrichedShow = tmdbEnrichmentService.enrichTvShow(traktShow)
                             enrichedShow?.let { show ->
                                 homeMediaItems.add(HomeMediaItem.TvShow(show, null))
+                                showsToSave.add(show)
                             }
                         }
                     }
@@ -288,6 +303,16 @@ class IntermediateViewRepository @Inject constructor(
                         Log.w(TAG, "⚠️ Unknown item type: ${item.type}")
                     }
                 }
+            }
+            
+            // Save enriched entities to database
+            if (moviesToSave.isNotEmpty()) {
+                movieDao.insertMovies(moviesToSave)
+                Log.d(TAG, "💾 Saved ${moviesToSave.size} movies to database")
+            }
+            if (showsToSave.isNotEmpty()) {
+                tvShowDao.insertTvShows(showsToSave)
+                Log.d(TAG, "💾 Saved ${showsToSave.size} TV shows to database")
             }
             
             Log.d(TAG, "🎬 Converted ${homeMediaItems.size} items successfully")
@@ -376,7 +401,15 @@ class IntermediateViewRepository @Inject constructor(
         val newItems = when (viewType) {
             "network" -> loadNetworkContentPage(itemId, dataUrl, page)
             "collection" -> emptyList() // Not implemented yet
-            "director" -> emptyList() // Not implemented yet  
+            "director" -> {
+                // Directors use Trakt lists just like networks
+                if (!dataUrl.isNullOrBlank()) {
+                    loadTraktListContentPage(dataUrl, page)
+                } else {
+                    Log.w(TAG, "⚠️ No data URL provided for director $itemId pagination")
+                    emptyList()
+                }
+            }
             "trakt_list" -> loadTraktListContentPage(dataUrl, page)
             else -> {
                 Log.w(TAG, "⚠️ Unknown view type: $viewType")

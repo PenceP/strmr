@@ -19,6 +19,7 @@ sealed class HomeMediaItem {
         val id: String,
         val name: String,
         val backgroundImageUrl: String,
-        val nameDisplayMode: String
+        val nameDisplayMode: String,
+        val dataUrl: String? = null
     ) : HomeMediaItem()
 } 

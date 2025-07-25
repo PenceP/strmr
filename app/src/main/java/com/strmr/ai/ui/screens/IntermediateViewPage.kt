@@ -281,6 +281,7 @@ fun IntermediateViewPage(
                                     else -> null
                                 }
                                 if (mediaType != null && tmdbId != null) {
+                                    android.util.Log.d("IntermediateViewPage", "🎯 Navigating to details: mediaType=$mediaType, tmdbId=$tmdbId")
                                     onNavigateToDetails(mediaType, tmdbId)
                                 }
                             },

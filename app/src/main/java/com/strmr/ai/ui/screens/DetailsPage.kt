@@ -106,6 +106,12 @@ fun DetailsPage(
     cachedSeason: Int? = null,
     cachedEpisode: Int? = null
 ) {
+    Log.d("DetailsPage", "🎬 DetailsPage composable called with mediaDetails: ${when(mediaDetails) {
+        is MediaDetailsType.Movie -> "Movie: ${mediaDetails.movie.title}"
+        is MediaDetailsType.TvShow -> "TvShow: ${mediaDetails.show.title}"
+        null -> "null"
+    }}")
+    
     if (mediaDetails == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()

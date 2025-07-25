@@ -145,12 +145,6 @@
       "nameDisplayMode": "Hidden"
     },
     {
-      "id": "ben-10",
-      "name": "Ben 10",
-      "backgroundImageUrl": "drawable://collection_ben_10",
-      "nameDisplayMode": "Hidden"
-    },
-    {
       "id": "breaking-bad",
       "name": "Breaking Bad",
       "backgroundImageUrl": "drawable://collection_breaking_bad",
@@ -184,12 +178,6 @@
       "id": "harry-potter",
       "name": "Harry Potter",
       "backgroundImageUrl": "drawable://collection_harry_potter",
-      "nameDisplayMode": "Hidden"
-    },
-    {
-      "id": "herbie",
-      "name": "Herbie",
-      "backgroundImageUrl": "drawable://collection_herbie",
       "nameDisplayMode": "Hidden"
     },
     {
@@ -306,61 +294,72 @@
       "id": "nolan",
       "name": "Christopher Nolan",
       "backgroundImageUrl": "drawable://director_nolan",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/acox03/lists/christopher-nolan?sort=rank,asc"
     },
     {
       "id": "scorsese",
       "name": "Martin Scorsese",
       "backgroundImageUrl": "drawable://director_scorsese",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/viddywelly/lists/martin-scorsese?sort=rank,asc"
     },
     {
       "id": "spielberg",
       "name": "Steven Spielberg",
       "backgroundImageUrl": "drawable://director_spielberg",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/viddywelly/lists/steven-spielberg?sort=rank,asc"
     },
     {
       "id": "kubrick",
       "name": "Stanley Kubrick",
       "backgroundImageUrl": "drawable://director_kubrick",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/fuzzybeats/lists/stanley-kubrick?sort=released,asc"
     },
     {
       "id": "fincher",
       "name": "David Fincher",
       "backgroundImageUrl": "drawable://director_fincher",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/mawsa/lists/david-fincher?sort=rank,asc"
     },
     {
       "id": "hitchcock",
       "name": "Alfred Hitchcock",
       "backgroundImageUrl": "drawable://director_hitchcock",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/mawsa/lists/alfred-hitchcock?sort=rank,asc"
     },
     {
       "id": "pta",
       "name": "Paul Thomas Anderson",
       "backgroundImageUrl": "drawable://director_pta",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/pebao/lists/paul-thomas-anderson?sort=rank,asc"
     },
     {
       "id": "villeneuve",
       "name": "Denis Villeneuve",
       "backgroundImageUrl": "drawable://director_villeneuve",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/batherini/lists/denis-villeneuve?sort=rank,asc"
     },
     {
       "id": "depalma",
       "name": "Brian De Palma",
       "backgroundImageUrl": "drawable://director_depalma",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/viddywelly/lists/brian-de-palma?sort=rank,asc"
+
     },
     {
       "id": "carpenter",
       "name": "John Carpenter",
       "backgroundImageUrl": "drawable://director_carpenter",
-      "nameDisplayMode": "Hidden"
+      "nameDisplayMode": "Hidden",
+      "dataUrl": "https://trakt.tv/users/viddywelly/lists/john-carpenter?sort=rank,asc"
     }
   ],
   "networks": [
