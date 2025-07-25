@@ -31,6 +31,7 @@ fun <T> CenteredMediaRow(
     onSelectionChanged: (Int) -> Unit,
     onUpDown: ((Int) -> Unit)? = null,
     onItemClick: ((T) -> Unit)? = null,
+    onLoadMore: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     itemWidth: Dp = 120.dp,
     itemSpacing: Dp = 16.dp,
@@ -45,6 +46,10 @@ fun <T> CenteredMediaRow(
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val density = LocalDensity.current
+    
+    // Debouncing variables to prevent rapid focus changes
+    var lastFocusChangeTime by remember { mutableStateOf(0L) }
+    val focusDebounceDelay = 50L // 50ms debounce
 
     // Centering logic (same as HomeMediaRow)
     val rowWidthDp = 900.dp
@@ -99,6 +104,14 @@ fun <T> CenteredMediaRow(
             Log.d("CenteredMediaRow", "🔄 Syncing scroll position for selectedIndex=$selectedIndex")
             val offset = getOffsetForIndex(selectedIndex, mediaItems.size)
             listState.scrollToItem(selectedIndex, offset)
+        }
+    }
+
+    // Monitor selected index for pagination
+    LaunchedEffect(selectedIndex, mediaItems.size) {
+        if (isRowSelected && mediaItems.size - selectedIndex <= 4) {
+            Log.d("CenteredMediaRow", "📄 Near end of list for '$title' (${mediaItems.size - selectedIndex} items left), triggering load more")
+            onLoadMore?.invoke()
         }
     }
 
@@ -187,8 +200,12 @@ fun <T> CenteredMediaRow(
                         modifier = Modifier
                             .onFocusChanged { fs ->
                                 if (fs.isFocused && isRowSelected) {
-                                    Log.d("CenteredMediaRow", "Focused item $index")
-                                    onSelectionChanged(index)
+                                    val currentTime = System.currentTimeMillis()
+                                    if (currentTime - lastFocusChangeTime > focusDebounceDelay) {
+                                        lastFocusChangeTime = currentTime
+                                        Log.d("CenteredMediaRow", "Focused item $index")
+                                        onSelectionChanged(index)
+                                    }
                                 }
                             }
                             .focusable(enabled = isRowSelected),

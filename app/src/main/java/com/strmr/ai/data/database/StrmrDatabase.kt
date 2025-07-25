@@ -38,9 +38,11 @@ import com.strmr.ai.data.database.TraktRatingsDao
         SeasonEntity::class,
         EpisodeEntity::class,
         CollectionEntity::class,
-        TraktRatingsEntity::class
+        TraktRatingsEntity::class,
+        IntermediateViewEntity::class,
+        IntermediateViewItemEntity::class
     ],
-    version = 11, // bumped for continue watching table
+    version = 12, // bumped for intermediate view caching tables
     exportSchema = false
 )
 @TypeConverters(ListConverter::class)
@@ -58,10 +60,50 @@ abstract class StrmrDatabase : RoomDatabase() {
     abstract fun episodeDao(): EpisodeDao
     abstract fun collectionDao(): CollectionDao
     abstract fun traktRatingsDao(): TraktRatingsDao
+    abstract fun intermediateViewDao(): IntermediateViewDao
 
     companion object {
         @Volatile
         private var INSTANCE: StrmrDatabase? = null
+
+        // Migration from version 11 to 12
+        private val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Create intermediate_views table
+                database.execSQL("""
+                    CREATE TABLE intermediate_views (
+                        id TEXT PRIMARY KEY NOT NULL,
+                        viewType TEXT NOT NULL,
+                        itemId TEXT NOT NULL,
+                        itemName TEXT NOT NULL,
+                        itemBackgroundUrl TEXT,
+                        dataUrl TEXT,
+                        lastUpdated INTEGER NOT NULL,
+                        totalItems INTEGER NOT NULL DEFAULT 0,
+                        page INTEGER NOT NULL DEFAULT 1,
+                        pageSize INTEGER NOT NULL DEFAULT 20
+                    )
+                """)
+                
+                // Create intermediate_view_items table
+                database.execSQL("""
+                    CREATE TABLE intermediate_view_items (
+                        intermediateViewId TEXT NOT NULL,
+                        mediaType TEXT NOT NULL,
+                        tmdbId INTEGER NOT NULL,
+                        orderIndex INTEGER NOT NULL,
+                        addedAt INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY (intermediateViewId, mediaType, tmdbId)
+                    )
+                """)
+                
+                // Create indices for better performance
+                database.execSQL("CREATE INDEX idx_intermediate_views_type ON intermediate_views(viewType)")
+                database.execSQL("CREATE INDEX idx_intermediate_views_updated ON intermediate_views(lastUpdated)")
+                database.execSQL("CREATE INDEX idx_intermediate_view_items_view ON intermediate_view_items(intermediateViewId)")
+                database.execSQL("CREATE INDEX idx_intermediate_view_items_order ON intermediate_view_items(intermediateViewId, orderIndex)")
+            }
+        }
 
         // Migration from version 10 to 11
         private val MIGRATION_10_11 = object : Migration(10, 11) {
@@ -154,7 +196,7 @@ abstract class StrmrDatabase : RoomDatabase() {
                     StrmrDatabase::class.java,
                     "strmr_database"
                 )
-                .addMigrations(MIGRATION_10_11, MIGRATION_9_10, MIGRATION_8_9) // Add the new migrations
+                .addMigrations(MIGRATION_11_12, MIGRATION_10_11, MIGRATION_9_10, MIGRATION_8_9) // Add the new migrations
                 .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance

@@ -310,7 +310,8 @@ fun HomePage(
     viewModel: HomeViewModel,
     isContentFocused: Boolean = false,
     onContentFocusChanged: ((Boolean) -> Unit)? = null,
-    onNavigateToDetails: ((String, Int, Int?, Int?) -> Unit)? = null
+    onNavigateToDetails: ((String, Int, Int?, Int?) -> Unit)? = null,
+    onNavigateToIntermediateView: ((String, String, String, String?, String?) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val continueWatching by viewModel.continueWatching.collectAsState()
@@ -702,6 +703,25 @@ fun HomePage(
                                     is HomeMediaItem.TvShow -> {
                                         Log.d("HomePage", "🎯 DEBUG: Navigating to TvShow details - show: ${item.show.title}, season: ${item.season}, episode: ${item.episode}")
                                         onNavigateToDetails?.invoke("tvshow", item.show.tmdbId, item.season, item.episode)
+                                    }
+                                    is com.strmr.ai.data.NetworkInfo -> {
+                                        Log.d("HomePage", "🎯 DEBUG: Navigating to Network intermediate view - network: ${item.name}")
+                                        // Check if this is a Trakt list (nested item) or a regular network
+                                        val viewType = if (item.dataUrl?.contains("api.trakt.tv") == true) {
+                                            "trakt_list"
+                                        } else {
+                                            "network"
+                                        }
+                                        onNavigateToIntermediateView?.invoke(viewType, item.id, item.name, item.posterUrl, item.dataUrl)
+                                    }
+                                    is HomeMediaItem.Collection -> {
+                                        Log.d("HomePage", "🎯 DEBUG: Navigating to Collection intermediate view - collection: ${item.name}")
+                                        val viewType = when (rowConfig?.type) {
+                                            "collections" -> "collection"
+                                            "directors" -> "director"
+                                            else -> "collection"
+                                        }
+                                        onNavigateToIntermediateView?.invoke(viewType, item.id, item.name, item.backgroundImageUrl, null)
                                     }
                                 }
                             } else null

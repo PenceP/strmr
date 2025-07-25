@@ -112,7 +112,9 @@ interface TraktApiService {
     suspend fun getUserListItems(
         @Path("username") username: String,
         @Path("list_slug") listSlug: String,
-        @Query("extended") extended: String = "full"
+        @Query("extended") extended: String = "full",
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = StrmrConstants.Api.DEFAULT_PAGE_SIZE
     ): List<TraktListItem>
 }
 

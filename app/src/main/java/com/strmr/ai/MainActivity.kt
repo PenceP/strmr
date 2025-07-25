@@ -50,6 +50,7 @@ import com.strmr.ai.ui.screens.DetailsPage
 import com.strmr.ai.ui.screens.MediaDetailsType
 import com.strmr.ai.ui.screens.VideoPlayerScreen
 import com.strmr.ai.ui.screens.EpisodeView
+import com.strmr.ai.ui.screens.IntermediateViewPage
 import android.util.Log
 import dagger.hilt.android.AndroidEntryPoint
 import com.strmr.ai.viewmodel.HomeViewModel
@@ -203,6 +204,12 @@ fun MainScreen(youtubeExtractor: YouTubeExtractor) {
                                 "details/$mediaType/$tmdbId"
                             }
                             navController.navigate(route)
+                        },
+                        onNavigateToIntermediateView = { viewType, itemId, itemName, itemBackgroundUrl, dataUrl ->
+                            val encodedName = java.net.URLEncoder.encode(itemName, "UTF-8")
+                            val encodedBackgroundUrl = itemBackgroundUrl?.let { java.net.URLEncoder.encode(it, "UTF-8") } ?: ""
+                            val encodedDataUrl = dataUrl?.let { java.net.URLEncoder.encode(it, "UTF-8") } ?: ""
+                            navController.navigate("intermediate_view/$viewType/$itemId/$encodedName/$encodedBackgroundUrl/$encodedDataUrl")
                         }
                     )
                 }
@@ -552,6 +559,44 @@ fun MainScreen(youtubeExtractor: YouTubeExtractor) {
                             initialEpisode = episode
                         )
                     }
+                }
+                composable(
+                    route = "intermediate_view/{viewType}/{itemId}/{itemName}/{itemBackgroundUrl}/{dataUrl}",
+                    arguments = listOf(
+                        navArgument("viewType") { type = NavType.StringType },
+                        navArgument("itemId") { type = NavType.StringType },
+                        navArgument("itemName") { type = NavType.StringType },
+                        navArgument("itemBackgroundUrl") { type = NavType.StringType },
+                        navArgument("dataUrl") { type = NavType.StringType }
+                    )
+                ) { backStackEntry ->
+                    val viewType = backStackEntry.arguments?.getString("viewType") ?: ""
+                    val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
+                    val encodedName = backStackEntry.arguments?.getString("itemName") ?: ""
+                    val encodedBackgroundUrl = backStackEntry.arguments?.getString("itemBackgroundUrl") ?: ""
+                    val encodedDataUrl = backStackEntry.arguments?.getString("dataUrl") ?: ""
+                    
+                    val itemName = java.net.URLDecoder.decode(encodedName, "UTF-8")
+                    val itemBackgroundUrl = if (encodedBackgroundUrl.isNotEmpty()) {
+                        java.net.URLDecoder.decode(encodedBackgroundUrl, "UTF-8")
+                    } else null
+                    val dataUrl = if (encodedDataUrl.isNotEmpty()) {
+                        java.net.URLDecoder.decode(encodedDataUrl, "UTF-8")
+                    } else null
+                    
+                    IntermediateViewPage(
+                        viewType = viewType,
+                        itemId = itemId,
+                        itemName = itemName,
+                        itemBackgroundUrl = itemBackgroundUrl,
+                        dataUrl = dataUrl,
+                        onNavigateToDetails = { mediaType, tmdbId ->
+                            navController.navigate("details/$mediaType/$tmdbId")
+                        },
+                        onNavigateBack = {
+                            navController.popBackStack()
+                        }
+                    )
                 }
             }
         }

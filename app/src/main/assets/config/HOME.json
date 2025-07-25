@@ -369,42 +369,42 @@
       "name": "Netflix Collections",
       "backgroundImageUrl": "drawable://network_netflix",
       "nameDisplayMode": "Hidden",
-      "dataUrl": "https://trakt.tv/users/asmobarki/lists/netflix?sort=released,asc"
+      "dataUrl": "https://trakt.tv/users/lhuss13/lists/netflix-movies?sort=released,asc"
     },
     {
       "id": "DisneyPlus",
       "name": "Disney+ Collections",
       "backgroundImageUrl": "drawable://network_disney_plus",
       "nameDisplayMode": "Hidden",
-      "dataUrl": null
+      "dataUrl": "https://trakt.tv/users/bonnno1/lists/disney-movies?sort=released,asc"
     },
     {
       "id": "HBOMax",
       "name": "HBO Max Collections",
       "backgroundImageUrl": "drawable://network_hbo_max",
       "nameDisplayMode": "Hidden",
-      "dataUrl": null
+      "dataUrl": "https://trakt.tv/users/alaxkouad/lists/hbo-max-movies?sort=released,asc"
     },
     {
       "id": "Hulu",
       "name": "Hulu Collections",
       "backgroundImageUrl": "drawable://network_hulu",
       "nameDisplayMode": "Hidden",
-      "dataUrl": null
+      "dataUrl": "https://trakt.tv/users/garycrawfordgc/lists/hulu-movies?sort=released,asc"
     },
     {
       "id": "AmazonPrime",
       "name": "Amazon Prime Collections",
       "backgroundImageUrl": "drawable://network_amazon_prime",
       "nameDisplayMode": "Hidden",
-      "dataUrl": null
+      "dataUrl": "https://trakt.tv/users/garycrawfordgc/lists/amazon-prime-movies?sort=released,asc"
     },
     {
       "id": "AppleTVPlus",
       "name": "Apple TV+ Collections",
       "backgroundImageUrl": "drawable://network_apple_tv_plus",
       "nameDisplayMode": "Hidden",
-      "dataUrl": null
+      "dataUrl": "https://trakt.tv/users/shaunatkins11/lists/apple-tv-movies?sort=released,asc"
     }
   ]
 }
