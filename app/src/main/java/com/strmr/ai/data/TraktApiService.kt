@@ -116,6 +116,35 @@ interface TraktApiService {
         @Query("page") page: Int = 1,
         @Query("limit") limit: Int = StrmrConstants.Api.DEFAULT_PAGE_SIZE
     ): List<TraktListItem>
+    
+    // Sync endpoints for authenticated users
+    @Headers("Content-Type: application/json")
+    @GET("sync/collection/movies")
+    suspend fun getMovieCollection(
+        @Header("Authorization") token: String,
+        @Query("extended") extended: String = "full"
+    ): List<TraktCollectionItem>
+    
+    @Headers("Content-Type: application/json")
+    @GET("sync/collection/shows")
+    suspend fun getShowCollection(
+        @Header("Authorization") token: String,
+        @Query("extended") extended: String = "full"
+    ): List<TraktCollectionItem>
+    
+    @Headers("Content-Type: application/json")
+    @GET("sync/watchlist/movies")
+    suspend fun getMovieWatchlist(
+        @Header("Authorization") token: String,
+        @Query("extended") extended: String = "full"
+    ): List<TraktWatchlistItem>
+    
+    @Headers("Content-Type: application/json")
+    @GET("sync/watchlist/shows")
+    suspend fun getShowWatchlist(
+        @Header("Authorization") token: String,
+        @Query("extended") extended: String = "full"
+    ): List<TraktWatchlistItem>
 }
 
 // Separate interface for authenticated user endpoints

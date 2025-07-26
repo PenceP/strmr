@@ -32,10 +32,21 @@ class HomeViewModel @Inject constructor(
     private val _isNetworksLoading = MutableStateFlow(true)
     val isNetworksLoading = _isNetworksLoading.asStateFlow()
 
+    private val _isTraktAuthorized = MutableStateFlow(false)
+    val isTraktAuthorized = _isTraktAuthorized.asStateFlow()
+
+    private val _traktLists = MutableStateFlow<List<HomeMediaItem.Collection>>(emptyList())
+    val traktLists = _traktLists.asStateFlow()
+
+    private val _isTraktListsLoading = MutableStateFlow(false)
+    val isTraktListsLoading = _isTraktListsLoading.asStateFlow()
+
     init {
         observeContinueWatching()
         refreshContinueWatching()
         loadNetworks()
+        // Don't load Trakt lists in init - wait for authorization
+        // loadTraktLists()
     }
 
     private fun observeContinueWatching() {
@@ -153,4 +164,86 @@ class HomeViewModel @Inject constructor(
     }
     
     suspend fun getOmdbRatings(imdbId: String) = omdbRepository.getOmdbRatings(imdbId)
+    
+    private fun checkTraktAuthorization() {
+        viewModelScope.launch {
+            try {
+                val isAuthorized = accountRepository.isAccountValid("trakt")
+                _isTraktAuthorized.value = isAuthorized
+                Log.d("HomeViewModel", "🔑 Trakt authorization status: $isAuthorized")
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "❌ Error checking Trakt authorization", e)
+                _isTraktAuthorized.value = false
+            }
+        }
+    }
+    
+    fun refreshTraktAuthorization() {
+        checkTraktAuthorization()
+    }
+    
+    private fun loadTraktLists() {
+        viewModelScope.launch {
+            try {
+                Log.d("HomeViewModel", "🔄 Starting loadTraktLists()")
+                _isTraktListsLoading.value = true
+                
+                // Check if user is authorized first
+                val isAuthorized = accountRepository.isAccountValid("trakt")
+                _isTraktAuthorized.value = isAuthorized
+                Log.d("HomeViewModel", "🔑 Trakt authorization check result: $isAuthorized")
+                
+                if (isAuthorized) {
+                    // Create the Trakt Lists collection items from HOME.json configuration
+                    val traktCollections = listOf(
+                        HomeMediaItem.Collection(
+                            id = "movie_collection",
+                            name = "Movie Collection",
+                            backgroundImageUrl = "drawable://trakt_likedlist",
+                            nameDisplayMode = "Visible",
+                            dataUrl = "https://api.trakt.tv/sync/collection/movies"
+                        ),
+                        HomeMediaItem.Collection(
+                            id = "movie_watchlist", 
+                            name = "Movie Watchlist",
+                            backgroundImageUrl = "drawable://trakt_watchlist",
+                            nameDisplayMode = "Visible",
+                            dataUrl = "https://api.trakt.tv/sync/watchlist/movies"
+                        ),
+                        HomeMediaItem.Collection(
+                            id = "tv_collection",
+                            name = "TV Collection", 
+                            backgroundImageUrl = "drawable://trakt_likedlist",
+                            nameDisplayMode = "Visible",
+                            dataUrl = "https://api.trakt.tv/sync/collection/shows"
+                        ),
+                        HomeMediaItem.Collection(
+                            id = "tv_watchlist",
+                            name = "TV Watchlist",
+                            backgroundImageUrl = "drawable://trakt_watchlist", 
+                            nameDisplayMode = "Visible",
+                            dataUrl = "https://api.trakt.tv/sync/watchlist/shows"
+                        )
+                    )
+                    
+                    _traktLists.value = traktCollections
+                    Log.d("HomeViewModel", "✅ Loaded ${traktCollections.size} Trakt lists")
+                } else {
+                    _traktLists.value = emptyList()
+                    Log.d("HomeViewModel", "🔒 Trakt not authorized - no lists loaded")
+                }
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "❌ Error loading Trakt lists", e)
+                _traktLists.value = emptyList()
+                _isTraktAuthorized.value = false
+            } finally {
+                _isTraktListsLoading.value = false
+            }
+        }
+    }
+    
+    fun refreshTraktLists() {
+        Log.d("HomeViewModel", "🔄 refreshTraktLists() called - reloading Trakt lists")
+        loadTraktLists()
+    }
 } 

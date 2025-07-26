@@ -263,7 +263,10 @@ fun MainScreen(
                     val homeViewModel: HomeViewModel = hiltViewModel()
                     TraktSettingsPage(
                         onBackPressed = { navController.popBackStack() },
-                        onTraktAuthorized = { homeViewModel.refreshContinueWatching() }
+                        onTraktAuthorized = { 
+                            homeViewModel.refreshContinueWatching()
+                            homeViewModel.refreshTraktLists()
+                        }
                     )
                 }
                 composable("premiumize_settings") {

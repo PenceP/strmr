@@ -317,6 +317,19 @@ fun HomePage(
     val continueWatching by viewModel.continueWatching.collectAsState()
     val isContinueWatchingLoading by viewModel.isContinueWatchingLoading.collectAsState()
     val isNetworksLoading by viewModel.isNetworksLoading.collectAsState()
+    val traktLists by viewModel.traktLists.collectAsState()
+    val isTraktListsLoading by viewModel.isTraktListsLoading.collectAsState()
+    
+    // Debug logging for Trakt Lists
+    LaunchedEffect(traktLists.size, isTraktListsLoading) {
+        Log.d("HomePage", "🔍 Trakt Lists state: size=${traktLists.size}, loading=$isTraktListsLoading")
+    }
+    
+    // Initialize Trakt lists when HomePage loads
+    LaunchedEffect(Unit) {
+        Log.d("HomePage", "🚀 Initializing Trakt Lists on HomePage load")
+        viewModel.refreshTraktLists()
+    }
     
     // Use the new SelectionManager
     val selectionManager = rememberSelectionManager()
@@ -344,8 +357,18 @@ fun HomePage(
     }
     
     // Create media rows dynamically based on configuration
-    val mediaRows = mutableMapOf<String, List<Any>>()
-    val rowConfigs = mutableMapOf<String, RowConfig>()
+    // Rebuild rows when data changes
+    val mediaRows = remember(continueWatching, traktLists, networks, collections, directors, pageConfiguration) { 
+        mutableMapOf<String, List<Any>>() 
+    }
+    val rowConfigs = remember(continueWatching, traktLists, networks, collections, directors, pageConfiguration) { 
+        mutableMapOf<String, RowConfig>() 
+    }
+    
+    // Clear and rebuild rows when data changes
+    mediaRows.clear()
+    rowConfigs.clear()
+    
     pageConfiguration?.let { config ->
         val enabledRows = ConfigurationLoader(context).getEnabledRowsSortedByOrder(config)
         
@@ -356,21 +379,29 @@ fun HomePage(
                         mediaRows[rowConfig.title] = continueWatching
                         rowConfigs[rowConfig.title] = rowConfig
                     }
-                    // Add nested rows if they exist
-                    if (!rowConfig.nestedRows.isNullOrEmpty()) {
-                        val nestedRowConfigs = ConfigurationLoader(context).getNestedRowsFromConfig(rowConfig)
-                        for (nestedRowConfig in nestedRowConfigs) {
-                            when (nestedRowConfig.type) {
-                                "nested_items" -> {
-                                    // Get the individual items from the parent row configuration
-                                    val nestedItems = ConfigurationLoader(context).getNestedItemsFromConfig(rowConfig)
-                                    if (nestedItems.isNotEmpty()) {
-                                        mediaRows[nestedRowConfig.title] = nestedItems
-                                        rowConfigs[nestedRowConfig.title] = nestedRowConfig
-                                    }
-                                }
-                            }
-                        }
+                    
+                    // Add Trakt Lists row if authorized and has items
+                    if (traktLists.isNotEmpty()) {
+                        // Create a synthetic row config for Trakt Lists
+                        val traktListsConfig = RowConfig(
+                            id = "trakt_lists",
+                            title = "Trakt Lists",
+                            type = "nested_items",
+                            cardType = "landscape",
+                            cardHeight = 120,
+                            showHero = false,
+                            showLoading = false,
+                            order = 2,
+                            enabled = true,
+                            displayOptions = rowConfig.displayOptions,
+                            nestedRows = null,
+                            nestedItems = null
+                        )
+                        mediaRows["Trakt Lists"] = traktLists
+                        rowConfigs["Trakt Lists"] = traktListsConfig
+                        Log.d("HomePage", "✅ Added Trakt Lists row with ${traktLists.size} items")
+                    } else {
+                        Log.d("HomePage", "🔒 Trakt Lists row hidden - no items or not authorized")
                     }
                 }
                 "networks" -> {
@@ -648,6 +679,7 @@ fun HomePage(
                     val isLoading = rowConfig?.showLoading == true && when (rowConfig.type) {
                         "continue_watching" -> isContinueWatchingLoading
                         "networks" -> isNetworksLoading
+                        "nested_items" -> if (rowTitle == "Trakt Lists") isTraktListsLoading else false
                         else -> false
                     }
                     

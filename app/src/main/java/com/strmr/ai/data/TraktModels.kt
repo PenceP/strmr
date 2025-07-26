@@ -186,6 +186,20 @@ data class TraktListItem(
     val show: Show?
 )
 
+// Trakt Collection models
+data class TraktCollectionItem(
+    val collected_at: String,
+    val movie: Movie?,
+    val show: Show?
+)
+
+// Trakt Watchlist models
+data class TraktWatchlistItem(
+    val listed_at: String,
+    val movie: Movie?,
+    val show: Show?
+)
+
 // Continue Watching models
 data class WatchedHistoryItem(
     val id: Long,

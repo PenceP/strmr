@@ -17,7 +17,8 @@ import javax.inject.Singleton
 class IntermediateViewRepository @Inject constructor(
     private val database: StrmrDatabase,
     private val traktApiService: TraktApiService,
-    private val tmdbEnrichmentService: TmdbEnrichmentService
+    private val tmdbEnrichmentService: TmdbEnrichmentService,
+    private val accountRepository: AccountRepository
 ) {
     
     companion object {
@@ -231,20 +232,16 @@ class IntermediateViewRepository @Inject constructor(
         
         return when {
             dataUrl.contains("/sync/collection/movies") -> {
-                Log.w(TAG, "⚠️ Sync collection/watchlist not yet implemented for: $dataUrl")
-                emptyList()
+                loadTraktMovieCollection()
             }
             dataUrl.contains("/sync/watchlist/movies") -> {
-                Log.w(TAG, "⚠️ Sync collection/watchlist not yet implemented for: $dataUrl")
-                emptyList()
+                loadTraktMovieWatchlist()
             }
             dataUrl.contains("/sync/collection/shows") -> {
-                Log.w(TAG, "⚠️ Sync collection/watchlist not yet implemented for: $dataUrl")
-                emptyList()
+                loadTraktShowCollection()
             }
             dataUrl.contains("/sync/watchlist/shows") -> {
-                Log.w(TAG, "⚠️ Sync collection/watchlist not yet implemented for: $dataUrl")
-                emptyList()
+                loadTraktShowWatchlist()
             }
             dataUrl.contains("trakt.tv/users/") && dataUrl.contains("/lists/") -> {
                 loadExternalTraktList(dataUrl)
@@ -495,19 +492,20 @@ class IntermediateViewRepository @Inject constructor(
         
         return when {
             dataUrl.contains("/sync/collection/movies") -> {
-                Log.w(TAG, "⚠️ Sync collection/watchlist pagination not yet implemented for: $dataUrl")
+                // Collections and watchlists return all items at once, no pagination needed
+                Log.d(TAG, "📄 Movie collection doesn't support pagination - returning empty")
                 emptyList()
             }
             dataUrl.contains("/sync/watchlist/movies") -> {
-                Log.w(TAG, "⚠️ Sync collection/watchlist pagination not yet implemented for: $dataUrl")
+                Log.d(TAG, "📄 Movie watchlist doesn't support pagination - returning empty")
                 emptyList()
             }
             dataUrl.contains("/sync/collection/shows") -> {
-                Log.w(TAG, "⚠️ Sync collection/watchlist pagination not yet implemented for: $dataUrl")
+                Log.d(TAG, "📄 Show collection doesn't support pagination - returning empty")
                 emptyList()
             }
             dataUrl.contains("/sync/watchlist/shows") -> {
-                Log.w(TAG, "⚠️ Sync collection/watchlist pagination not yet implemented for: $dataUrl")
+                Log.d(TAG, "📄 Show watchlist doesn't support pagination - returning empty")
                 emptyList()
             }
             dataUrl.contains("trakt.tv/users/") && dataUrl.contains("/lists/") -> {
@@ -517,6 +515,184 @@ class IntermediateViewRepository @Inject constructor(
                 Log.w(TAG, "⚠️ Unsupported Trakt URL: $dataUrl")
                 emptyList()
             }
+        }
+    }
+    
+    // ======================== Trakt Sync Methods ========================
+    
+    private suspend fun loadTraktMovieCollection(): List<HomeMediaItem> {
+        Log.d(TAG, "🎬 Loading Trakt movie collection")
+        
+        return try {
+            // Get access token
+            val accessToken = accountRepository.refreshTokenIfNeeded(StrmrConstants.Preferences.ACCOUNT_TYPE_TRAKT)
+            if (accessToken.isNullOrBlank()) {
+                Log.w(TAG, "⚠️ No valid Trakt access token for movie collection")
+                return emptyList()
+            }
+            
+            // Call Trakt API
+            val collectionItems = traktApiService.getMovieCollection("Bearer $accessToken")
+            Log.d(TAG, "✅ Received ${collectionItems.size} movies from collection")
+            
+            // Convert to HomeMediaItems with TMDB enrichment
+            val homeMediaItems = mutableListOf<HomeMediaItem>()
+            val moviesToSave = mutableListOf<MovieEntity>()
+            
+            for (item in collectionItems) {
+                item.movie?.let { traktMovie ->
+                    val enrichedMovie = tmdbEnrichmentService.enrichMovieWithLogo(traktMovie)
+                    enrichedMovie?.let { movie ->
+                        homeMediaItems.add(HomeMediaItem.Movie(movie, null))
+                        moviesToSave.add(movie)
+                    }
+                }
+            }
+            
+            // Save enriched entities to database
+            if (moviesToSave.isNotEmpty()) {
+                movieDao.insertMovies(moviesToSave)
+                Log.d(TAG, "💾 Saved ${moviesToSave.size} movies from collection to database")
+            }
+            
+            Log.d(TAG, "🎬 Converted ${homeMediaItems.size} collection movies successfully")
+            homeMediaItems
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error loading Trakt movie collection", e)
+            emptyList()
+        }
+    }
+    
+    private suspend fun loadTraktMovieWatchlist(): List<HomeMediaItem> {
+        Log.d(TAG, "📺 Loading Trakt movie watchlist")
+        
+        return try {
+            // Get access token
+            val accessToken = accountRepository.refreshTokenIfNeeded(StrmrConstants.Preferences.ACCOUNT_TYPE_TRAKT)
+            if (accessToken.isNullOrBlank()) {
+                Log.w(TAG, "⚠️ No valid Trakt access token for movie watchlist")
+                return emptyList()
+            }
+            
+            // Call Trakt API
+            val watchlistItems = traktApiService.getMovieWatchlist("Bearer $accessToken")
+            Log.d(TAG, "✅ Received ${watchlistItems.size} movies from watchlist")
+            
+            // Convert to HomeMediaItems with TMDB enrichment
+            val homeMediaItems = mutableListOf<HomeMediaItem>()
+            val moviesToSave = mutableListOf<MovieEntity>()
+            
+            for (item in watchlistItems) {
+                item.movie?.let { traktMovie ->
+                    val enrichedMovie = tmdbEnrichmentService.enrichMovieWithLogo(traktMovie)
+                    enrichedMovie?.let { movie ->
+                        homeMediaItems.add(HomeMediaItem.Movie(movie, null))
+                        moviesToSave.add(movie)
+                    }
+                }
+            }
+            
+            // Save enriched entities to database
+            if (moviesToSave.isNotEmpty()) {
+                movieDao.insertMovies(moviesToSave)
+                Log.d(TAG, "💾 Saved ${moviesToSave.size} movies from watchlist to database")
+            }
+            
+            Log.d(TAG, "📺 Converted ${homeMediaItems.size} watchlist movies successfully")
+            homeMediaItems
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error loading Trakt movie watchlist", e)
+            emptyList()
+        }
+    }
+    
+    private suspend fun loadTraktShowCollection(): List<HomeMediaItem> {
+        Log.d(TAG, "📺 Loading Trakt show collection")
+        
+        return try {
+            // Get access token
+            val accessToken = accountRepository.refreshTokenIfNeeded(StrmrConstants.Preferences.ACCOUNT_TYPE_TRAKT)
+            if (accessToken.isNullOrBlank()) {
+                Log.w(TAG, "⚠️ No valid Trakt access token for show collection")
+                return emptyList()
+            }
+            
+            // Call Trakt API
+            val collectionItems = traktApiService.getShowCollection("Bearer $accessToken")
+            Log.d(TAG, "✅ Received ${collectionItems.size} shows from collection")
+            
+            // Convert to HomeMediaItems with TMDB enrichment
+            val homeMediaItems = mutableListOf<HomeMediaItem>()
+            val showsToSave = mutableListOf<TvShowEntity>()
+            
+            for (item in collectionItems) {
+                item.show?.let { traktShow ->
+                    val enrichedShow = tmdbEnrichmentService.enrichTvShowWithLogo(traktShow)
+                    enrichedShow?.let { show ->
+                        homeMediaItems.add(HomeMediaItem.TvShow(show, null))
+                        showsToSave.add(show)
+                    }
+                }
+            }
+            
+            // Save enriched entities to database
+            if (showsToSave.isNotEmpty()) {
+                tvShowDao.insertTvShows(showsToSave)
+                Log.d(TAG, "💾 Saved ${showsToSave.size} shows from collection to database")
+            }
+            
+            Log.d(TAG, "📺 Converted ${homeMediaItems.size} collection shows successfully")
+            homeMediaItems
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error loading Trakt show collection", e)
+            emptyList()
+        }
+    }
+    
+    private suspend fun loadTraktShowWatchlist(): List<HomeMediaItem> {
+        Log.d(TAG, "📺 Loading Trakt show watchlist")
+        
+        return try {
+            // Get access token
+            val accessToken = accountRepository.refreshTokenIfNeeded(StrmrConstants.Preferences.ACCOUNT_TYPE_TRAKT)
+            if (accessToken.isNullOrBlank()) {
+                Log.w(TAG, "⚠️ No valid Trakt access token for show watchlist")
+                return emptyList()
+            }
+            
+            // Call Trakt API
+            val watchlistItems = traktApiService.getShowWatchlist("Bearer $accessToken")
+            Log.d(TAG, "✅ Received ${watchlistItems.size} shows from watchlist")
+            
+            // Convert to HomeMediaItems with TMDB enrichment
+            val homeMediaItems = mutableListOf<HomeMediaItem>()
+            val showsToSave = mutableListOf<TvShowEntity>()
+            
+            for (item in watchlistItems) {
+                item.show?.let { traktShow ->
+                    val enrichedShow = tmdbEnrichmentService.enrichTvShowWithLogo(traktShow)
+                    enrichedShow?.let { show ->
+                        homeMediaItems.add(HomeMediaItem.TvShow(show, null))
+                        showsToSave.add(show)
+                    }
+                }
+            }
+            
+            // Save enriched entities to database
+            if (showsToSave.isNotEmpty()) {
+                tvShowDao.insertTvShows(showsToSave)
+                Log.d(TAG, "💾 Saved ${showsToSave.size} shows from watchlist to database")
+            }
+            
+            Log.d(TAG, "📺 Converted ${homeMediaItems.size} watchlist shows successfully")
+            homeMediaItems
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error loading Trakt show watchlist", e)
+            emptyList()
         }
     }
 }
