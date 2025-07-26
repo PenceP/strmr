@@ -107,7 +107,9 @@ data class TmdbTvShowDetails(
     val first_air_date: String?,
     val last_air_date: String?,
     val episode_run_time: List<Int>?,
-    val genres: List<Genre>
+    val genres: List<Genre>,
+    val number_of_seasons: Int?,
+    val seasons: List<TmdbSeasonSummary>?
 )
 
 data class Genre(
@@ -162,7 +164,8 @@ data class TmdbEpisode(
     val overview: String?,
     val still_path: String?,
     val air_date: String?,
-    val runtime: Int?
+    val runtime: Int?,
+    val vote_average: Float?
 ) 
 
 data class TmdbSimilarResponse(
@@ -231,4 +234,14 @@ data class TmdbVideo(
     val site: String, // e.g., "YouTube"
     val size: Int?,
     val type: String // e.g., "Trailer", "Teaser", "Clip", "Featurette"
-) 
+)
+
+data class TmdbSeasonSummary(
+    val air_date: String?,
+    val episode_count: Int,
+    val id: Int,
+    val name: String,
+    val overview: String?,
+    val poster_path: String?,
+    val season_number: Int
+)

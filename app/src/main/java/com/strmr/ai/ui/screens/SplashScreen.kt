@@ -48,19 +48,28 @@ fun SplashScreen(
         ),
         label = "text_alpha"
     )
-    
+
+    // Add timeout for update check
+    LaunchedEffect(Unit) {
+        delay(5000) // 5 second timeout
+        if (splashState == SplashState.CHECKING_UPDATE) {
+            // Skip update check and go directly to loading posters
+            splashState = SplashState.LOADING_POSTERS
+        }
+    }
+
     // Handle splash flow
     LaunchedEffect(updateUiState, splashState) {
         when (splashState) {
             SplashState.CHECKING_UPDATE -> {
-                // Wait for update check to complete
-                if (!updateUiState.isLoading && updateUiState.updateInfo != null) {
+                // Wait for update check to complete or timeout
+                if (!updateUiState.isLoading) {
                     if (updateUiState.updateInfo?.hasUpdate == true) {
                         // Start download automatically
                         updateViewModel.downloadAndInstallUpdate()
                         splashState = SplashState.DOWNLOADING_UPDATE
                     } else {
-                        // No update, move to loading posters
+                        // No update or check failed, move to loading posters
                         splashState = SplashState.LOADING_POSTERS
                     }
                 }

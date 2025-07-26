@@ -8,7 +8,7 @@
  - Liskov Substitution Principle
  - Interface Segregation Principle
  - Dependency Inversion Principle
--DRY - Don't Repeat Yourself
+can you -DRY - Don't Repeat Yourself
 -KISS - Keep It Simple, Stupid
 -YAGNI - You Aren't Gonna Need It
 

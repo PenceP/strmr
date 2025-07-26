@@ -42,7 +42,7 @@ import com.strmr.ai.data.database.TraktRatingsDao
         IntermediateViewEntity::class,
         IntermediateViewItemEntity::class
     ],
-    version = 12, // bumped for intermediate view caching tables
+    version = 12, // bumped for intermediate view caching tables and episode rating column
     exportSchema = false
 )
 @TypeConverters(ListConverter::class)
@@ -189,6 +189,14 @@ abstract class StrmrDatabase : RoomDatabase() {
             }
         }
 
+        // Migration from version 11 to 12
+        private val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add rating column to episodes table
+                database.execSQL("ALTER TABLE episodes ADD COLUMN rating REAL")
+            }
+        }
+
         fun getDatabase(context: Context): StrmrDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -196,7 +204,12 @@ abstract class StrmrDatabase : RoomDatabase() {
                     StrmrDatabase::class.java,
                     "strmr_database"
                 )
-                .addMigrations(MIGRATION_11_12, MIGRATION_10_11, MIGRATION_9_10, MIGRATION_8_9) // Add the new migrations
+                    .addMigrations(
+                        MIGRATION_10_11,
+                        MIGRATION_9_10,
+                        MIGRATION_8_9,
+                        MIGRATION_11_12
+                    ) // Add the new migrations
                 .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance
