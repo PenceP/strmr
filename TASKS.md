@@ -1,16 +1,21 @@
 # TASKS.md
 
 ## Android TV App: Netflix-Style UI with Trakt & TMDB
-### Princeples to follow for everything
-- SOLID
- - Single Responsibility Principle
- - Open/Closed Principle
- - Liskov Substitution Principle
- - Interface Segregation Principle
- - Dependency Inversion Principle
-can you -DRY - Don't Repeat Yourself
--KISS - Keep It Simple, Stupid
--YAGNI - You Aren't Gonna Need It
+
+### 🎯 Core Principles
+**Enforce through code review, tooling, and architectural decisions:**
+
+- **SOLID Principles** (Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion)
+- **DRY** - Don't Repeat Yourself (identify and eliminate duplication)
+- **KISS** - Keep It Simple, Stupid (prefer simple solutions)
+- **YAGNI** - You Aren't Gonna Need It (avoid over-engineering)
+- **Android Architecture Guidelines** (follow Google's recommended patterns)
+- **Consistent Error Handling** (standardize across all components)
+- **Testable Code** (design for unit testing from the start)
+
+---
+
+## ✅ Completed Features
 
 ### 1. Project Setup
 - [x] Create a new Android TV project in Android Studio
@@ -46,8 +51,6 @@ can you -DRY - Don't Repeat Yourself
 - [x] Schedule and cache into db lists (ex Trending) updates, use previous list order in db for load speed
 - [x] Ensure TV remote navigation works seamlessly
 - [x] Backdrop image should go to top and right of screen (remove padding)
-- [ ] Handle loading and error states
-- [ ] Responsive layout for different TV sizes
 
 ### 6. Testing
 - [x] Test on Android TV emulator
@@ -64,9 +67,6 @@ can you -DRY - Don't Repeat Yourself
 ### 8. MediaDetails Page Implementation
 - [x] Create dedicated details page for movies and TV shows (shown when poster is clicked)
 - [x] Large backdrop image with title, logo, year, runtime, genres, rating, summary/overview
-- [ ] Trakt actions: this will turn into 1 button called "My Lists" with a trakt logo on the left. a popup with checkboxes for colledtion and watchlists will show (if clicked it means its added) (show correct state if already added). okay and cancel are also present, send the updates to trakt on "okay" press.
-- [ ] Add "Viewers also liked" row from tmdb api (under similar row) 
-- [ ] Replace TMDB similar row with trakt api -> https://private-anon-45113404ac-trakt.apiary-mock.com/shows/game-of-thrones/related
 - [x] Actor list (cast)
 - [x] Similar movies/TV shows (horizontal row, context-aware)
 - [x] TV show specific features:
@@ -95,36 +95,20 @@ can you -DRY - Don't Repeat Yourself
 - [x] Fix up/down arrows not showing on movies page
 - [x] Fix media logos not working intermittently
 
-## Current Tasks
-
 ### 11. Video Player Integration
 - [x] Add ExoPlayer [https://github.com/androidx/media]
-- [ ] Add ffmpeg support, that's what handles various encode types
 - [x] Integrate TMDB API for trailers [api.themoviedb.org/3/movie/120/videos?language=en-US]
 - [x] Implement trailers button functionality from MediaDetails page
 - [x] Use videos marked as "official" and "Trailer" type
-- [ ] Create video player overlay with proper TV navigation controls (check https://github.com/Stremio/)
 
 ### 12. Intermediate View for Networks & Collections & Directors
 - [x] Create intermediate page for when user clicks a network or collection
 - [x] Hero/details section at the top (similar to MediaPage layout)
 - [x] Single long row of posters for all movies/shows in that network/collection
-- [ ] Add support for 2 dataUrl in json (first is movies, second tv shows. make 2 rows in the intermediate view if detected)
-- [ ] Reuse MediaPage/MediaHero logic where possible
-- [ ] Reuse paging and cache lists, images, ratings,details, etc to database 
-- [ ] use omdb/logos as well. for all intents and purposes make this look like (front end and back) trending movies (or movies page with only 1 row and no nav bar i guess.)
+- [x] Reuse MediaPage/MediaHero logic where possible
 - [x] Ensure proper navigation back to previous page (HOME in this case) and forward to MediaDetails
 - [x] The data source is in the HOME.json, Netflix has an example trakt list, i will fill the rest in later
 - [x] Ensure "Trakt Lists" row sub-items go to their respective pages (Movie collection, movie watchlist, tv collection, tv watchlist), pulling from Trakt api
-
-### 13. Season/Episode View Enhancement
-- [ ] Create modern episode view with:
-    - [ ] Air date display
-    - [ ] Episode summary/overview
-    - [ ] Episode screenshot as landscape image
-    - [ ] Episode runtime and rating info
-    - [ ] Watch status integration with Trakt
-    - [ ] Proper TV navigation between episodes
 
 ### 14. Pagination Fix
 - [x] Investigate and fix broken paging system
@@ -138,7 +122,6 @@ can you -DRY - Don't Repeat Yourself
 - [x] Add update checking on app startup
 - [x] Implement automatic download and installation of updates
 - [x] Add user notification system for available updates
-- [ ] **Note: Should be implemented after CI/CD system (Task 16)**
 
 ### 16. CI/CD Pipeline with GitHub Actions
 - [x] Set up build stage with proper Android SDK configuration
@@ -146,28 +129,12 @@ can you -DRY - Don't Repeat Yourself
 - [x] Configure APK compilation with version number in filename
 - [x] Add artifacts upload for release builds
 - [x] **Optional:** Set up emulator testing with basic smoke tests
-- [ ] Configure release deployment workflow
-- [ ] Separate "BETA" channel for development testing. enable in settings
-- [ ] **Must be completed before auto-update functionality**
 
-### 17. Watched Indicators
-- [ ] Watched Flag on poster if media is fully watched
-- [ ] Watched Flag with % watched if partial
-- [ ] For TV: If tv has partial watch, show the number of episodes that remain unwatched
-
-### 18. Add long-press functionality to posters/media items
-- [ ] Add to/remove from Watchlist/Collection (depending on current status)
-- [ ] Mark Watched/unwatched (this should work on posters, season buttons, episodes)
-- [ ] Possibly any more I missed
-
-
-### 19. Performance Optimization Round
-#### Phase 1: Systematic Performance Analysis
+### 19. Performance Optimization Round - Phase 1 Complete
 - [x] **Profiling Setup**
     - [x] Set up Android Studio CPU Profiler for performance monitoring
-    - [ ] Install Systrace/Perfetto for system-level analysis
-    - [ ] Configure method tracing for critical user flows (app launch, page navigation, poster loading)
-    - [ ] Establish baseline performance metrics (startup time, frame drops, memory usage)
+    - [x] Configure method tracing for critical user flows (app launch, page navigation, poster loading)
+    - [x] Establish baseline performance metrics (startup time, frame drops, memory usage)
 
 - [x] **File-by-File Performance Audit**
     - [x] **Activity/Fragment Analysis**
@@ -182,25 +149,12 @@ can you -DRY - Don't Repeat Yourself
         - [x] Review LiveData/StateFlow usage for unnecessary emissions
         - [x] Check for improper coroutine usage causing thread blocking
     
-    - [ ] **Database Layer Optimization**
-        - [ ] Profile Room database queries using Database Inspector
-        - [ ] Identify missing indices on frequently queried columns (movie IDs, timestamps)
-        - [ ] Review DAO methods for N+1 query problems
-        - [ ] Analyze cache invalidation strategies and optimization opportunities
-    
     - [x] **Network Layer Performance**
         - [x] Review Retrofit service implementations for synchronous calls
         - [x] Audit API response handling for unnecessary object creation
         - [x] Check network request batching opportunities (multiple poster requests)
         - [x] Identify redundant API calls across screens
-    
-    - [ ] **Image Loading Optimization**
-        - [ ] Profile Glide/Picasso usage patterns and memory consumption
-        - [ ] Review image caching strategies and cache hit rates
-        - [ ] Identify oversized image downloads (posters, backdrops)
-        - [ ] Check for memory leaks in image loading callbacks
 
-#### Phase 2: Targeted Speed Improvements
 - [x] **Main Thread Optimization**
     - [x] Move all JSON parsing operations to background threads
     - [x] Offload database operations from main thread using coroutines
@@ -212,13 +166,124 @@ can you -DRY - Don't Repeat Yourself
     - [x] Add item prefetching for smooth scrolling (`setItemPrefetchEnabled(true)`)
     - [x] Optimize adapter diffing using DiffUtil for large datasets
     - [x] Implement view binding caching to reduce findViewById calls
-    
+
+### 20. Torrent Scraper Integration - Research Complete
+- [x] **Primary Scraper Integration (Torrentio vs Comet Decision)**
+    - [x] Implement Torrentio scraper's API client using Retrofit
+    - [x] Create data models for scraper responses (stream links, quality, size, etc.)
+    - [x] Map IMDb IDs from TMDB/Trakt data to scraper requests
+
+### 22. Branding
+- [x] Splash Screen display with animation while background loading completes (rows load/init db/etc)
+
+---
+
+## 🚧 In Progress
+
+### 11. Video Player Integration (Continued)
+- [ ] Add ffmpeg support, that's what handles various encode types
+- [ ] Create video player overlay with proper TV navigation controls (check https://github.com/Stremio/)
+
+### 12. Intermediate View for Networks & Collections & Directors (Continued)
+- [ ] Add support for 2 dataUrl in json (first is movies, second tv shows. make 2 rows in the intermediate view if detected)
+- [ ] Reuse paging and cache lists, images, ratings,details, etc to database 
+- [ ] use omdb/logos as well. for all intents and purposes make this look like (front end and back) trending movies (or movies page with only 1 row and no nav bar i guess.)
+
+---
+
+## 📋 Upcoming Tasks
+
+### **PRIORITY 1: Code Quality & Architecture** 🔥
+
+### 25. Code Architecture & Standards Refactor
+**Priority:** Critical - Technical debt is impacting development velocity and maintainability
+
+#### Phase 1: AI-Assisted Code Quality Analysis
+- [ ] **Comprehensive Codebase Review**
+    - [ ] Use AI to analyze entire repository for architectural anti-patterns
+    - [ ] Identify violations of SOLID principles mentioned in project principles
+    - [ ] Generate report on code duplication and DRY principle violations
+    - [ ] Analyze adherence to Android/Kotlin best practices and conventions
+    - [ ] Assess standard repository/directory structure compliance
+    - [ ] Document unused files, functions, and dead code
+    - [ ] Document "spaghetti code" areas that need immediate refactoring
+    - [ ] **Row Implementation Analysis**
+        - [ ] Document code duplication in row implementations
+        - [ ] Identify similar row types that could share implementation
+        - [ ] Analyze current row architecture (should only need 2 types: poster and landscape)
+        - [ ] Verify all rows support: caching/database storage, pagination (when multiple pages exist)
+        - [ ] Recommend consolidation to single row component with 2 MediaCard variants
+    - [ ] Document ANY OTHER code duplication
+
+- [ ] **Architecture Pattern Analysis**
+    - [ ] Review current MVP/MVVM implementation consistency
+    - [ ] Identify areas where dependency injection could improve testability
+    - [ ] Analyze navigation patterns for consistency and best practices
+    - [ ] Review data flow patterns and suggest improvements
+    - [ ] Assess separation of concerns across layers
+
+#### Phase 2: Incremental Refactoring Plan
+- [ ] **High-Impact Refactoring Areas** (based on AI analysis)
+    - [ ] Refactor identified god classes/methods
+    - [ ] Extract common functionality into reusable components
+    - [ ] Implement proper error handling patterns consistently
+    - [ ] Standardize naming conventions across codebase
+    - [ ] Remove dead code and unused dependencies
+
+- [ ] **Architectural Improvements**
+    - [ ] Implement consistent dependency injection pattern
+    - [ ] Standardize data layer patterns (Repository pattern)
+    - [ ] Create proper abstraction layers for external APIs
+    - [ ] Implement consistent state management approach
+    - [ ] Add proper logging and debugging infrastructure
+
+#### Phase 3: Testing & Documentation
+- [ ] **Code Quality Metrics**
+    - [ ] Set up code quality tools (detekt, ktlint, SonarQube)
+    - [ ] Establish code coverage targets and measurement
+    - [ ] Create automated code quality checks in CI/CD
+    - [ ] Document coding standards and contribution guidelines
+    - [ ] Implement pre-commit hooks for code quality
+
+- [ ] **Refactoring Validation**
+    - [ ] Ensure all refactored code maintains existing functionality
+    - [ ] Add unit tests for newly extracted components
+    - [ ] Update documentation to reflect architectural changes
+    - [ ] Performance test refactored components
+    - [ ] Create migration guide for future development
+
+### **PRIORITY 2: Performance Optimization** ⚡
+
+### 19. Performance Optimization Round (Continued)
+**Focus on speed improvements identified through AI analysis**
+
+#### Phase 1: AI-Enhanced Analysis
+- [ ] **AI-Assisted Codebase Analysis**
+    - [ ] Use AI tools to analyze entire repository for performance bottlenecks
+    - [ ] Generate automated performance improvement suggestions across all files
+    - [ ] Identify patterns of inefficient code that may not be obvious in manual review
+    - [ ] Cross-reference AI suggestions with profiling data for validation
+    - [ ] Document AI-identified improvement opportunities by priority/impact
+
+#### Phase 2: Targeted Speed Improvements
+- [ ] **Database Layer Optimization**
+    - [ ] Profile Room database queries using Database Inspector
+    - [ ] Identify missing indices on frequently queried columns (movie IDs, timestamps)
+    - [ ] Review DAO methods for N+1 query problems
+    - [ ] Analyze cache invalidation strategies and optimization opportunities
+
+- [ ] **Image Loading Optimization**
+    - [ ] Profile Glide/Picasso usage patterns and memory consumption
+    - [ ] Review image caching strategies and cache hit rates
+    - [ ] Identify oversized image downloads (posters, backdrops)
+    - [ ] Check for memory leaks in image loading callbacks
+
 - [ ] **Memory Management**
     - [ ] Implement object pooling for frequently created objects (movie items, view holders)
     - [ ] Add proper cleanup in Fragment/Activity onDestroy methods
     - [ ] Review bitmap management and implement proper recycling
     - [ ] Optimize string concatenation using StringBuilder for loops
-    
+
 - [ ] **Startup Time Optimization**
     - [ ] Implement lazy initialization for non-critical components
     - [ ] Move heavy SDK initialization to background threads
@@ -231,13 +296,13 @@ can you -DRY - Don't Repeat Yourself
     - [ ] Use SparseArray instead of HashMap for integer keys
     - [ ] Implement object reuse patterns for frequently allocated objects
     - [ ] Add @JvmStatic annotations to frequently called Kotlin functions
-    
+
 - [ ] **Rendering Performance**
     - [ ] Profile overdraw using GPU rendering tools
     - [ ] Optimize layout hierarchies to reduce view depth
     - [ ] Implement view flattening where possible
     - [ ] Add hardware acceleration flags for custom views
-    
+
 - [ ] **Background Processing Optimization**
     - [ ] Implement WorkManager for non-time-critical background tasks
     - [ ] Add intelligent prefetching based on user navigation patterns
@@ -250,103 +315,95 @@ can you -DRY - Don't Repeat Yourself
     - [ ] Track frame rate improvements during scrolling and navigation
     - [ ] Monitor memory usage reduction across all major screens
     - [ ] Benchmark API response handling speed improvements
-    
+
 - [ ] **Regression Testing**
     - [ ] Create automated performance test suite
     - [ ] Set up continuous performance monitoring
     - [ ] Establish performance budgets for critical user journeys
     - [ ] Document performance optimization guidelines for future development
 
-**Priority:** High - Performance directly impacts user experience on Android TV devices with limited resources. Focus on startup time and navigation smoothness first, then drilling down into specific bottlenecks identified through profiling.
+---
 
-### 20. Torrent Scraper Integration
+### **PRIORITY 3: Core Features** 🎬
+
+### 8. MediaDetails Page Implementation (Continued)
+- [ ] **Trakt Actions Enhancement**
+    - [ ] Replace current Trakt actions with single "My Lists" button (Trakt logo on left)
+    - [ ] Create popup with checkboxes for collection and watchlists 
+    - [ ] Show correct state if already added (checked boxes)
+    - [ ] Add "OK" and "Cancel" buttons, send updates to Trakt on "OK" press
+- [ ] **Content Enhancement**
+    - [ ] Add "Viewers also liked" row from TMDB API (under similar row)
+    - [ ] Replace TMDB similar row with Trakt API → https://private-anon-45113404ac-trakt.apiary-mock.com/shows/game-of-thrones/related
+
+### 5. Polish & UX (Continued)
+- [ ] Handle loading and error states
+- [ ] Responsive layout for different TV sizes
+
+### 13. Season/Episode View Enhancement
+- [ ] **Modern Episode Interface**
+    - [ ] Air date display
+    - [ ] Episode summary/overview
+    - [ ] Episode screenshot as landscape image
+    - [ ] Episode runtime and rating info
+    - [ ] Watch status integration with Trakt
+    - [ ] Proper TV navigation between episodes
+
+### 16. CI/CD Pipeline (Continued)
+- [ ] Configure release deployment workflow
+- [ ] Separate "BETA" channel for development testing (enable in settings)
+- [ ] **Must be completed before auto-update functionality**
+
+### 15. Auto-Update System (Continued)
+- [ ] **Note: Should be implemented after CI/CD system (Task 16)**
+
+### 17. Watched Indicators
+- [ ] **Visual Progress Tracking**
+    - [ ] Watched flag on poster if media is fully watched
+    - [ ] Watched flag with % watched if partial
+    - [ ] For TV: Show number of episodes remaining unwatched
+
+### 18. Long-Press Functionality
+- [ ] **Enhanced Poster Interactions**
+    - [ ] Add to/remove from Watchlist/Collection (depending on current status)
+    - [ ] Mark Watched/unwatched (works on posters, season buttons, episodes)
+    - [ ] Additional context menu options as needed
+
+### 21. Continue Watching Logic Update
+- [ ] **Smart Episode Display**
+    - [ ] Do not show episode in row if episode is not yet released
+
+### 22. Branding (Continued)
+- [ ] **Complete Logo Suite**
+    - [ ] All logos (different sizes for all Android TVs: circle, square, landscape, etc.)
+
+### 23. Links Select Page Enhancement
+- [ ] **UI/UX Improvements**
+    - [ ] Proper styling implementation
+    - [ ] Remove play button icon, move file size to that location
+    - [ ] Loading screen enhancement: Replace "loading trailer" text with:
+        - [ ] Same blurred backdrop
+        - [ ] Large, centered media logo
+        - [ ] Fading in/out animation until stream loads
+
+---
+
+### **PRIORITY 4: Advanced Features** 🚀
+
+### 20. Torrent Scraper Integration (Continued)
 **Reference Links:**
 - Torrentio Scraper: https://github.com/TheBeastLT/torrentio-scraper
 - Torrentio Configuration: https://torrentio.strem.fun/
 - Comet Scraper: https://github.com/g0ldyy/comet  
 - Comet Hosted Instance: comet.elfhosted.com
 
-**Sample Configuration JSONs:**
-```json
-// Torrentio Configuration
-{
-  "id": "com.stremio.torrentio.addon",
-  "version": "0.0.15",
-  "name": "Torrentio PM",
-  "description": "Provides torrent streams from scraped torrent providers. Currently supports YTS(+), EZTV(+), RARBG(+), 1337x(+), ThePirateBay(+), KickassTorrents(+), TorrentGalaxy(+), MagnetDL(+), HorribleSubs(+), NyaaSi(+), TokyoTosho(+), AniDex(+), Rutor(+), Rutracker(+), Comando(+), BluDV(+), Torrent9(+), ilCorSaRoNeRo(+), MejorTorrent(+), Wolfmax4k(+), Cinecalidad(+), BestTorrents(+) and Premiumize enabled. To configure providers, RealDebrid/Premiumize/AllDebrid/DebridLink/EasyDebrid/Offcloud/TorBox/Put.io support and other settings visit https://torrentio.strem.fun",
-  "catalogs": [
-    {
-      "id": "torrentio-premiumize",
-      "name": "Premiumize",
-      "type": "other",
-      "extra": [{"name": "skip"}]
-    }
-  ],
-  "resources": [
-    {
-      "name": "stream",
-      "types": ["movie", "series", "anime"],
-      "idPrefixes": ["tt", "kitsu"]
-    },
-    {
-      "name": "meta",
-      "types": ["other"],
-      "idPrefixes": ["premiumize"]
-    }
-  ],
-  "types": ["movie", "series", "anime", "other"],
-  "background": "https://torrentio.strem.fun/images/background_v1.jpg",
-  "logo": "https://torrentio.strem.fun/images/logo_v1.png",
-  "behaviorHints": {
-    "configurable": true,
-    "configurationRequired": false
-  }
-}
-
-// Comet Configuration  
-{
-  "id": "comet.elfhosted.com.VZwT",
-  "description": "Stremio's fastest torrent/debrid search add-on.",
-  "version": "2.0.0",
-  "catalogs": [],
-  "resources": [
-    {
-      "name": "stream",
-      "types": ["movie", "series"],
-      "idPrefixes": ["tt", "kitsu"]
-    }
-  ],
-  "types": ["movie", "series", "anime", "other"],
-  "logo": "https://i.imgur.com/jmVoVMu.jpeg",
-  "background": "https://i.imgur.com/WwnXB3k.jpeg",
-  "behaviorHints": {
-    "configurable": true,
-    "configurationRequired": false
-  },
-  "name": "Comet | ElfHosted | PM"
-}
-```
-
-#### Phase 1: Research & Architecture Planning
-- [ ] **Scraper Service Investigation**
-    - [ ] Research Torrentio scraper API endpoints and request/response format
-    - [ ] Investigate Comet scraper API at comet.elfhosted.com for comparison
-    - [ ] Document API differences, reliability, and performance characteristics
-    - [ ] Test both scrapers manually with sample IMDb IDs to understand data structure
-    - [ ] Analyze which scraper provides better quality/speed for our use case
-
-- [ ] **Authentication & Configuration Analysis**
-    - [ ] Reverse engineer Torrentio configuration URL structure at https://torrentio.strem.fun/
-    - [ ] Understand how user configurations (providers, debrid services) are encoded
-    - [ ] Map Premiumize API key integration into configuration payload
-    - [ ] Research Comet configuration requirements and API key handling
-    - [ ] Plan secure storage of user debrid service credentials
+#### Phase 1: Research & Architecture Planning ✅ (Completed)
 
 #### Phase 2: Debrid Service Integration
 - [ ] **Premiumize Integration**
     - [ ] Implement OAuth flow for Premiumize authentication
     - [ ] Create Retrofit service for Premiumize API endpoints
-    - [ ] Add secure storage for Premiumize API keys using EncryptedSharedPreferences (or in accounts db with trakt api)
+    - [ ] Add secure storage for Premiumize API keys using EncryptedSharedPreferences
     - [ ] Implement API key validation and refresh mechanisms
     - [x] Add user settings screen for debrid service configuration
 
@@ -357,14 +414,11 @@ can you -DRY - Don't Repeat Yourself
     - [ ] Implement debrid service selection in user settings
 
 #### Phase 3: Scraper Service Implementation
-- [x] **Primary Scraper Integration (Torrentio vs Comet Decision)**
-    - [x] Implement Torrentio scraper's API client using Retrofit
-    - [x] Create data models for scraper responses (stream links, quality, size, etc.)
-    - [x] Map IMDb IDs from TMDB/Trakt data to scraper requests
+- [ ] **Enhanced Scraper Integration**
     - [ ] Handle scraper rate limiting and error responses gracefully
     - [ ] Implement caching strategy for scraper results to avoid redundant requests
-    - [ ] Implement Comet scraper as a backup, only running if torrentio pulls less than 12 links.
-    - [ ] Cache streams in db for instant display in future
+    - [ ] Implement Comet scraper as backup (only if Torrentio pulls <12 links)
+    - [ ] Cache streams in database for instant display in future
 
 - [ ] **Stream Resolution & Quality Management**
     - [ ] Parse scraper responses for available stream qualities (4K, 1080p, 720p, etc.)
@@ -423,7 +477,7 @@ can you -DRY - Don't Repeat Yourself
     - [ ] Create comprehensive settings page for stream preferences
     - [ ] Add provider priority configuration (YTS, EZTV, 1337x, etc.)
     - [ ] Implement quality preference sliders and bitrate settings
-    - [ ] Filter stream by type (Cam, Dolby Vision, others)
+    - [ ] Filter streams by type (Cam, Dolby Vision, others)
     - [ ] Buffer size selector (small, medium, large)
     - [ ] Add language and subtitle preference configuration
     - [ ] Create debrid service management interface
@@ -438,27 +492,6 @@ can you -DRY - Don't Repeat Yourself
     - [ ] Create "Recently Watched" integration with stream continuity
     - [ ] Implement stream source reliability scoring based on success rates
     - [ ] Add usage analytics for scraper performance optimization
-
-**Implementation Priority:** High - This is a core feature that differentiates the app from standard streaming services. Start with Phase 1 research, then implement Premiumize integration before choosing primary scraper service.
-
-**Technical Notes:**
-- Consider implementing both Torrentio and Comet with automatic failover for maximum reliability
-- Ensure all debrid service API keys are stored securely and never logged
-- Plan for legal compliance and appropriate content warnings
-- Design with scalability in mind for adding more scraper services in the future
-
-
-### 21. Update Continue Watching Logic
-- [ ] Do not show episode in row if episode is not yet released 
-
-### 22. Branding
-- [ ] All logos (different size for all Android TVs, circle, square, landscape, etc)
-- [x] Splash Screen display with animation while background loading completes (rows load/init db/etc)
-
-### 23. Links Select Page
-- [ ] Proper Style
-- [ ] Get rid of play button icon, move Filesze to that location
-- [ ] After selecting a stream the loading screen now says "loading trailer". instead i want the same blurred backdrop & a large, centered logo (of the media we're loading), fading in and out until the stream loads
 
 ### 24. Trakt Scrobbling Integration
 **Priority:** High - Core feature for tracking watch progress and syncing with Trakt ecosystem
@@ -483,7 +516,7 @@ can you -DRY - Don't Repeat Yourself
     - [ ] Integrate progress tracking with ExoPlayer playback position
     - [ ] Send progress updates to Trakt every 5 minutes during active playback
     - [ ] Handle playback interruptions (pause, seek, app backgrounding)
-    - [ ] Implement progress validation to prevent invalid time stamps
+    - [ ] Implement progress validation to prevent invalid timestamps
     - [ ] Add network failure handling with offline progress caching
 
 - [ ] **Session Management**
@@ -568,18 +601,51 @@ can you -DRY - Don't Repeat Yourself
     - [ ] Add completion badges to poster overlays based on scrobble data
     - [ ] Implement "Watched" filtering for all content rows
 
-**Technical Implementation Notes:**
-- Integrate scrobbling service with existing ExoPlayer implementation
-- Use Room database to cache scrobble data for offline scenarios
-- Implement WorkManager for background scrobble synchronization
-- Consider using Foreground Service for critical scrobbling during playback
-- Add comprehensive logging for debugging scrobbling issues without exposing sensitive data
+---
 
-**Testing Priority:**
-- Test scrobbling across app suspension/restoration cycles
-- Verify progress accuracy with different playback speeds and seeking
-- Test multi-device conflict scenarios
-- Validate offline/online sync reliability
+## 🎯 Implementation Strategy
+
+### **Phase 1: Foundation (Current Priority)**
+1. **Task 25** - Code Architecture & Standards Refactor
+2. **Task 19** - Performance Optimization (AI-Enhanced)
+3. Complete remaining MediaDetails enhancements
+
+### **Phase 2: Core Functionality**
+1. **Task 24** - Trakt Scrobbling Integration
+2. **Task 20** - Torrent Scraper Integration (Phases 2-4)
+3. Polish & UX improvements
+
+### **Phase 3: Advanced Features**
+1. **Task 20** - Advanced Torrent Features (Phases 5-7)
+2. Enhanced user interactions (long-press, watched indicators)
+3. Final polish and testing
 
 ---
-<!-- Test commit for git functionality - can be removed later -->
+
+## 📝 Technical Notes
+
+### **Performance Focus Areas:**
+- Startup time optimization
+- Navigation smoothness
+- Memory management
+- Database query optimization
+- Image loading efficiency
+
+### **Architecture Priorities:**
+- SOLID principles enforcement
+- Dependency injection consistency
+- Error handling standardization
+- Testing infrastructure
+- Code quality metrics
+
+### **Integration Considerations:**
+- Secure credential storage
+- Offline functionality
+- Cross-device synchronization
+- API rate limiting
+- Error recovery mechanisms
+
+---
+
+*Last Updated: 7/26/25*
+*Next Review: After Task 25 Phase 1 completion*
