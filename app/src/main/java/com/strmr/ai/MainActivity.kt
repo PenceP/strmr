@@ -3,6 +3,11 @@ package com.strmr.ai
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -11,8 +16,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
@@ -682,17 +688,34 @@ fun MainScreen(
                         }
                     }
 
-                    show?.let {
-                        EpisodeView(
-                            show = it,
-                            viewModel = detailsViewModel,
-                            onEpisodeClick = { selectedSeason, selectedEpisode ->
-                                navController.navigate("details/tvshow/$tmdbId/$selectedSeason/$selectedEpisode")
-                            },
-                            onBack = { navController.popBackStack() },
-                            initialSeason = season,
-                            initialEpisode = episode
-                        )
+                    if (show == null) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Color.White)
+                        }
+                    } else {
+                        val alpha = remember { Animatable(0f) }
+                        LaunchedEffect(Unit) {
+                            alpha.animateTo(
+                                targetValue = 1f,
+                                animationSpec = tween(durationMillis = 420)
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer { this.alpha = alpha.value }
+                        ) {
+                            EpisodeView(
+                                show = show!!,
+                                viewModel = detailsViewModel,
+                                onEpisodeClick = { selectedSeason, selectedEpisode ->
+                                    navController.navigate("details/tvshow/$tmdbId/$selectedSeason/$selectedEpisode")
+                                },
+                                onBack = { navController.popBackStack() },
+                                initialSeason = season,
+                                initialEpisode = episode
+                            )
+                        }
                     }
                 }
                 composable(

@@ -57,6 +57,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import kotlinx.coroutines.isActive
 import com.strmr.ai.utils.resolveImageSource
+import kotlinx.coroutines.launch
 
 @Composable
 fun EpisodeView(
@@ -179,7 +180,7 @@ fun EpisodeView(
         }
     }
 
-    // Auto-scroll to selected season
+    // Restore smooth animated left alignment for seasons (like episodes)
     LaunchedEffect(selectedSeasonIndex) {
         if (seasons.isNotEmpty() && selectedSeasonIndex in 0 until seasons.size) {
             seasonListState.animateScrollToItem(selectedSeasonIndex)
@@ -285,37 +286,49 @@ fun EpisodeView(
                     )
                 }
 
-                // Season selector - horizontal scrolling aligned with episodes and fixed selector border
+                // Season selector - horizontal scrolling aligned with episodes (no white border selector, scroll throttling enabled)
                 if (seasons.isNotEmpty()) {
                     val selectorStartSeason = StrmrConstants.Dimensions.Icons.EXTRA_LARGE
                     val seasonButtonWidth = 100.dp
                     val seasonButtonWidthWithSpacing = seasonButtonWidth + 12.dp
+
+                    // --- Throttle/limit left/right key speed ---
+                    var lastSeasonNavTime by remember { mutableStateOf(0L) }
+                    val throttleMs = 80L
+
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 32.dp)
                     ) {
-                        // LazyRow for seasons
                         LazyRow(
                             state = seasonListState,
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
                                 .focusRequester(seasonFocusRequester)
                                 .focusable()
                                 .onKeyEvent { event ->
+                                    val now = System.currentTimeMillis()
                                     when (event.nativeKeyEvent.keyCode) {
                                         android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
                                             if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
-                                                if (selectedSeasonIndex > 0) {
-                                                    selectedSeasonIndex--
+                                                if (now - lastSeasonNavTime > throttleMs) {
+                                                    if (selectedSeasonIndex > 0) {
+                                                        selectedSeasonIndex--
+                                                        lastSeasonNavTime = now
+                                                    }
                                                 }
                                             }
                                             true
                                         }
                                         android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
                                             if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
-                                                if (selectedSeasonIndex < seasons.size - 1) {
-                                                    selectedSeasonIndex++
+                                                if (now - lastSeasonNavTime > throttleMs) {
+                                                    if (selectedSeasonIndex < seasons.size - 1) {
+                                                        selectedSeasonIndex++
+                                                        lastSeasonNavTime = now
+                                                    }
                                                 }
                                             }
                                             true
@@ -353,15 +366,9 @@ fun EpisodeView(
                                     }
                                 )
                             }
-                            // Add multiple spacers at the end for scroll effect
                             repeat(8) { item { Spacer(modifier = Modifier.width(seasonButtonWidthWithSpacing)) } }
                         }
-                    }
-                    // Scroll logic: always bring selected season under selector
-                    LaunchedEffect(selectedSeasonIndex) {
-                        if (seasons.isNotEmpty() && selectedSeasonIndex in 0 until seasons.size) {
-                            seasonListState.animateScrollToItem(selectedSeasonIndex)
-                        }
+                        // --- NO border selector overlay here anymore ---
                     }
                 }
 
@@ -379,38 +386,51 @@ fun EpisodeView(
                     )
                 }
 
-                // Episodes row - with selector border overlaid on top
+                // Episodes row - with selector border overlaid on top and key event throttling
                 Box(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     val selectorStart = StrmrConstants.Dimensions.Icons.EXTRA_LARGE
                     val episodeCardWidth = 200.dp
                     val episodeCardWidthWithSpacing = episodeCardWidth + 12.dp
-                    // LazyRow, aligned precisely with selector
+
+                    // --- Throttle/limit left/right key speed for episodes ---
+                    var lastEpisodeNavTime by remember { mutableStateOf(0L) }
+                    val throttleMs = 80L
+
                     LazyRow(
                         state = episodeListState,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
                             .focusRequester(if (isEpisodeRowFocused) episodeFocusRequester else FocusRequester())
                             .focusable()
                             .onKeyEvent { event ->
+                                val now = System.currentTimeMillis()
                                 when (event.nativeKeyEvent.keyCode) {
                                     android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
                                         if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
-                                            if (selectedEpisodeIndex > 0) {
-                                                selectedEpisodeIndex--
+                                            if (now - lastEpisodeNavTime > throttleMs) {
+                                                if (selectedEpisodeIndex > 0) {
+                                                    selectedEpisodeIndex--
+                                                    lastEpisodeNavTime = now
+                                                }
                                             }
                                         }
                                         true
                                     }
                                     android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
                                         if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
-                                            if (selectedEpisodeIndex < episodes.size - 1) {
-                                                selectedEpisodeIndex++
+                                            if (now - lastEpisodeNavTime > throttleMs) {
+                                                if (selectedEpisodeIndex < episodes.size - 1) {
+                                                    selectedEpisodeIndex++
+                                                    lastEpisodeNavTime = now
+                                                }
                                             }
                                         }
                                         true
                                     }
+
                                     android.view.KeyEvent.KEYCODE_DPAD_UP -> {
                                         if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
                                             isEpisodeRowFocused = false
@@ -418,6 +438,7 @@ fun EpisodeView(
                                         }
                                         true
                                     }
+
                                     android.view.KeyEvent.KEYCODE_DPAD_CENTER, android.view.KeyEvent.KEYCODE_ENTER -> {
                                         if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
                                             val selectedSeason = seasons[selectedSeasonIndex]
@@ -429,12 +450,14 @@ fun EpisodeView(
                                         }
                                         true
                                     }
+
                                     android.view.KeyEvent.KEYCODE_BACK -> {
                                         if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
                                             onBack()
                                         }
                                         true
                                     }
+
                                     else -> false
                                 }
                             },
@@ -494,7 +517,7 @@ fun EpisodeView(
                 }
 
                 // Description area for focused episode only
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 if (episodes.isNotEmpty() && selectedEpisodeIndex < episodes.size) {
                     val selectedEpisode = episodes[selectedEpisodeIndex]
                     selectedEpisode.overview?.let { overview ->
@@ -632,55 +655,55 @@ private fun EpisodeCardNoFocusBorder(
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Episode number and title
-        Text(
-            text = "${episode.episodeNumber}. ${episode.name ?: "Episode ${episode.episodeNumber}"}",
-            color = StrmrConstants.Colors.TEXT_PRIMARY,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-        )
-
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Air date and rating row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Box(
+            modifier = Modifier.height(58.dp)
         ) {
-            // Air date (left side)
-            episode.airDate?.let { airDate ->
-                DateFormatter.formatEpisodeDate(airDate)?.let { formattedDate ->
-                    Text(
-                        text = formattedDate,
-                        color = Color(0xFFFAFAFA),
-                        fontSize = 12.sp
-                    )
-                }
-            } ?: Spacer(modifier = Modifier.width(1.dp)) // Placeholder when no air date
+            Column {
+                Text(
+                    text = "${episode.episodeNumber}. ${episode.name ?: "Episode ${episode.episodeNumber}"}",
+                    color = StrmrConstants.Colors.TEXT_PRIMARY,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(1.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    episode.airDate?.let { airDate ->
+                        DateFormatter.formatEpisodeDate(airDate)?.let { formattedDate ->
+                            Text(
+                                text = formattedDate,
+                                color = Color(0xFFFAFAFA),
+                                fontSize = 12.sp
+                            )
+                        }
+                    } ?: Spacer(modifier = Modifier.width(1.dp))
 
-            // Rating (right side, aligned with thumbnail edge)
-            episode.rating?.let { rating ->
-                if (rating > 0) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        Text(
-                            text = String.format("%.1f", rating),
-                            color = Color(0xFFFAFAFA),
-                            fontSize = 12.sp
-                        )
-                        Spacer(modifier = Modifier.width(2.dp))
-                        Text(
-                            text = "★",
-                            color = Color(0xFFFAFAFA).copy(alpha = 0.7f),
-                            fontSize = 10.sp
-                        )
+                    episode.rating?.let { rating ->
+                        if (rating > 0) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                Text(
+                                    text = String.format("%.1f", rating),
+                                    color = Color(0xFFFAFAFA),
+                                    fontSize = 12.sp
+                                )
+                                Spacer(modifier = Modifier.width(2.dp))
+                                Text(
+                                    text = "★",
+                                    color = Color(0xFFFAFAFA).copy(alpha = 0.7f),
+                                    fontSize = 10.sp
+                                )
+                            }
+                        }
                     }
                 }
             }
