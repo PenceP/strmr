@@ -65,7 +65,8 @@ can you -DRY - Don't Repeat Yourself
 - [x] Create dedicated details page for movies and TV shows (shown when poster is clicked)
 - [x] Large backdrop image with title, logo, year, runtime, genres, rating, summary/overview
 - [ ] Trakt actions: this will turn into 1 button called "My Lists" with a trakt logo on the left. a popup with checkboxes for colledtion and watchlists will show (if clicked it means its added) (show correct state if already added). okay and cancel are also present, send the updates to trakt on "okay" press.
-- [ ] Add "Viewers also liked" row from tmdb api (under similar row)
+- [ ] Add "Viewers also liked" row from tmdb api (under similar row) 
+- [ ] Replace TMDB similar row with trakt api -> https://private-anon-45113404ac-trakt.apiary-mock.com/shows/game-of-thrones/related
 - [x] Actor list (cast)
 - [x] Similar movies/TV shows (horizontal row, context-aware)
 - [x] TV show specific features:
@@ -100,20 +101,21 @@ can you -DRY - Don't Repeat Yourself
 - [x] Add ExoPlayer [https://github.com/androidx/media]
 - [ ] Add ffmpeg support, that's what handles various encode types
 - [x] Integrate TMDB API for trailers [api.themoviedb.org/3/movie/120/videos?language=en-US]
-- [ ] Implement trailers button functionality from MediaDetails page
-- [ ] Use videos marked as "official" and "Trailer" type
-- [ ] Create video player overlay with proper TV navigation controls
+- [x] Implement trailers button functionality from MediaDetails page
+- [x] Use videos marked as "official" and "Trailer" type
+- [ ] Create video player overlay with proper TV navigation controls (check https://github.com/Stremio/)
 
 ### 12. Intermediate View for Networks & Collections & Directors
-- [ ] Create intermediate page for when user clicks a network or collection
-- [ ] Hero/details section at the top (similar to MediaPage layout)
-- [ ] Single long row of posters for all movies/shows in that network/collection
+- [x] Create intermediate page for when user clicks a network or collection
+- [x] Hero/details section at the top (similar to MediaPage layout)
+- [x] Single long row of posters for all movies/shows in that network/collection
+- [ ] Add support for 2 dataUrl in json (first is movies, second tv shows. make 2 rows in the intermediate view if detected)
 - [ ] Reuse MediaPage/MediaHero logic where possible
 - [ ] Reuse paging and cache lists, images, ratings,details, etc to database 
 - [ ] use omdb/logos as well. for all intents and purposes make this look like (front end and back) trending movies (or movies page with only 1 row and no nav bar i guess.)
-- [ ] Ensure proper navigation back to previous page (HOME in this case) and forward to MediaDetails
-- [ ] The data source is in the HOME.json, Netflix has an example trakt list, i will fill the rest in later
-- [ ] Ensure "Trakt Lists" row sub-items go to their respective pages (Movie collection, movie watchlist, tv collection, tv watchlit), pulling from Trakt api
+- [x] Ensure proper navigation back to previous page (HOME in this case) and forward to MediaDetails
+- [x] The data source is in the HOME.json, Netflix has an example trakt list, i will fill the rest in later
+- [x] Ensure "Trakt Lists" row sub-items go to their respective pages (Movie collection, movie watchlist, tv collection, tv watchlist), pulling from Trakt api
 
 ### 13. Season/Episode View Enhancement
 - [ ] Create modern episode view with:
@@ -554,7 +556,7 @@ can you -DRY - Don't Repeat Yourself
 #### Phase 7: Integration with Existing Features
 - [ ] **Continue Watching Enhancement**
     - [ ] Update Continue Watching logic to use scrobble progress data
-    - [ ] Remove completed items from Continue Watching automatically
+    - [ ] Remove completed items from Continue Watching automatically 
     - [ ] Show accurate progress percentages from scrobble data
     - [ ] Implement cross-device progress synchronization
     - [ ] Add "Resume from last position" using scrobble timestamps
