@@ -47,22 +47,32 @@ fun MediaDetails(
             .padding(8.dp)
             .width(400.dp)
     ) {
-        // Title
-        val resolvedLogoSource = resolveImageSource(logoUrl)
-        if (resolvedLogoSource != null) {
-            AsyncImage(
-                model = resolvedLogoSource,
-                contentDescription = title,
-                modifier = Modifier
-                    .height(72.dp)
-                    .padding(bottom = 8.dp)
-            )
-        } else {
-            Text(
-                text = title ?: "",
-                color = Color.White,
-                style = MaterialTheme.typography.headlineMedium
-            )
+        // Title/Logo area - always reserve space for consistent layout
+        Box(
+            modifier = Modifier
+                .height(72.dp)
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            val resolvedLogoSource = resolveImageSource(logoUrl)
+            if (resolvedLogoSource != null) {
+                AsyncImage(
+                    model = resolvedLogoSource,
+                    contentDescription = title,
+                    modifier = Modifier
+                        .height(72.dp)
+                        .fillMaxWidth()
+                )
+            } else {
+                // Show title text as placeholder when logo is not available
+                Text(
+                    text = title ?: "",
+                    color = Color.White,
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
         // Extra content (e.g., season/episode)
         

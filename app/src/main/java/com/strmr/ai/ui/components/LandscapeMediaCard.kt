@@ -98,20 +98,32 @@ fun LandscapeMediaCard(
                     )
                 }
             }
-            // Centered logo
-            val resolvedLogoSource = resolveImageSource(logoUrl)
-            if (resolvedLogoSource != null) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .height(54.dp)
-                        .widthIn(max = 160.dp)
-                ) {
+            // Centered logo with placeholder text
+            Box(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .height(54.dp)
+                    .widthIn(max = 160.dp)
+            ) {
+                val resolvedLogoSource = resolveImageSource(logoUrl)
+                if (resolvedLogoSource != null) {
                     AsyncImage(
                         model = resolvedLogoSource,
                         contentDescription = "$title logo",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Fit
+                    )
+                } else {
+                    // Show title text as placeholder when logo is not available
+                    Text(
+                        text = title,
+                        color = Color.White,
+                        textAlign = TextAlign.Center,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 8.dp)
                     )
                 }
             }
@@ -128,7 +140,10 @@ fun LandscapeMediaCard(
                         color = Color.White,
                         fontSize = 16.sp,
                         modifier = Modifier
-                            .background(Color.Black.copy(alpha = 0.0f), shape = RoundedCornerShape(6.dp))
+                            .background(
+                                Color.Black.copy(alpha = 0.0f),
+                                shape = RoundedCornerShape(6.dp)
+                            )
                             .padding(horizontal = 8.dp, vertical = 2.dp)
                     )
                 }

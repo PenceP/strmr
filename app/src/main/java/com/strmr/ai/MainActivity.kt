@@ -688,7 +688,7 @@ fun MainScreen(
                         }
                     }
 
-com                    if (show == null) {
+                    if (show == null) {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator(color = Color.White)
                         }
