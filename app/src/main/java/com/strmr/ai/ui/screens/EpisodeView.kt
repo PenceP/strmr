@@ -377,7 +377,10 @@ fun EpisodeView(
                 if (episodes.isNotEmpty()) {
                     Text(
                         text = "${episodes.size} Episodes",
-                        color = if (isEpisodeRowFocused) StrmrConstants.Colors.TEXT_PRIMARY else StrmrConstants.Colors.TEXT_SECONDARY,
+                        color = if (isEpisodeRowFocused)
+                            StrmrConstants.Colors.TEXT_PRIMARY.copy(alpha = 0.8f)
+                        else
+                            StrmrConstants.Colors.TEXT_SECONDARY,
                         fontSize = 14.sp,
                         modifier = Modifier.padding(
                             start = StrmrConstants.Dimensions.Icons.EXTRA_LARGE,
