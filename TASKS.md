@@ -580,3 +580,6 @@ can you -DRY - Don't Repeat Yourself
 - Verify progress accuracy with different playback speeds and seeking
 - Test multi-device conflict scenarios
 - Validate offline/online sync reliability
+
+---
+<!-- Test commit for git functionality - can be removed later -->
