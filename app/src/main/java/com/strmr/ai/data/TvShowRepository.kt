@@ -299,55 +299,144 @@ class TvShowRepository(
     }
 
     suspend fun getOrFetchSeasons(showTmdbId: Int): List<SeasonEntity> {
-        val cached = seasonDao.getSeasonsForShow(showTmdbId)
-        val now = System.currentTimeMillis()
-        if (cached.isNotEmpty() && cached.all { now - it.lastUpdated < detailsExpiryMs }) {
-            return cached
-        }
-        // Fetch from TMDB
+        // Always fetch fresh data from TMDB to ensure new seasons/episodes are shown
         return try {
+            Log.d("TvShowRepository", "🌐 Fetching seasons from TMDB for show $showTmdbId")
             val details = tmdbApi.getTvShowDetails(showTmdbId)
-            // Try to get the number of seasons from episode_run_time or another field (fallback to 10 if not available)
-            val numberOfSeasons = details.episode_run_time?.size ?: 0
-            // If episode_run_time is not the right field, you may need to hardcode or fetch from another endpoint
-            // For now, let's try 1..numberOfSeasons, fallback to 1..10
-            val seasonNumbers = if (numberOfSeasons > 0) 1..numberOfSeasons else 1..10
+            Log.d(
+                "TvShowRepository",
+                "📡 TMDB TV Show Details for $showTmdbId: seasons=${details.seasons?.size}, number_of_seasons=${details.number_of_seasons}"
+            )
+
+            // Log the raw seasons data from TMDB
+            details.seasons?.forEachIndexed { index, season ->
+                Log.d(
+                    "TvShowRepository",
+                    "📺 Raw Season $index: number=${season.season_number}, name='${season.name}', episodes=${season.episode_count}"
+                )
+            }
+
             val seasonsList = mutableListOf<SeasonEntity>()
-            for (seasonNumber in seasonNumbers) {
-                try {
-                    val seasonDetails = tmdbApi.getSeasonDetails(showTmdbId, seasonNumber)
-                    seasonsList.add(
-                        SeasonEntity(
+            val now = System.currentTimeMillis()
+
+            // Use the seasons array from TMDB if available, otherwise fallback to number_of_seasons
+            if (!details.seasons.isNullOrEmpty()) {
+                Log.d(
+                    "TvShowRepository",
+                    "✅ Using seasons array from TMDB (${details.seasons.size} seasons)"
+                )
+                for (seasonSummary in details.seasons) {
+                    Log.d(
+                        "TvShowRepository",
+                        "🔍 Processing Season ${seasonSummary.season_number}: '${seasonSummary.name}' (${seasonSummary.episode_count} episodes)"
+                    )
+
+                    // Skip Season 0 (specials) entirely
+                    if (seasonSummary.season_number == 0) {
+                        Log.d("TvShowRepository", "⏭️ Skipping Season 0 (specials)")
+                        continue
+                    }
+
+                    try {
+                        val seasonEntity = SeasonEntity(
                             showTmdbId = showTmdbId,
-                            seasonNumber = seasonDetails.season_number,
-                            name = seasonDetails.name,
-                            overview = seasonDetails.overview,
-                            posterUrl = seasonDetails.poster_path?.let { path -> StrmrConstants.Api.TMDB_IMAGE_BASE_W300 + path },
-                            episodeCount = seasonDetails.episodes?.size ?: 0,
-                            airDate = seasonDetails.air_date,
+                            seasonNumber = seasonSummary.season_number,
+                            name = seasonSummary.name,
+                            overview = seasonSummary.overview,
+                            posterUrl = seasonSummary.poster_path?.let { path -> StrmrConstants.Api.TMDB_IMAGE_BASE_W300 + path },
+                            episodeCount = seasonSummary.episode_count,
+                            airDate = seasonSummary.air_date,
                             lastUpdated = now
                         )
-                    )
-                } catch (_: Exception) { /* skip missing/bad seasons */ }
+                        seasonsList.add(seasonEntity)
+                        Log.d(
+                            "TvShowRepository",
+                            "✅ Added Season ${seasonSummary.season_number}: ${seasonSummary.name} (${seasonSummary.episode_count} episodes)"
+                        )
+                    } catch (e: Exception) {
+                        Log.w(
+                            "TvShowRepository",
+                            "⚠️ Failed to process season ${seasonSummary.season_number}: ${e.message}"
+                        )
+                    }
+                }
+            } else if (details.number_of_seasons != null && details.number_of_seasons > 0) {
+                Log.d(
+                    "TvShowRepository",
+                    "🔄 Fallback: Using number_of_seasons=${details.number_of_seasons}"
+                )
+                // Fallback: fetch each season individually
+                for (seasonNumber in 1..details.number_of_seasons) {
+                    try {
+                        val seasonDetails = tmdbApi.getSeasonDetails(showTmdbId, seasonNumber)
+                        seasonsList.add(
+                            SeasonEntity(
+                                showTmdbId = showTmdbId,
+                                seasonNumber = seasonDetails.season_number,
+                                name = seasonDetails.name,
+                                overview = seasonDetails.overview,
+                                posterUrl = seasonDetails.poster_path?.let { path -> StrmrConstants.Api.TMDB_IMAGE_BASE_W300 + path },
+                                episodeCount = seasonDetails.episodes?.size ?: 0,
+                                airDate = seasonDetails.air_date,
+                                lastUpdated = now
+                            )
+                        )
+                        Log.d(
+                            "TvShowRepository",
+                            "✅ Fetched Season $seasonNumber: ${seasonDetails.name}"
+                        )
+                    } catch (e: Exception) {
+                        Log.w(
+                            "TvShowRepository",
+                            "⚠️ Failed to fetch season $seasonNumber: ${e.message}"
+                        )
+                    }
+                }
+            } else {
+                Log.w(
+                    "TvShowRepository",
+                    "⚠️ No season information available from TMDB for show $showTmdbId"
+                )
             }
-            seasonDao.deleteSeasonsForShow(showTmdbId)
-            seasonDao.insertSeasons(seasonsList)
+
+            Log.d("TvShowRepository", "📊 Final seasonsList size: ${seasonsList.size}")
+            seasonsList.forEachIndexed { index, season ->
+                Log.d(
+                    "TvShowRepository",
+                    "📊 Final Season $index: ${season.seasonNumber} - ${season.name}"
+                )
+            }
+
+            // Still save to database for performance, but don't use cache for retrieval
+            if (seasonsList.isNotEmpty()) {
+                seasonDao.deleteSeasonsForShow(showTmdbId)
+                seasonDao.insertSeasons(seasonsList)
+                Log.d(
+                    "TvShowRepository",
+                    "💾 Saved ${seasonsList.size} seasons to database (for performance only)"
+                )
+            }
+
             seasonsList
         } catch (e: Exception) {
-            Log.e("TvShowRepository", "Error fetching seasons for show $showTmdbId", e)
+            Log.e("TvShowRepository", "❌ Error fetching seasons for show $showTmdbId", e)
+            // Fallback to cached data only if API fails
+            val cached = seasonDao.getSeasonsForShow(showTmdbId)
+            Log.d("TvShowRepository", "🔄 API failed, falling back to ${cached.size} cached seasons")
             cached
         }
     }
 
     suspend fun getOrFetchEpisodes(showTmdbId: Int, seasonNumber: Int): List<EpisodeEntity> {
-        val cached = episodeDao.getEpisodesForSeason(showTmdbId, seasonNumber)
-        val now = System.currentTimeMillis()
-        if (cached.isNotEmpty() && cached.all { now - it.lastUpdated < detailsExpiryMs }) {
-            return cached
-        }
-        // Fetch from TMDB
+        // Always fetch fresh episode data from TMDB to ensure new episodes are shown
         return try {
+            Log.d(
+                "TvShowRepository",
+                "🌐 Fetching episodes from TMDB for show $showTmdbId season $seasonNumber"
+            )
             val seasonDetails = tmdbApi.getSeasonDetails(showTmdbId, seasonNumber)
+            val now = System.currentTimeMillis()
+
             val episodesList = seasonDetails.episodes?.map { episode ->
                 EpisodeEntity(
                     showTmdbId = showTmdbId,
@@ -358,14 +447,33 @@ class TvShowRepository(
                     stillUrl = episode.still_path?.let { path -> StrmrConstants.Api.TMDB_IMAGE_BASE_W300 + path },
                     airDate = episode.air_date,
                     runtime = episode.runtime,
+                    rating = episode.vote_average, // Added episode rating
                     lastUpdated = now
                 )
             } ?: emptyList()
+
+            Log.d(
+                "TvShowRepository",
+                "✅ Fetched ${episodesList.size} fresh episodes for show $showTmdbId season $seasonNumber"
+            )
+
+            // Still save to database for performance, but don't use cache for retrieval
             episodeDao.deleteEpisodesForSeason(showTmdbId, seasonNumber)
             episodeDao.insertEpisodes(episodesList)
+
             episodesList
         } catch (e: Exception) {
-            Log.e("TvShowRepository", "Error fetching episodes for show $showTmdbId season $seasonNumber", e)
+            Log.e(
+                "TvShowRepository",
+                "❌ Error fetching episodes for show $showTmdbId season $seasonNumber",
+                e
+            )
+            // Fallback to cached data only if API fails
+            val cached = episodeDao.getEpisodesForSeason(showTmdbId, seasonNumber)
+            Log.d(
+                "TvShowRepository",
+                "🔄 API failed, falling back to ${cached.size} cached episodes"
+            )
             cached
         }
     }
@@ -443,4 +551,4 @@ class TvShowRepository(
     suspend fun getTvShowTrailer(tmdbId: Int): String? {
         return trailerService.getTvShowTrailer(tmdbId)
     }
-} 
+}
