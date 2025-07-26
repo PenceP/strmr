@@ -102,6 +102,9 @@ abstract class StrmrDatabase : RoomDatabase() {
                 database.execSQL("CREATE INDEX idx_intermediate_views_updated ON intermediate_views(lastUpdated)")
                 database.execSQL("CREATE INDEX idx_intermediate_view_items_view ON intermediate_view_items(intermediateViewId)")
                 database.execSQL("CREATE INDEX idx_intermediate_view_items_order ON intermediate_view_items(intermediateViewId, orderIndex)")
+                
+                // Add rating column to episodes table
+                database.execSQL("ALTER TABLE episodes ADD COLUMN rating REAL")
             }
         }
 
@@ -186,14 +189,6 @@ abstract class StrmrDatabase : RoomDatabase() {
             override fun migrate(database: SupportSQLiteDatabase) {
                 // Add popularOrder column to tv_shows table
                 database.execSQL("ALTER TABLE tv_shows ADD COLUMN popularOrder INTEGER")
-            }
-        }
-
-        // Migration from version 11 to 12
-        private val MIGRATION_11_12 = object : Migration(11, 12) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                // Add rating column to episodes table
-                database.execSQL("ALTER TABLE episodes ADD COLUMN rating REAL")
             }
         }
 
