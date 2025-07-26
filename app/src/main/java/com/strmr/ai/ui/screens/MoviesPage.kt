@@ -43,6 +43,7 @@ import androidx.paging.compose.LazyPagingItems
 fun MoviesPage(
     isContentFocused: Boolean,
     onContentFocusChanged: ((Boolean) -> Unit)?,
+    onLeftBoundary: (() -> Unit)? = null,
     onNavigateToDetails: ((Int) -> Unit)?
 ) {
     val context = LocalContext.current
@@ -262,6 +263,7 @@ fun MoviesPage(
                             selectionManager.updateContentFocus(focused)
                             onContentFocusChanged?.invoke(focused)
                         },
+                        onLeftBoundary = onLeftBoundary,
                         currentRowIndex = validRowIndex,
                         totalRowCount = rowCount,
                         onItemClick = { movie ->
@@ -314,7 +316,8 @@ fun MoviesPage(
                                         onNavigateToDetails?.invoke(movie.tmdbId)
                                     }
                                 )
-                            }
+                            },
+                            onLeftBoundary = onLeftBoundary
                         )
                     } else {
                         // Show skeleton when no items loaded yet

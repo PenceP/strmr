@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusState
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.onKeyEvent
@@ -26,11 +25,14 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 fun NavigationBar(
     navController: NavHostController,
     modifier: Modifier = Modifier,
-    onRightPressed: (() -> Unit)? = null
+    onRightPressed: (() -> Unit)? = null,
+    onFocusReceived: (() -> Unit)? = null
 ) {
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route ?: "home"
     var focusedIndex by remember { mutableStateOf(1) } // Default to Home (index 1)
     val navFocusRequester = remember { FocusRequester() }
+    var initialLoad by remember { mutableStateOf(true) }
+    var hasNavBarFocus by remember { mutableStateOf(false) }
     
     // Auto-focus the NavigationBar on app start
     LaunchedEffect(Unit) {
@@ -48,8 +50,12 @@ fun NavigationBar(
             "settings" -> 5
             else -> 1
         }
-        // Ensure NavigationBar has focus when route changes
-        navFocusRequester.requestFocus()
+        // Only auto-focus when route changes if this is the initial load or a major navigation
+        // Don't auto-focus for every route change to prevent conflicts with manual focus requests
+        if (initialLoad) {
+            navFocusRequester.requestFocus()
+            initialLoad = false
+        }
     }
     
     // Auto-navigate when focused index changes
@@ -80,6 +86,16 @@ fun NavigationBar(
             .padding(vertical = 22.dp)
             .focusRequester(navFocusRequester)
             .focusable()
+            .onFocusChanged { focusState ->
+                hasNavBarFocus = focusState.hasFocus
+                if (focusState.hasFocus) {
+                    android.util.Log.d(
+                        "NavigationBar",
+                        "🎯 NavigationBar gained focus, triggering onFocusReceived callback"
+                    )
+                    onFocusReceived?.invoke()
+                }
+            }
             .onKeyEvent { event ->
                 if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
                     when (event.nativeKeyEvent.keyCode) {
@@ -91,6 +107,7 @@ fun NavigationBar(
                             }
                             true // Consume the event
                         }
+
                         android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
                             if (focusedIndex < 5) {
                                 focusedIndex++
@@ -99,17 +116,23 @@ fun NavigationBar(
                             }
                             true // Consume the event
                         }
+
                         android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
                             // Prevent left navigation
                             true
                         }
+
                         android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
                             // Allow right navigation to main content and notify
-                            android.util.Log.d("NavigationBar", "🎯 Right arrow pressed, triggering onRightPressed callback")
+                            android.util.Log.d(
+                                "NavigationBar",
+                                "🎯 Right arrow pressed, triggering onRightPressed callback"
+                            )
                             onRightPressed?.invoke()
                             false
                         }
-                        android.view.KeyEvent.KEYCODE_DPAD_CENTER, 
+
+                        android.view.KeyEvent.KEYCODE_DPAD_CENTER,
                         android.view.KeyEvent.KEYCODE_ENTER -> {
                             // Navigate to the selected item
                             val route = when (focusedIndex) {
@@ -130,6 +153,7 @@ fun NavigationBar(
                             }
                             true
                         }
+
                         else -> false
                     }
                 } else false
@@ -143,6 +167,7 @@ fun NavigationBar(
             route = "search",
             isSelected = currentRoute == "search",
             isFocused = focusedIndex == 0,
+            hasNavBarFocus = hasNavBarFocus,
             onClick = { 
                 focusedIndex = 0
             }
@@ -156,6 +181,7 @@ fun NavigationBar(
             route = "home",
             isSelected = currentRoute == "home",
             isFocused = focusedIndex == 1,
+            hasNavBarFocus = hasNavBarFocus,
             onClick = { 
                 focusedIndex = 1
             }
@@ -169,6 +195,7 @@ fun NavigationBar(
             route = "movies",
             isSelected = currentRoute == "movies",
             isFocused = focusedIndex == 2,
+            hasNavBarFocus = hasNavBarFocus,
             onClick = { 
                 focusedIndex = 2
             }
@@ -182,6 +209,7 @@ fun NavigationBar(
             route = "tvshows",
             isSelected = currentRoute == "tvshows",
             isFocused = focusedIndex == 3,
+            hasNavBarFocus = hasNavBarFocus,
             onClick = { 
                 focusedIndex = 3
             }
@@ -195,6 +223,7 @@ fun NavigationBar(
             route = "debridcloud",
             isSelected = currentRoute == "debridcloud",
             isFocused = focusedIndex == 4,
+            hasNavBarFocus = hasNavBarFocus,
             onClick = { 
                 focusedIndex = 4
             }
@@ -208,6 +237,7 @@ fun NavigationBar(
             route = "settings",
             isSelected = currentRoute == "settings",
             isFocused = focusedIndex == 5,
+            hasNavBarFocus = hasNavBarFocus,
             onClick = { 
                 focusedIndex = 5
             }
@@ -222,8 +252,15 @@ private fun NavigationItem(
     route: String,
     isSelected: Boolean,
     isFocused: Boolean,
+    hasNavBarFocus: Boolean,
     onClick: () -> Unit
 ) {
+    // Debug logging
+    android.util.Log.d(
+        "NavigationItem",
+        "🎯 $label - isSelected: $isSelected, isFocused: $isFocused, hasNavBarFocus: $hasNavBarFocus"
+    )
+
     Box(
         modifier = Modifier
             .size(38.dp)
@@ -234,9 +271,29 @@ private fun NavigationItem(
             imageVector = icon,
             contentDescription = label,
             tint = when {
-                isFocused -> Color.White
-                isSelected -> Color.White.copy(alpha = 0.8f)
-                else -> Color.Gray
+                hasNavBarFocus && isFocused -> {
+                    android.util.Log.d(
+                        "NavigationItem",
+                        "🔴 Item $label is focused with navbar focus - should be RED"
+                    )
+                    Color(0xFFFF0000) // Explicit bright red
+                }
+
+                isSelected -> {
+                    android.util.Log.d(
+                        "NavigationItem",
+                        "⚪ Item $label is selected - should be WHITE"
+                    )
+                    Color.White
+                }
+
+                else -> {
+                    android.util.Log.d(
+                        "NavigationItem",
+                        "⚫ Item $label is inactive - should be GRAY"
+                    )
+                    Color.Gray
+                }
             },
             modifier = Modifier.size(24.dp)
         )

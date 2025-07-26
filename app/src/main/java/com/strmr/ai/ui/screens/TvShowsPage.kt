@@ -43,6 +43,7 @@ import androidx.paging.compose.collectAsLazyPagingItems
 fun TvShowsPage(
     isContentFocused: Boolean,
     onContentFocusChanged: ((Boolean) -> Unit)?,
+    onLeftBoundary: (() -> Unit)? = null,
     onNavigateToDetails: ((Int) -> Unit)?
 ) {
     val context = LocalContext.current
@@ -256,6 +257,7 @@ fun TvShowsPage(
                             selectionManager.updateContentFocus(focused)
                             onContentFocusChanged?.invoke(focused)
                         },
+                        onLeftBoundary = onLeftBoundary,
                         currentRowIndex = validRowIndex,
                         totalRowCount = rowCount,
                         onItemClick = { show ->
@@ -294,6 +296,7 @@ fun TvShowsPage(
                                 selectionManager.updateContentFocus(focused)
                                 onContentFocusChanged?.invoke(focused)
                             },
+                            onLeftBoundary = onLeftBoundary,
                             currentRowIndex = validRowIndex,
                             totalRowCount = rowCount,
                             onItemClick = { show ->

@@ -36,7 +36,10 @@ class KeyEventHandler<T : MediaItem>(
     }
     
     private fun handleLeftNavigation(): Boolean {
-        if (config.selectedIndex <= 0) return false
+        if (config.selectedIndex <= 0) {
+            config.onLeftBoundary?.invoke()
+            return true
+        }
         
         val newIndex = config.selectedIndex - 1
         updateSelection(newIndex)
