@@ -15,6 +15,7 @@ data class PagingMediaRowConfig<T : MediaItem>(
     val onUpDown: ((Int) -> Unit)? = null,
     val isContentFocused: Boolean = false,
     val onContentFocusChanged: ((Boolean) -> Unit)? = null,
+    val onLeftBoundary: (() -> Unit)? = null,
     val currentRowIndex: Int = 0,
     val totalRowCount: Int = 1,
     val onItemClick: ((T) -> Unit)? = null,

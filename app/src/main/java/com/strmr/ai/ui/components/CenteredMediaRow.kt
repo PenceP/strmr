@@ -39,6 +39,7 @@ fun <T> CenteredMediaRow(
     focusRequester: FocusRequester? = null,
     isContentFocused: Boolean = false,
     onContentFocusChanged: ((Boolean) -> Unit)? = null,
+    onLeftBoundary: (() -> Unit)? = null,
     currentRowIndex: Int = 0,
     totalRowCount: Int = 1,
     itemContent: @Composable (item: T, isSelected: Boolean) -> Unit
@@ -138,56 +139,64 @@ fun <T> CenteredMediaRow(
                     .fillMaxWidth()
                     .height(rowHeight)
                     .align(Alignment.Center)
-                    .onFocusChanged { 
+                    .onFocusChanged {
                         Log.d("CenteredMediaRow", "🎯 Focus changed for '$title': ${it.isFocused}")
-                        onContentFocusChanged?.invoke(it.isFocused) 
+                        onContentFocusChanged?.invoke(it.isFocused)
                     }
                     .focusRequester(focusRequester ?: FocusRequester())
                     .focusable(enabled = isRowSelected)
                     .onKeyEvent { event ->
-                    if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN && isRowSelected) {
-                        when (event.nativeKeyEvent.keyCode) {
-                            android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
-                                if (selectedIndex > 0) {
-                                    onSelectionChanged(selectedIndex - 1)
+                        if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN && isRowSelected) {
+                            when (event.nativeKeyEvent.keyCode) {
+                                android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
+                                    if (selectedIndex > 0) {
+                                        onSelectionChanged(selectedIndex - 1)
+                                    } else {
+                                        onLeftBoundary?.invoke()
+                                    }
                                     true
-                                } else {
-                                    false
                                 }
-                            }
-                            android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                                if (selectedIndex < mediaItems.size - 1) {
-                                    onSelectionChanged(selectedIndex + 1)
+
+                                android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                                    if (selectedIndex < mediaItems.size - 1) {
+                                        onSelectionChanged(selectedIndex + 1)
+                                        true
+                                    } else {
+                                        false
+                                    }
+                                }
+
+                                android.view.KeyEvent.KEYCODE_DPAD_UP -> {
+                                    onUpDown?.invoke(-1)
                                     true
-                                } else {
-                                    false
                                 }
-                            }
-                            android.view.KeyEvent.KEYCODE_DPAD_UP -> {
-                                onUpDown?.invoke(-1)
-                                true
-                            }
-                            android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
-                                onUpDown?.invoke(1)
-                                true
-                            }
-                            android.view.KeyEvent.KEYCODE_DPAD_CENTER, 
-                            android.view.KeyEvent.KEYCODE_ENTER -> {
-                                // Handle click without race condition
-                                val item = mediaItems.getOrNull(selectedIndex)
-                                if (item != null) {
-                                    Log.d("CenteredMediaRow", "🎯 Enter pressed on item $selectedIndex")
-                                    onItemClick?.invoke(item)
+
+                                android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
+                                    onUpDown?.invoke(1)
+                                    true
                                 }
-                                true
+
+                                android.view.KeyEvent.KEYCODE_DPAD_CENTER,
+                                android.view.KeyEvent.KEYCODE_ENTER -> {
+                                    // Handle click without race condition
+                                    val item = mediaItems.getOrNull(selectedIndex)
+                                    if (item != null) {
+                                        Log.d(
+                                            "CenteredMediaRow",
+                                            "🎯 Enter pressed on item $selectedIndex"
+                                        )
+                                        onItemClick?.invoke(item)
+                                    }
+                                    true
+                                }
+
+                                else -> false
                             }
-                            else -> false
-                        }
-                    } else false
-                }
+                        } else false
+                    }
         ) {
             itemsIndexed(mediaItems) { index, item ->
-                val isSelected = isRowSelected && index == selectedIndex
+                val isSelected = isRowSelected && index == selectedIndex && isContentFocused
                 val dynamicWidth = if (isSelected) itemWidth * 1.2f else itemWidth
 
                 Box(
