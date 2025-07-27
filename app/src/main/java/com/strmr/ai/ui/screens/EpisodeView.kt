@@ -637,7 +637,7 @@ private fun EpisodeCardNoFocusBorder(
             }
             // Runtime overlay
             episode.runtime?.let { runtime ->
-                if (runtime > 0) {
+                if (runtime > 0 && isSelected && isEpisodeRowFocused) {
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
