@@ -98,6 +98,8 @@ sealed class MediaDetailsType {
 fun DetailsPage(
     mediaDetails: MediaDetailsType?,
     viewModel: com.strmr.ai.viewmodel.DetailsViewModel,
+    focusMemoryManager: com.strmr.ai.FocusMemoryManager? = null,
+    screenKey: String = "",
     onPlay: (season: Int?, episode: Int?) -> Unit = { _, _ -> },
     onAddToCollection: () -> Unit = {},
     onNavigateToSimilar: (String, Int) -> Unit = { _, _ -> }, // New navigation callback
@@ -130,7 +132,9 @@ fun DetailsPage(
                 onTrailer,
                 onMoreEpisodes,
                 cachedSeason,
-                cachedEpisode
+                cachedEpisode,
+                focusMemoryManager,
+                screenKey
             )
         }
     }
@@ -294,7 +298,10 @@ fun MovieDetailsView(
                     .fillMaxWidth()
                     .weight(0.5f)
                     .verticalScroll(scrollState)
-                    .padding(horizontal = StrmrConstants.Dimensions.Icons.EXTRA_LARGE, vertical = StrmrConstants.Dimensions.SPACING_SECTION)
+                    .padding(
+                        horizontal = StrmrConstants.Dimensions.Icons.EXTRA_LARGE,
+                        vertical = StrmrConstants.Dimensions.SPACING_SECTION
+                    )
             ) {
                 // Buttons row
                 Box(modifier = Modifier.fillMaxWidth()) {
@@ -575,7 +582,11 @@ private fun HeaderSection(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = StrmrConstants.Dimensions.Icons.EXTRA_LARGE, end = StrmrConstants.Dimensions.Icons.EXTRA_LARGE, bottom = StrmrConstants.Dimensions.SPACING_SECTION),
+            .padding(
+                start = StrmrConstants.Dimensions.Icons.EXTRA_LARGE,
+                end = StrmrConstants.Dimensions.Icons.EXTRA_LARGE,
+                bottom = StrmrConstants.Dimensions.SPACING_SECTION
+            ),
         horizontalAlignment = Alignment.Start
     ) {
         Spacer(Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
@@ -765,9 +776,38 @@ fun TvShowDetailsView(
     onTrailer: (String, String) -> Unit,
     onMoreEpisodes: () -> Unit = {},
     cachedSeason: Int? = null,
-    cachedEpisode: Int? = null
+    cachedEpisode: Int? = null,
+    focusMemoryManager: com.strmr.ai.FocusMemoryManager? = null,
+    screenKey: String = ""
 ) {
     val playButtonFocusRequester = remember { FocusRequester() }
+    val trailerButtonFocusRequester = remember { FocusRequester() }
+    val moreEpisodesButtonFocusRequester = remember { FocusRequester() }
+    val collectionButtonFocusRequester = remember { FocusRequester() }
+    val watchlistButtonFocusRequester = remember { FocusRequester() }
+    val watchedButtonFocusRequester = remember { FocusRequester() }
+    val moreButtonFocusRequester = remember { FocusRequester() }
+
+    // Restore focus when coming back from another screen
+    LaunchedEffect(screenKey) {
+        if (focusMemoryManager != null && screenKey.isNotEmpty()) {
+            val focusMemory = focusMemoryManager.getFocus(screenKey)
+            focusMemory?.let { memory ->
+                when (memory.lastFocusedItem) {
+                    "play" -> playButtonFocusRequester.requestFocus()
+                    "trailer" -> trailerButtonFocusRequester.requestFocus()
+                    "more_episodes" -> moreEpisodesButtonFocusRequester.requestFocus()
+                    "collection" -> collectionButtonFocusRequester.requestFocus()
+                    "watchlist" -> watchlistButtonFocusRequester.requestFocus()
+                    "watched" -> watchedButtonFocusRequester.requestFocus()
+                    "more" -> moreButtonFocusRequester.requestFocus()
+                    else -> playButtonFocusRequester.requestFocus()
+                }
+                // Clear the memory after restoring focus
+                focusMemoryManager.clearFocus(screenKey)
+            }
+        }
+    }
     var omdbRatings by remember(show.imdbId) { mutableStateOf<OmdbResponse?>(null) }
     var seasons by remember { mutableStateOf<List<SeasonEntity>>(emptyList()) }
     var selectedSeason by remember { mutableStateOf<Int?>(cachedSeason) }
@@ -960,7 +1000,10 @@ fun TvShowDetailsView(
                     .fillMaxWidth()
                     .weight(0.5f)
                     .verticalScroll(scrollState)
-                    .padding(horizontal = StrmrConstants.Dimensions.Icons.EXTRA_LARGE, vertical = StrmrConstants.Dimensions.SPACING_SECTION)
+                    .padding(
+                        horizontal = StrmrConstants.Dimensions.Icons.EXTRA_LARGE,
+                        vertical = StrmrConstants.Dimensions.SPACING_SECTION
+                    )
             ) {
                 // Buttons row
                 Box(modifier = Modifier.fillMaxWidth()) {
@@ -1001,7 +1044,8 @@ fun TvShowDetailsView(
                                 },
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT),
+                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
+                                    .focusRequester(trailerButtonFocusRequester),
                                 interactionSource = trailerButtonInteractionSource,
                                 isFocused = trailerButtonIsFocused,
                                 text = "Trailer",
@@ -1013,7 +1057,8 @@ fun TvShowDetailsView(
                                 onClick = onMoreEpisodes,
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT),
+                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
+                                    .focusRequester(moreEpisodesButtonFocusRequester),
                                 interactionSource = moreEpisodesButtonInteractionSource,
                                 isFocused = moreEpisodesButtonIsFocused,
                                 text = "More Episodes",
@@ -1029,6 +1074,7 @@ fun TvShowDetailsView(
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
+                                    .focusRequester(collectionButtonFocusRequester)
                                     .onKeyEvent { event ->
                                         if (
                                             event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
@@ -1058,6 +1104,7 @@ fun TvShowDetailsView(
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
+                                    .focusRequester(watchlistButtonFocusRequester)
                                     .onKeyEvent { event ->
                                         if (
                                             event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
@@ -1088,6 +1135,7 @@ fun TvShowDetailsView(
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
+                                    .focusRequester(watchedButtonFocusRequester)
                                     .onKeyEvent { event ->
                                         if (
                                             event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
@@ -1118,6 +1166,7 @@ fun TvShowDetailsView(
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
+                                    .focusRequester(moreButtonFocusRequester)
                                     .onKeyEvent { event ->
                                         if (
                                             event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&

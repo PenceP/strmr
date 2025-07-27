@@ -118,6 +118,7 @@ fun <T : MediaItem> PagingMediaRow(
     onUpDown: ((Int) -> Unit)? = null,
     isContentFocused: Boolean = false,
     onContentFocusChanged: ((Boolean) -> Unit)? = null,
+    onLeftBoundary: (() -> Unit)? = null,
     currentRowIndex: Int = 0,
     totalRowCount: Int = 1,
     onItemClick: ((T) -> Unit)? = null,
@@ -137,7 +138,8 @@ fun <T : MediaItem> PagingMediaRow(
         totalRowCount = totalRowCount,
         onItemClick = onItemClick,
         onPositionChanged = onPositionChanged,
-        logTag = logTag
+        logTag = logTag,
+        onLeftBoundary = onLeftBoundary
     )
     
     RefactoredPagingMediaRow(

@@ -10,6 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -51,7 +52,10 @@ fun <T : MediaItem> MediaRowContent(
                             if (focusState.hasFocus) {
                                 config.onContentFocusChanged?.invoke(true)
                             }
-                            android.util.Log.d(config.logTag, "🎯 Focus changed for '${config.title}': ${focusState.hasFocus}")
+                            android.util.Log.d(
+                                config.logTag,
+                                "🎯 Focus changed for '${config.title}': ${focusState.hasFocus}"
+                            )
                         }
                 } else {
                     Modifier
@@ -68,7 +72,7 @@ fun <T : MediaItem> MediaRowContent(
         ) { index ->
             MediaItemSlot(
                 mediaItem = lazyPagingItems[index],
-                isSelected = index == config.selectedIndex && config.isRowSelected,
+                isSelected = index == config.selectedIndex && config.isRowSelected && config.isContentFocused,
                 onItemClick = config.onItemClick
             )
         }

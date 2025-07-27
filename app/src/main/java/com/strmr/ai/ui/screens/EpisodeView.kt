@@ -57,6 +57,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import kotlinx.coroutines.isActive
 import com.strmr.ai.utils.resolveImageSource
+import kotlinx.coroutines.launch
 
 @Composable
 fun EpisodeView(
@@ -170,14 +171,16 @@ fun EpisodeView(
         }
     }
 
-    // Auto-scroll to selected episode
+    // Auto-scroll to selected episode with fixed selector behavior
     LaunchedEffect(selectedEpisodeIndex) {
         if (episodes.isNotEmpty() && selectedEpisodeIndex in 0 until episodes.size) {
+            // Scroll to keep the selected episode aligned with the fixed selector position
+            // The scroll amount should move episodes left while selector stays fixed
             episodeListState.animateScrollToItem(selectedEpisodeIndex)
         }
     }
 
-    // Auto-scroll to selected season
+    // Restore smooth animated left alignment for seasons (like episodes)
     LaunchedEffect(selectedSeasonIndex) {
         if (seasons.isNotEmpty() && selectedSeasonIndex in 0 until seasons.size) {
             seasonListState.animateScrollToItem(selectedSeasonIndex)
@@ -225,7 +228,7 @@ fun EpisodeView(
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
-                    .blur(radius = StrmrConstants.Blur.RADIUS_STANDARD),
+                    .blur(radius = 32.dp),
                 contentScale = ContentScale.Crop,
                 alpha = StrmrConstants.Colors.Alpha.LIGHT
             )
@@ -252,7 +255,7 @@ fun EpisodeView(
                 Column(
                     modifier = Modifier.padding(
                         start = StrmrConstants.Dimensions.Icons.EXTRA_LARGE,
-                        bottom = 40.dp
+                        bottom = 12.dp
                     )
                 ) {
                     // Show title or logo
@@ -276,86 +279,128 @@ fun EpisodeView(
                     }
 
                     Text(
-                        text = "${seasons.size} Seasons ${episodes.size} Episodes",
+                        text = "${seasons.size} Seasons",
                         color = StrmrConstants.Colors.TEXT_SECONDARY,
-                        fontSize = 18.sp,
+                        fontSize = 14.sp,
                         modifier = Modifier.padding(bottom = 32.dp)
                     )
                 }
 
-                // Season selector - horizontal scrolling aligned with episodes
+                // Season selector - horizontal scrolling aligned with episodes (no white border selector, scroll throttling enabled)
                 if (seasons.isNotEmpty()) {
-                    LazyRow(
-                        state = seasonListState,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    val selectorStartSeason = StrmrConstants.Dimensions.Icons.EXTRA_LARGE
+                    val seasonButtonWidth = 100.dp
+                    val seasonButtonWidthWithSpacing = seasonButtonWidth + 12.dp
+
+                    // --- Throttle/limit left/right key speed ---
+                    var lastSeasonNavTime by remember { mutableStateOf(0L) }
+                    val throttleMs = 80L
+
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 32.dp)
-                            .focusRequester(seasonFocusRequester)
-                            .focusable()
-                            .onKeyEvent { event ->
-                                when (event.nativeKeyEvent.keyCode) {
-                                    android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
-                                        if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
-                                            if (selectedSeasonIndex > 0) {
-                                                selectedSeasonIndex--
-                                            }
-                                        }
-                                        true
-                                    }
-
-                                    android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                                        if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
-                                            if (selectedSeasonIndex < seasons.size - 1) {
-                                                selectedSeasonIndex++
-                                            }
-                                        }
-                                        true
-                                    }
-
-                                    android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
-                                        if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
-                                            isSeasonSelectorFocused = false
-                                            isEpisodeRowFocused = true
-                                        }
-                                        true
-                                    }
-
-                                    android.view.KeyEvent.KEYCODE_BACK -> {
-                                        if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
-                                            onBack()
-                                        }
-                                        true
-                                    }
-
-                                    else -> false
-                                }
-                            },
-                        contentPadding = PaddingValues(
-                            start = StrmrConstants.Dimensions.Icons.EXTRA_LARGE,
-                            end = 40.dp
-                        )
                     ) {
-                        itemsIndexed(seasons) { index, season ->
-                            SeasonButton(
-                                season = season,
-                                isSelected = index == selectedSeasonIndex,
-                                isFocused = isSeasonSelectorFocused && index == selectedSeasonIndex,
-                                onClick = {
-                                    selectedSeasonIndex = index
-                                    isSeasonSelectorFocused = true
-                                    isEpisodeRowFocused = false
-                                }
+                        LazyRow(
+                            state = seasonListState,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusRequester(seasonFocusRequester)
+                                .focusable()
+                                .onKeyEvent { event ->
+                                    val now = System.currentTimeMillis()
+                                    when (event.nativeKeyEvent.keyCode) {
+                                        android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
+                                            if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
+                                                if (now - lastSeasonNavTime > throttleMs) {
+                                                    if (selectedSeasonIndex > 0) {
+                                                        selectedSeasonIndex--
+                                                        lastSeasonNavTime = now
+                                                    }
+                                                }
+                                            }
+                                            true
+                                        }
+                                        android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                                            if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
+                                                if (now - lastSeasonNavTime > throttleMs) {
+                                                    if (selectedSeasonIndex < seasons.size - 1) {
+                                                        selectedSeasonIndex++
+                                                        lastSeasonNavTime = now
+                                                    }
+                                                }
+                                            }
+                                            true
+                                        }
+                                        android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
+                                            if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
+                                                isSeasonSelectorFocused = false
+                                                isEpisodeRowFocused = true
+                                            }
+                                            true
+                                        }
+                                        android.view.KeyEvent.KEYCODE_BACK -> {
+                                            if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
+                                                onBack()
+                                            }
+                                            true
+                                        }
+                                        else -> false
+                                    }
+                                },
+                            contentPadding = PaddingValues(
+                                start = selectorStartSeason,
+                                end = selectorStartSeason
                             )
+                        ) {
+                            itemsIndexed(seasons) { index, season ->
+                                SeasonButtonNoBorder(
+                                    season = season,
+                                    isSelected = index == selectedSeasonIndex,
+                                    isRowFocused = isSeasonSelectorFocused,
+                                    onClick = {
+                                        selectedSeasonIndex = index
+                                        isSeasonSelectorFocused = true
+                                        isEpisodeRowFocused = false
+                                    }
+                                )
+                            }
+                            repeat(8) { item { Spacer(modifier = Modifier.width(seasonButtonWidthWithSpacing)) } }
                         }
+                        // --- NO border selector overlay here anymore ---
                     }
                 }
 
                 // Episodes section
-                // Removed the "Episodes" text label
+                // Episode count text - inline with description
+                if (episodes.isNotEmpty()) {
+                    Text(
+                        text = "${episodes.size} Episodes",
+                        color = if (isEpisodeRowFocused)
+                            StrmrConstants.Colors.TEXT_PRIMARY.copy(alpha = 0.8f)
+                        else
+                            StrmrConstants.Colors.TEXT_SECONDARY,
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(
+                            start = StrmrConstants.Dimensions.Icons.EXTRA_LARGE,
+                            bottom = 16.dp
+                        )
+                    )
+                }
 
-                // Episodes row - full width
-                Column {
+                // Episodes row - with selector border overlaid on top and key event throttling
+                Box(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    val selectorStart = StrmrConstants.Dimensions.Icons.EXTRA_LARGE
+                    val episodeCardWidth = 200.dp
+                    val episodeCardWidthWithSpacing = episodeCardWidth + 12.dp
+
+                    // --- Throttle/limit left/right key speed for episodes ---
+                    var lastEpisodeNavTime by remember { mutableStateOf(0L) }
+                    val throttleMs = 80L
+
                     LazyRow(
                         state = episodeListState,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -364,20 +409,26 @@ fun EpisodeView(
                             .focusRequester(if (isEpisodeRowFocused) episodeFocusRequester else FocusRequester())
                             .focusable()
                             .onKeyEvent { event ->
+                                val now = System.currentTimeMillis()
                                 when (event.nativeKeyEvent.keyCode) {
                                     android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
                                         if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
-                                            if (selectedEpisodeIndex > 0) {
-                                                selectedEpisodeIndex--
+                                            if (now - lastEpisodeNavTime > throttleMs) {
+                                                if (selectedEpisodeIndex > 0) {
+                                                    selectedEpisodeIndex--
+                                                    lastEpisodeNavTime = now
+                                                }
                                             }
                                         }
                                         true
                                     }
-
                                     android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
                                         if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
-                                            if (selectedEpisodeIndex < episodes.size - 1) {
-                                                selectedEpisodeIndex++
+                                            if (now - lastEpisodeNavTime > throttleMs) {
+                                                if (selectedEpisodeIndex < episodes.size - 1) {
+                                                    selectedEpisodeIndex++
+                                                    lastEpisodeNavTime = now
+                                                }
                                             }
                                         }
                                         true
@@ -414,43 +465,82 @@ fun EpisodeView(
                                 }
                             },
                         contentPadding = PaddingValues(
-                            start = StrmrConstants.Dimensions.Icons.EXTRA_LARGE,
-                            end = 40.dp
+                            start = selectorStart,
+                            end = selectorStart
                         )
                     ) {
                         itemsIndexed(episodes) { index, episode ->
-                            EpisodeCardCompact(
-                                episode = episode,
-                                isSelected = index == selectedEpisodeIndex,
-                                isFocused = isEpisodeRowFocused && index == selectedEpisodeIndex,
-                                onClick = {
-                                    selectedEpisodeIndex = index
-                                    isEpisodeRowFocused = true
-                                    isSeasonSelectorFocused = false
+                            val episodeAlpha = when {
+                                isSeasonSelectorFocused -> 0.5f
+                                isEpisodeRowFocused && index == selectedEpisodeIndex -> 1f
+                                else -> 0.5f
+                            }
+                            Box(
+                                modifier = Modifier.graphicsLayer {
+                                    alpha = episodeAlpha
                                 }
-                            )
+                            ) {
+                                EpisodeCardNoFocusBorder(
+                                    episode = episode,
+                                    onClick = {
+                                        selectedEpisodeIndex = index
+                                        isEpisodeRowFocused = true
+                                        isSeasonSelectorFocused = false
+                                    },
+                                    isSelected = (index == selectedEpisodeIndex),
+                                    isEpisodeRowFocused = isEpisodeRowFocused
+                                )
+                            }
                         }
+                        // Add three end spacers so last episode scrolls fully left
+                        item { Spacer(modifier = Modifier.width(episodeCardWidthWithSpacing)) }
+                        item { Spacer(modifier = Modifier.width(episodeCardWidthWithSpacing)) }
+                        item { Spacer(modifier = Modifier.width(episodeCardWidthWithSpacing)) }
                     }
+                    // Fixed selector overlay: fades if you're not in episode row
+                    Box(
+                        modifier = Modifier
+                            .graphicsLayer {
+                                alpha = if (isSeasonSelectorFocused) 0.5f else 1f
+                            }
+                            .padding(start = selectorStart)
+                            .width(episodeCardWidth)
+                            .height(112.dp)
+                            .border(
+                                width = 3.dp,
+                                color = StrmrConstants.Colors.TEXT_PRIMARY,
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                    )
+                }
+                LaunchedEffect(selectedEpisodeIndex) {
+                    if (episodes.isNotEmpty() && selectedEpisodeIndex in 0 until episodes.size) {
+                        episodeListState.animateScrollToItem(selectedEpisodeIndex)
+                    }
+                }
 
-                    // Description area for focused episode only
-                    Spacer(modifier = Modifier.height(16.dp))
-                    if (episodes.isNotEmpty() && selectedEpisodeIndex < episodes.size) {
-                        val selectedEpisode = episodes[selectedEpisodeIndex]
-                        selectedEpisode.overview?.let { overview ->
-                            if (overview.isNotBlank()) {
-                                Text(
-                                    text = overview,
-                                    color = Color.White,
-                                    fontSize = 14.sp,
-                                    lineHeight = 18.sp,
-                                    maxLines = 3,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.padding(
+                // Description area for focused episode only
+                Spacer(modifier = Modifier.height(6.dp))
+                if (episodes.isNotEmpty() && selectedEpisodeIndex < episodes.size) {
+                    val selectedEpisode = episodes[selectedEpisodeIndex]
+                    selectedEpisode.overview?.let { overview ->
+                        if (overview.isNotBlank()) {
+                            Text(
+                                text = overview,
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                lineHeight = 18.sp,
+                                maxLines = 3,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier
+                                    .padding(
                                         start = StrmrConstants.Dimensions.Icons.EXTRA_LARGE,
                                         end = StrmrConstants.Dimensions.Icons.EXTRA_LARGE
                                     )
-                                )
-                            }
+                                    .graphicsLayer {
+                                        alpha = if (isEpisodeRowFocused) 1f else 0.65f
+                                    }
+                            )
                         }
                     }
                 }
@@ -460,43 +550,32 @@ fun EpisodeView(
 }
 
 @Composable
-private fun SeasonButton(
+private fun SeasonButtonNoBorder(
     season: SeasonEntity,
     isSelected: Boolean,
-    isFocused: Boolean,
+    isRowFocused: Boolean,
     onClick: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-    val buttonIsFocused by interactionSource.collectIsFocusedAsState()
-    val actuallyFocused = isFocused || buttonIsFocused
-
-    val backgroundColor = when {
-        isSelected && actuallyFocused -> StrmrConstants.Colors.TEXT_PRIMARY // Full white when selected and focused
-        isSelected -> StrmrConstants.Colors.TEXT_PRIMARY.copy(alpha = 0.7f) // Less grey when selected but not focused
-        actuallyFocused -> StrmrConstants.Colors.TEXT_PRIMARY.copy(alpha = 0.2f)
-        else -> Color.Gray.copy(alpha = 0.4f) // Grey color for non-selected buttons
-    }
-    
-    val textColor = if (isSelected) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY
-
     Box(
         modifier = Modifier
             .width(100.dp)
             .height(40.dp)
             .background(
-                color = backgroundColor,
+                color = when {
+                    isSelected && isRowFocused -> Color.White
+                    isSelected && !isRowFocused -> Color.White.copy(alpha = 0.7f)
+                    else -> Color.Gray.copy(alpha = 0.4f)
+                },
                 shape = RoundedCornerShape(8.dp)
             )
             .focusable(interactionSource = interactionSource)
-            .clickable { onClick() }
-            .graphicsLayer {
-                alpha = if (actuallyFocused) 1f else 0.65f
-            },
+            .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = "Season ${season.seasonNumber}",
-            color = textColor,
+            color = if (isSelected) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY,
             fontSize = 14.sp,
             fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
         )
@@ -504,44 +583,27 @@ private fun SeasonButton(
 }
 
 @Composable
-private fun EpisodeCardCompact(
+private fun EpisodeCardNoFocusBorder(
     episode: EpisodeEntity,
-    isSelected: Boolean,
-    isFocused: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    isSelected: Boolean = false,
+    isEpisodeRowFocused: Boolean = false
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-    val cardIsFocused by interactionSource.collectIsFocusedAsState()
-    val actuallyFocused = isFocused || cardIsFocused
 
     Column(
         modifier = Modifier
             .width(200.dp)
             .focusable(interactionSource = interactionSource)
             .clickable { onClick() }
-            .padding(end = 20.dp)
-            .graphicsLayer {
-                alpha = if (actuallyFocused) 1f else 0.65f
-            }
     ) {
-        // Episode thumbnail with play icon and runtime
+        // Episode thumbnail
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(112.dp)
                 .clip(RoundedCornerShape(8.dp))
                 .background(StrmrConstants.Colors.BACKGROUND_DARK.copy(alpha = 0.6f))
-                .let { modifier ->
-                    if (actuallyFocused) {
-                        modifier.border(
-                            width = 3.dp,
-                            color = StrmrConstants.Colors.TEXT_PRIMARY,
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                    } else {
-                        modifier
-                    }
-                }
         ) {
             // Episode still/thumbnail
             if (!episode.stillUrl.isNullOrBlank()) {
@@ -552,16 +614,15 @@ private fun EpisodeCardCompact(
                     contentScale = ContentScale.Crop
                 )
             }
-
-            // Play icon overlay
-            if (actuallyFocused) {
+            // Play icon overlay - only if focused
+            if (isSelected && isEpisodeRowFocused) {
                 Box(
                     modifier = Modifier
                         .size(32.dp)
                         .align(Alignment.BottomStart)
                         .padding(6.dp)
                         .background(
-                            color = StrmrConstants.Colors.TEXT_PRIMARY.copy(alpha = 0.9f),
+                            color = StrmrConstants.Colors.BACKGROUND_DARK.copy(alpha = 0.8f),
                             shape = androidx.compose.foundation.shape.CircleShape
                         ),
                     contentAlignment = Alignment.Center
@@ -569,15 +630,14 @@ private fun EpisodeCardCompact(
                     Icon(
                         Icons.Filled.PlayArrow,
                         contentDescription = "Play",
-                        tint = StrmrConstants.Colors.BACKGROUND_DARK,
+                        tint = Color.White,
                         modifier = Modifier.size(16.dp)
                     )
                 }
             }
-
             // Runtime overlay
             episode.runtime?.let { runtime ->
-                if (runtime > 0 && actuallyFocused) {
+                if (runtime > 0) {
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
@@ -598,57 +658,55 @@ private fun EpisodeCardCompact(
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Episode number and title
-        Text(
-            text = "${episode.episodeNumber}. ${episode.name ?: "Episode ${episode.episodeNumber}"}",
-            color = StrmrConstants.Colors.TEXT_PRIMARY,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-        )
-
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Air date and rating row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Box(
+            modifier = Modifier.height(58.dp)
         ) {
-            // Air date (left side)
-            episode.airDate?.let { airDate ->
-                DateFormatter.formatEpisodeDate(airDate)?.let { formattedDate ->
-                    Text(
-                        text = formattedDate,
-                        color = if (actuallyFocused) Color(0xFFFAFAFA) else StrmrConstants.Colors.TEXT_SECONDARY,
-                        fontSize = 12.sp
-                    )
-                }
-            } ?: Spacer(modifier = Modifier.width(1.dp)) // Placeholder when no air date
+            Column {
+                Text(
+                    text = "${episode.episodeNumber}. ${episode.name ?: "Episode ${episode.episodeNumber}"}",
+                    color = StrmrConstants.Colors.TEXT_PRIMARY,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(1.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    episode.airDate?.let { airDate ->
+                        DateFormatter.formatEpisodeDate(airDate)?.let { formattedDate ->
+                            Text(
+                                text = formattedDate,
+                                color = Color(0xFFFAFAFA),
+                                fontSize = 12.sp
+                            )
+                        }
+                    } ?: Spacer(modifier = Modifier.width(1.dp))
 
-            // Rating (right side, aligned with thumbnail edge)
-            episode.rating?.let { rating ->
-                if (rating > 0) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        Text(
-                            text = String.format("%.1f", rating),
-                            color = if (actuallyFocused) Color(0xFFFAFAFA) else StrmrConstants.Colors.TEXT_SECONDARY,
-                            fontSize = 12.sp
-                        )
-                        Spacer(modifier = Modifier.width(2.dp))
-                        Text(
-                            text = "★",
-                            color = if (actuallyFocused) Color(0xFFFAFAFA) else StrmrConstants.Colors.TEXT_SECONDARY.copy(
-                                alpha = 0.7f
-                            ),
-                            fontSize = 10.sp
-                        )
+                    episode.rating?.let { rating ->
+                        if (rating > 0) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                Text(
+                                    text = String.format("%.1f", rating),
+                                    color = Color(0xFFFAFAFA),
+                                    fontSize = 12.sp
+                                )
+                                Spacer(modifier = Modifier.width(2.dp))
+                                Text(
+                                    text = "★",
+                                    color = Color(0xFFFAFAFA).copy(alpha = 0.7f),
+                                    fontSize = 10.sp
+                                )
+                            }
+                        }
                     }
                 }
             }

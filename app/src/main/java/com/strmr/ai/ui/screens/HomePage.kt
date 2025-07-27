@@ -95,6 +95,7 @@ fun HomeMediaRow(
     onUpDown: ((Int) -> Unit)? = null,
     isContentFocused: Boolean = false,
     onContentFocusChanged: ((Boolean) -> Unit)? = null,
+    onLeftBoundary: (() -> Unit)? = null,
     showOverlays: Boolean = false,
     rowHeight: Dp = 120.dp,
     onItemClick: ((Any) -> Unit)? = null,
@@ -191,7 +192,8 @@ fun HomeMediaRow(
                                     onSelectionChanged(selectedIndex - 1)
                                     true
                                 } else {
-                                    false
+                                    onLeftBoundary?.invoke()
+                                    true
                                 }
                             }
                             android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
@@ -231,7 +233,7 @@ fun HomeMediaRow(
         ) {
             items(mediaItems.size) { i ->
                 val mediaItem = mediaItems[i]
-                val isSelected = i == selectedIndex && isRowSelected
+                val isSelected = i == selectedIndex && isRowSelected && isContentFocused
                 
                 when (mediaItem) {
                     is HomeMediaItem.Movie -> LandscapeMediaCard(
@@ -310,6 +312,7 @@ fun HomePage(
     viewModel: HomeViewModel,
     isContentFocused: Boolean = false,
     onContentFocusChanged: ((Boolean) -> Unit)? = null,
+    onLeftBoundary: (() -> Unit)? = null,
     onNavigateToDetails: ((String, Int, Int?, Int?) -> Unit)? = null,
     onNavigateToIntermediateView: ((String, String, String, String?, String?) -> Unit)? = null
 ) {
@@ -676,7 +679,7 @@ fun HomePage(
                     val rowHeight = rowConfig?.cardHeight?.dp ?: 140.dp
                     
                     // Check if this row should show loading state based on configuration
-                    val isLoading = rowConfig?.showLoading == true && when (rowConfig.type) {
+                    val isLoading = rowConfig?.showLoading == true && when (rowConfig?.type) {
                         "continue_watching" -> isContinueWatchingLoading
                         "networks" -> isNetworksLoading
                         "nested_items" -> if (rowTitle == "Trakt Lists") isTraktListsLoading else false
@@ -726,6 +729,7 @@ fun HomePage(
                                 selectionManager.updateContentFocus(focused)
                                 onContentFocusChanged?.invoke(focused)
                             },
+                            onLeftBoundary = if (rowIndex == validRowIndex) onLeftBoundary else null,
                             showOverlays = rowConfig?.displayOptions?.showOverlays == true,
                             rowHeight = rowHeight,
                             cardType = rowConfig?.cardType ?: "portrait",

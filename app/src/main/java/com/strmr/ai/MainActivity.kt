@@ -3,6 +3,11 @@ package com.strmr.ai
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -11,7 +16,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
@@ -63,6 +70,55 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import javax.inject.Inject
 import androidx.media3.common.util.UnstableApi
+import android.view.KeyEvent
+
+// Focus memory data classes
+data class FocusMemory(
+    val lastFocusedItem: String = "",
+    val additionalData: Map<String, Any> = emptyMap()
+)
+
+// Focus memory manager
+class FocusMemoryManager {
+    private val memories = mutableMapOf<String, FocusMemory>()
+    
+    fun storeFocus(screenKey: String, focusedItem: String, additionalData: Map<String, Any> = emptyMap()) {
+        try {
+            if (screenKey.isNotBlank() && focusedItem.isNotBlank()) {
+                memories[screenKey] = FocusMemory(focusedItem, additionalData)
+                Log.d("FocusMemory", " Stored focus for $screenKey: $focusedItem")
+            }
+        } catch (e: Exception) {
+            Log.e("FocusMemory", " Error storing focus for $screenKey", e)
+        }
+    }
+    
+    fun getFocus(screenKey: String): FocusMemory? {
+        return try {
+            if (screenKey.isNotBlank()) {
+                val memory = memories[screenKey]
+                Log.d("FocusMemory", " Retrieved focus for $screenKey: ${memory?.lastFocusedItem}")
+                memory
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Log.e("FocusMemory", " Error retrieving focus for $screenKey", e)
+            null
+        }
+    }
+    
+    fun clearFocus(screenKey: String) {
+        try {
+            if (screenKey.isNotBlank()) {
+                memories.remove(screenKey)
+                Log.d("FocusMemory", " Cleared focus for $screenKey")
+            }
+        } catch (e: Exception) {
+            Log.e("FocusMemory", " Error clearing focus for $screenKey", e)
+        }
+    }
+}
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -82,7 +138,8 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var scraperRepository: ScraperRepository
     
-
+    private val focusMemoryManager = FocusMemoryManager()
+    
     @OptIn(ExperimentalTvMaterial3Api::class, UnstableApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -122,9 +179,11 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         else -> {
+                            @OptIn(UnstableApi::class)
                             MainScreen(
                                 youtubeExtractor = youtubeExtractor,
-                                scraperRepository = scraperRepository
+                                scraperRepository = scraperRepository,
+                                focusMemoryManager = focusMemoryManager
                             )
                         }
                     }
@@ -151,12 +210,25 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+    
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        return when (keyCode) {
+            KeyEvent.KEYCODE_DEL -> {
+                // Backspace key - treat as back button
+                onBackPressedDispatcher.onBackPressed()
+                true
+            }
+            else -> super.onKeyDown(keyCode, event)
+        }
+    }
 }
 
+@UnstableApi
 @Composable
 fun MainScreen(
     youtubeExtractor: YouTubeExtractor,
-    scraperRepository: ScraperRepository
+    scraperRepository: ScraperRepository,
+    focusMemoryManager: FocusMemoryManager
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -172,7 +244,20 @@ fun MainScreen(
     
     // Track content focus state
     var isContentFocused by remember { mutableStateOf(false) }
-    
+
+    // Helper function to handle navigation back to sidebar
+    val handleReturnToNavigation: () -> Unit = {
+        try {
+            android.util.Log.d("MainActivity", "🎯 Returning focus to navigation bar")
+            // Just request focus on navigation bar - let onFocusReceived handle the state change
+            navFocusRequester.requestFocus()
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "❌ Error in handleReturnToNavigation", e)
+            // Fallback: set content focus to false
+            isContentFocused = false
+        }
+    }
+
     // Reset content focus when route changes with debouncing
     LaunchedEffect(currentRoute) {
         isContentFocused = false
@@ -211,6 +296,7 @@ fun MainScreen(
                         onContentFocusChanged = { focused ->
                             isContentFocused = focused
                         },
+                        onLeftBoundary = handleReturnToNavigation,
                         onNavigateToDetails = { mediaType, tmdbId, season, episode ->
                             val route = if (season != null && episode != null) {
                                 "details/$mediaType/$tmdbId/$season/$episode"
@@ -233,6 +319,7 @@ fun MainScreen(
                         onContentFocusChanged = { focused ->
                             isContentFocused = focused
                         },
+                        onLeftBoundary = handleReturnToNavigation,
                         onNavigateToDetails = { tmdbId ->
                             navController.navigate("details/movie/$tmdbId")
                         }
@@ -244,6 +331,7 @@ fun MainScreen(
                         onContentFocusChanged = { focused ->
                             isContentFocused = focused
                         },
+                        onLeftBoundary = handleReturnToNavigation,
                         onNavigateToDetails = { tmdbId ->
                             navController.navigate("details/tvshow/$tmdbId")
                         }
@@ -309,6 +397,8 @@ fun MainScreen(
                         "movie" -> DetailsPage(
                             mediaDetails = movie?.let { MediaDetailsType.Movie(it) },
                             viewModel = detailsViewModel,
+                            focusMemoryManager = focusMemoryManager,
+                            screenKey = "details_movie_$tmdbId",
                             onPlay = { _, _ ->
                                 movie?.let { movieEntity ->
                                     if (!scraperRepository.isPremiumizeConfigured()) {
@@ -338,6 +428,8 @@ fun MainScreen(
                         "tvshow" -> DetailsPage(
                             mediaDetails = show?.let { MediaDetailsType.TvShow(it) },
                             viewModel = detailsViewModel,
+                            focusMemoryManager = focusMemoryManager,
+                            screenKey = "details_tvshow_$tmdbId",
                             onPlay = { selectedSeason, selectedEpisode ->
                                 show?.let { showEntity ->
                                     if (!scraperRepository.isPremiumizeConfigured()) {
@@ -366,6 +458,11 @@ fun MainScreen(
                             cachedSeason = season,
                             cachedEpisode = episode,
                             onMoreEpisodes = {
+                                // Store focus on "more episodes" button before navigating
+                                focusMemoryManager.storeFocus(
+                                    "details_tvshow_$tmdbId",
+                                    "more_episodes"
+                                )
                                 navController.navigate("episode_view/$tmdbId/${season ?: 1}/${episode ?: 1}")
                             }
                         )
@@ -402,6 +499,8 @@ fun MainScreen(
                         "movie" -> DetailsPage(
                             mediaDetails = movie?.let { MediaDetailsType.Movie(it) },
                             viewModel = detailsViewModel,
+                            focusMemoryManager = focusMemoryManager,
+                            screenKey = "details_movie_$tmdbId",
                             onPlay = { _, _ ->
                                 movie?.let { movieEntity ->
                                     if (!scraperRepository.isPremiumizeConfigured()) {
@@ -431,6 +530,8 @@ fun MainScreen(
                         "tvshow" -> DetailsPage(
                             mediaDetails = show?.let { MediaDetailsType.TvShow(it) },
                             viewModel = detailsViewModel,
+                            focusMemoryManager = focusMemoryManager,
+                            screenKey = "details_tvshow_$tmdbId",
                             onPlay = { selectedSeason, selectedEpisode ->
                                 show?.let { showEntity ->
                                     if (!scraperRepository.isPremiumizeConfigured()) {
@@ -455,6 +556,11 @@ fun MainScreen(
                             cachedSeason = season,
                             cachedEpisode = episode,
                             onMoreEpisodes = {
+                                // Store focus on "more episodes" button before navigating
+                                focusMemoryManager.storeFocus(
+                                    "details_tvshow_$tmdbId",
+                                    "more_episodes"
+                                )
                                 navController.navigate("episode_view/$tmdbId/${season ?: 1}/${episode ?: 1}")
                             }
                         )
@@ -540,6 +646,7 @@ fun MainScreen(
                         }
                     )
                 }
+                @OptIn(UnstableApi::class)
                 composable(
                     route = "video_player/{videoUrl}/{title}",
                     arguments = listOf(
@@ -552,7 +659,7 @@ fun MainScreen(
                     
                     // Decode URL if needed
                     val decodedUrl = java.net.URLDecoder.decode(videoUrl, "UTF-8")
-                    
+
                     VideoPlayerScreen(
                         videoUrl = decodedUrl,
                         title = title,
@@ -581,17 +688,34 @@ fun MainScreen(
                         }
                     }
 
-                    show?.let {
-                        EpisodeView(
-                            show = it,
-                            viewModel = detailsViewModel,
-                            onEpisodeClick = { selectedSeason, selectedEpisode ->
-                                navController.navigate("details/tvshow/$tmdbId/$selectedSeason/$selectedEpisode")
-                            },
-                            onBack = { navController.popBackStack() },
-                            initialSeason = season,
-                            initialEpisode = episode
-                        )
+                    if (show == null) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Color.White)
+                        }
+                    } else {
+                        val alpha = remember { Animatable(0f) }
+                        LaunchedEffect(Unit) {
+                            alpha.animateTo(
+                                targetValue = 1f,
+                                animationSpec = tween(durationMillis = 420)
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer { this.alpha = alpha.value }
+                        ) {
+                            EpisodeView(
+                                show = show!!,
+                                viewModel = detailsViewModel,
+                                onEpisodeClick = { selectedSeason, selectedEpisode ->
+                                    navController.navigate("details/tvshow/$tmdbId/$selectedSeason/$selectedEpisode")
+                                },
+                                onBack = { navController.popBackStack() },
+                                initialSeason = season,
+                                initialEpisode = episode
+                            )
+                        }
                     }
                 }
                 composable(
@@ -640,10 +764,18 @@ fun MainScreen(
                 navController = navController,
                 modifier = Modifier
                     .align(Alignment.CenterStart)
-                    .zIndex(1f),
+                    .zIndex(1f)
+                    .focusRequester(navFocusRequester),
                 onRightPressed = {
                     android.util.Log.d("MainActivity", "🎯 NavigationBar right pressed, setting isContentFocused = true")
                     isContentFocused = true
+                },
+                onFocusReceived = {
+                    android.util.Log.d(
+                        "MainActivity",
+                        "🎯 NavigationBar focus received, setting isContentFocused = false"
+                    )
+                    isContentFocused = false
                 }
             )
         }
