@@ -22,11 +22,16 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.Dp
+import androidx.compose.material3.MaterialTheme
 import coil.compose.AsyncImage
 import com.strmr.ai.ui.components.LandscapeMediaCard
 import com.strmr.ai.ui.components.MediaDetails
 import com.strmr.ai.ui.components.MediaHero
 import com.strmr.ai.ui.components.MediaRow
+import com.strmr.ai.ui.components.UnifiedMediaRow
+import com.strmr.ai.ui.components.MediaRowConfig
+import com.strmr.ai.ui.components.DataSource
+import com.strmr.ai.ui.components.CardType
 import com.strmr.ai.viewmodel.HomeMediaItem
 import com.strmr.ai.viewmodel.HomeViewModel
 import androidx.compose.material3.Text
@@ -50,7 +55,6 @@ import com.strmr.ai.R
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.MaterialTheme
 import coil.compose.rememberAsyncImagePainter
 import com.strmr.ai.ui.components.MediaCard
 import com.strmr.ai.ui.components.MediaRowSkeleton
@@ -101,163 +105,45 @@ fun HomeMediaRow(
     onItemClick: ((Any) -> Unit)? = null,
     cardType: String = "portrait"
 ) {
-    val listState = rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
-    val density = LocalDensity.current
-
-    // Centering logic for landscape cards
-    val rowWidthDp = 900.dp
-    val posterSpacingDp = 20.dp // Increased from 12.dp
-    val posterWidthDp = 160.dp // Landscape width
-    val selectedPosterWidthDp = 176.dp // Slightly larger when selected
-    val posterWidthPx = with(density) { posterWidthDp.roundToPx() }
-    val selectedPosterWidthPx = with(density) { selectedPosterWidthDp.roundToPx() }
-    val rowWidthPx = with(density) { rowWidthDp.roundToPx() }
-    val posterSpacingPx = with(density) { posterSpacingDp.roundToPx() }
-    
-    // Calculate how many posters fit in the row
-    val postersPerRow = (rowWidthPx - posterSpacingPx) / (posterWidthPx + posterSpacingPx)
-    val centerIndex = (postersPerRow / 2).toInt()
-
-    fun getOffsetForIndex(index: Int, totalItems: Int): Int {
-        return when {
-            index == 0 -> 0 // First poster: left-aligned
-            index <= centerIndex -> {
-                // Gradual centering: move toward center as we scroll right
-                val progress = index.toFloat() / centerIndex.toFloat()
-                val centerOffset = -(rowWidthPx / 2 - selectedPosterWidthPx / 2)
-                (centerOffset * progress).toInt()
-            }
-            else -> {
-                // Locked to center for all other positions
-                -(rowWidthPx / 2 - selectedPosterWidthPx / 2)
-            }
-        }
-    }
-
-    // Request focus when this row becomes selected and is composed
-    if (isRowSelected && focusRequester != null && isContentFocused) {
-        LaunchedEffect(isRowSelected, isContentFocused) {
-            focusRequester.requestFocus()
-        }
-    }
-
-    // Initialize row position when focus is first given
-    LaunchedEffect(isRowSelected, isContentFocused, selectedIndex) {
-        if (isRowSelected && isContentFocused && mediaItems.isNotEmpty()) {
-            Log.d("HomeMediaRow", "🎯 Initializing row position: selectedIndex=$selectedIndex, items=${mediaItems.size}")
-            // Ensure the selected item is properly positioned
-            val offset = getOffsetForIndex(selectedIndex, mediaItems.size)
-            listState.scrollToItem(selectedIndex, offset)
-        }
-    }
-
-    // Synchronize scroll position with selection changes
-    LaunchedEffect(selectedIndex) {
-        if (isRowSelected && mediaItems.isNotEmpty()) {
-            Log.d("HomeMediaRow", "🔄 Syncing scroll position for selectedIndex=$selectedIndex")
-            val offset = getOffsetForIndex(selectedIndex, mediaItems.size)
-            listState.scrollToItem(selectedIndex, offset)
-        }
-    }
-
-    Column(
-        modifier = modifier
-            .padding(start = 8.dp)
-    ) {
-        Text(
-            text = title,
-            color = Color.White,
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
-        
-        LazyRow(
-            state = listState,
-            modifier = Modifier
-                .width(900.dp)
-                .height(rowHeight)
-                .onFocusChanged { 
-                    Log.d("HomeMediaRow", "🎯 Focus changed for '$title': ${it.isFocused}")
-                    onContentFocusChanged?.invoke(it.isFocused) 
-                }
-                .focusRequester(focusRequester ?: FocusRequester())
-                .focusable(enabled = true)
-                .onKeyEvent { event ->
-                    Log.d("HomeMediaRow", "🎯 Key event for '$title': keyCode=${event.nativeKeyEvent.keyCode}, isRowSelected=$isRowSelected, focusRequester=${focusRequester != null}")
-                    if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN && isRowSelected && focusRequester != null) {
-                        when (event.nativeKeyEvent.keyCode) {
-                            android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
-                                if (selectedIndex > 0) {
-                                    onSelectionChanged(selectedIndex - 1)
-                                    true
-                                } else {
-                                    onLeftBoundary?.invoke()
-                                    true
-                                }
-                            }
-                            android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                                if (selectedIndex < mediaItems.size - 1) {
-                                    onSelectionChanged(selectedIndex + 1)
-                                    true
-                                } else {
-                                    false
-                                }
-                            }
-                            android.view.KeyEvent.KEYCODE_DPAD_UP -> {
-                                onUpDown?.invoke(-1)
-                                true
-                            }
-                            android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
-                                onUpDown?.invoke(1)
-                                true
-                            }
-                            android.view.KeyEvent.KEYCODE_DPAD_CENTER, 
-                            android.view.KeyEvent.KEYCODE_ENTER -> {
-                                // Handle click without race condition
-                                val mediaItem = mediaItems.getOrNull(selectedIndex)
-                                if (mediaItem != null) {
-                                    Log.d("HomeMediaRow", "🎯 Enter pressed on item $selectedIndex")
-                                    onItemClick?.invoke(mediaItem)
-                                }
-                                true
-                            }
-                            else -> false
-                        }
-                    } else false
-                },
-            horizontalArrangement = Arrangement.spacedBy(18.dp),
-            verticalAlignment = Alignment.Bottom,
-            // Add performance optimizations
-            userScrollEnabled = true
-        ) {
-            items(mediaItems.size) { i ->
-                val mediaItem = mediaItems[i]
-                val isSelected = i == selectedIndex && isRowSelected && isContentFocused
-                
+    // Use UnifiedMediaRow with EpisodeView-style left-aligned navigation
+    UnifiedMediaRow(
+        config = MediaRowConfig(
+            title = title,
+            dataSource = DataSource.RegularList(mediaItems),
+            selectedIndex = selectedIndex,
+            isRowSelected = isRowSelected,
+            onSelectionChanged = onSelectionChanged,
+            onUpDown = onUpDown,
+            onLeftBoundary = onLeftBoundary,
+            onItemClick = onItemClick,
+            onContentFocusChanged = onContentFocusChanged,
+            focusRequester = focusRequester,
+            cardType = if (cardType == "landscape") CardType.LANDSCAPE else CardType.PORTRAIT,
+            itemWidth = if (cardType == "landscape") 200.dp else 120.dp,
+            itemSpacing = 12.dp, // Use EpisodeView spacing
+            contentPadding = PaddingValues(horizontal = 48.dp), // Use EpisodeView padding
+            itemContent = { mediaItem, isSelected ->
                 when (mediaItem) {
                     is HomeMediaItem.Movie -> LandscapeMediaCard(
                         title = mediaItem.movie.title,
                         landscapeUrl = mediaItem.movie.backdropUrl,
                         logoUrl = mediaItem.movie.logoUrl,
-                        progress = mediaItem.progress ?: 0f, // Default to 0f for completed items
+                        progress = mediaItem.progress ?: 0f,
                         isSelected = isSelected,
                         onClick = {
-                            // Only update selection, don't trigger navigation here
-                            Log.d("HomeMediaRow", "🎯 Movie item clicked: $i")
-                            onSelectionChanged(i)
+                            Log.d("HomeMediaRow", "🎯 Movie item clicked")
+                            onSelectionChanged(selectedIndex)
                         }
                     )
                     is HomeMediaItem.TvShow -> LandscapeMediaCard(
                         title = mediaItem.show.title,
                         landscapeUrl = mediaItem.episodeImageUrl ?: mediaItem.show.backdropUrl,
                         logoUrl = mediaItem.show.logoUrl,
-                        progress = mediaItem.progress ?: 0f, // Default to 0f for next episodes
+                        progress = mediaItem.progress ?: 0f,
                         isSelected = isSelected,
                         onClick = {
-                            // Only update selection, don't trigger navigation here
-                            Log.d("HomeMediaRow", "🎯 TvShow item clicked: $i")
-                            onSelectionChanged(i)
+                            Log.d("HomeMediaRow", "🎯 TvShow item clicked")
+                            onSelectionChanged(selectedIndex)
                         },
                         bottomRightLabel = if (mediaItem.season != null && mediaItem.episode != null) {
                             if (mediaItem.isNextEpisode) "Next: S${mediaItem.season}: E${mediaItem.episode}" 
@@ -270,9 +156,8 @@ fun HomeMediaRow(
                         logoUrl = null,
                         isSelected = isSelected,
                         onClick = {
-                            // Only update selection, don't trigger navigation here
-                            Log.d("HomeMediaRow", "🎯 Network item clicked: $i")
-                            onSelectionChanged(i)
+                            Log.d("HomeMediaRow", "🎯 Network item clicked")
+                            onSelectionChanged(selectedIndex)
                         }
                     )
                     is HomeMediaItem.Collection -> {
@@ -280,31 +165,46 @@ fun HomeMediaRow(
                             LandscapeMediaCard(
                                 title = if (mediaItem.nameDisplayMode != "Hidden") mediaItem.name else "",
                                 landscapeUrl = mediaItem.backgroundImageUrl,
+                                logoUrl = null,
                                 isSelected = isSelected,
                                 onClick = {
-                                    // Only update selection, don't trigger navigation here
-                                    Log.d("HomeMediaRow", "🎯 Collection item clicked: $i")
-                                    onSelectionChanged(i)
+                                    Log.d("HomeMediaRow", "🎯 Collection item clicked")
+                                    onSelectionChanged(selectedIndex)
                                 }
                             )
                         } else {
+                            // Poster card for collections
                             MediaCard(
                                 title = if (mediaItem.nameDisplayMode != "Hidden") mediaItem.name else "",
                                 posterUrl = mediaItem.backgroundImageUrl,
                                 isSelected = isSelected,
                                 onClick = {
-                                    // Only update selection, don't trigger navigation here
-                                    Log.d("HomeMediaRow", "🎯 Collection item clicked: $i")
-                                    onSelectionChanged(i)
+                                    Log.d("HomeMediaRow", "🎯 Collection poster item clicked")
+                                    onSelectionChanged(selectedIndex)
                                 }
                             )
                         }
                     }
+                    else -> {
+                        // Fallback for unknown types to prevent crashes
+                        Log.w("HomeMediaRow", "⚠️ Unknown media item type: ${mediaItem::class.simpleName}")
+                        MediaCard(
+                            title = "Unknown Item",
+                            posterUrl = null,
+                            isSelected = isSelected,
+                            onClick = {
+                                Log.d("HomeMediaRow", "🎯 Unknown item clicked")
+                                onSelectionChanged(selectedIndex)
+                            }
+                        )
+                    }
                 }
             }
-        }
-    }
+        ),
+        modifier = modifier
+    )
 }
+
 
 @Composable
 fun HomePage(
@@ -478,12 +378,31 @@ fun HomePage(
         }
         // Request focus on the first available row when composition completes
         Log.d("HomePage", "🎯 Requesting focus on first row")
-        focusRequesters.getOrNull(0)?.requestFocus()
+        if (focusRequesters.isNotEmpty() && rows.isNotEmpty()) {
+            try {
+                focusRequesters[0].requestFocus()
+                Log.d("HomePage", "🎯 Successfully requested initial focus")
+            } catch (e: Exception) {
+                Log.w("HomePage", "🚨 Failed to request initial focus: ${e.message}")
+            }
+        }
     }
 
     // Handle focus changes when selectedRowIndex changes
-    LaunchedEffect(selectionManager.selectedRowIndex) {
-        focusRequesters.getOrNull(selectionManager.selectedRowIndex)?.requestFocus()
+    LaunchedEffect(selectionManager.selectedRowIndex, focusRequesters.size) {
+        val index = selectionManager.selectedRowIndex
+        if (index >= 0 && index < focusRequesters.size && index < rows.size) {
+            try {
+                // Add delay to ensure composition is complete (like EpisodeView)
+                kotlinx.coroutines.delay(100)
+                focusRequesters[index].requestFocus()
+                Log.d("HomePage", "🎯 Successfully requested focus on row $index")
+            } catch (e: Exception) {
+                Log.w("HomePage", "🚨 Failed to request focus on row $index: ${e.message}")
+            }
+        } else {
+            Log.w("HomePage", "🚨 Invalid focus request: index=$index, focusRequesters.size=${focusRequesters.size}, rows.size=${rows.size}")
+        }
     }
 
     val validRowIndex = if (selectionManager.selectedRowIndex >= rows.size) 0 else selectionManager.selectedRowIndex
@@ -718,8 +637,20 @@ fun HomePage(
                             onUpDown = { direction ->
                                 val newRowIndex = validRowIndex + direction
                                 if (newRowIndex >= 0 && newRowIndex < rows.size) {
-                                    Log.d("HomePage", "🎯 Row navigation: $validRowIndex -> $newRowIndex, maintaining focus")
-                                    selectionManager.updateSelection(newRowIndex, 0)
+                                    Log.d("HomePage", "🎯 Row navigation: $validRowIndex -> $newRowIndex, direction=$direction")
+                                    
+                                    // Maintain current item position or clamp to new row bounds
+                                    val newRowItems = rows.getOrNull(newRowIndex) ?: emptyList()
+                                    val currentItemIndex = selectionManager.selectedItemIndex
+                                    val newItemIndex = if (newRowItems.isNotEmpty()) {
+                                        // Keep current position or clamp to last item if new row is shorter
+                                        minOf(currentItemIndex, newRowItems.size - 1)
+                                    } else {
+                                        0
+                                    }
+                                    
+                                    Log.d("HomePage", "🎯 Updating selection: row $validRowIndex->$newRowIndex, item $currentItemIndex->$newItemIndex (row size: ${newRowItems.size})")
+                                    selectionManager.updateSelection(newRowIndex, newItemIndex)
                                     // Ensure content focus is maintained during row transitions
                                     selectionManager.updateContentFocus(true)
                                 }
