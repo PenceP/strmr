@@ -422,3 +422,30 @@ object MediaRowBuilder {
         itemContent = itemContent
     )
 }
+
+// Extension functions for legacy compatibility
+fun Any.getTitle(): String {
+    return when (this) {
+        is com.strmr.ai.data.database.MovieEntity -> this.title
+        is com.strmr.ai.data.database.TvShowEntity -> this.title
+        is com.strmr.ai.viewmodel.HomeMediaItem.Movie -> this.movie.title
+        is com.strmr.ai.viewmodel.HomeMediaItem.TvShow -> this.show.title
+        is com.strmr.ai.data.SearchResultItem.Movie -> this.title
+        is com.strmr.ai.data.SearchResultItem.TvShow -> this.title
+        is com.strmr.ai.data.SearchResultItem.Person -> this.name
+        else -> "Unknown"
+    }
+}
+
+fun Any.getPosterUrl(): String? {
+    return when (this) {
+        is com.strmr.ai.data.database.MovieEntity -> this.posterUrl
+        is com.strmr.ai.data.database.TvShowEntity -> this.posterUrl
+        is com.strmr.ai.viewmodel.HomeMediaItem.Movie -> this.movie.posterUrl
+        is com.strmr.ai.viewmodel.HomeMediaItem.TvShow -> this.show.posterUrl
+        is com.strmr.ai.data.SearchResultItem.Movie -> this.posterPath
+        is com.strmr.ai.data.SearchResultItem.TvShow -> this.posterPath
+        is com.strmr.ai.data.SearchResultItem.Person -> this.profilePath
+        else -> null
+    }
+}

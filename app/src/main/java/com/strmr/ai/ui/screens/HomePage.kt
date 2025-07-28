@@ -27,7 +27,6 @@ import coil.compose.AsyncImage
 import com.strmr.ai.ui.components.LandscapeMediaCard
 import com.strmr.ai.ui.components.MediaDetails
 import com.strmr.ai.ui.components.MediaHero
-import com.strmr.ai.ui.components.MediaRow
 import com.strmr.ai.ui.components.UnifiedMediaRow
 import com.strmr.ai.ui.components.MediaRowConfig
 import com.strmr.ai.ui.components.DataSource
@@ -701,23 +700,27 @@ fun HomePage(
                                         onNavigateToDetails?.invoke("tvshow", item.show.tmdbId, item.season, item.episode)
                                     }
                                     is com.strmr.ai.data.NetworkInfo -> {
-                                        Log.d("HomePage", "🎯 DEBUG: Navigating to Network intermediate view - network: ${item.name}")
+                                        // Use id as fallback if name is empty (common for networks with hidden names)
+                                        val displayName = if (item.name.isBlank()) item.id else item.name
+                                        Log.d("HomePage", "🎯 DEBUG: Navigating to Network intermediate view - network: $displayName (id: ${item.id})")
                                         // Check if this is a Trakt list (nested item) or a regular network
                                         val viewType = if (item.dataUrl?.contains("api.trakt.tv") == true) {
                                             "trakt_list"
                                         } else {
                                             "network"
                                         }
-                                        onNavigateToIntermediateView?.invoke(viewType, item.id, item.name, item.posterUrl, item.dataUrl)
+                                        onNavigateToIntermediateView?.invoke(viewType, item.id, displayName, item.posterUrl, item.dataUrl)
                                     }
                                     is HomeMediaItem.Collection -> {
-                                        Log.d("HomePage", "🎯 DEBUG: Navigating to Collection intermediate view - collection: ${item.name}")
+                                        // Use id as fallback if name is empty (defensive programming)
+                                        val displayName = if (item.name.isBlank()) item.id else item.name
+                                        Log.d("HomePage", "🎯 DEBUG: Navigating to Collection intermediate view - collection: $displayName (id: ${item.id})")
                                         val viewType = when (rowConfig?.type) {
                                             "collections" -> "collection"
                                             "directors" -> "director"
                                             else -> "collection"
                                         }
-                                        onNavigateToIntermediateView?.invoke(viewType, item.id, item.name, item.backgroundImageUrl, item.dataUrl)
+                                        onNavigateToIntermediateView?.invoke(viewType, item.id, displayName, item.backgroundImageUrl, item.dataUrl)
                                     }
                                 }
                             } else null

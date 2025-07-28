@@ -16,7 +16,13 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.unit.sp
 import androidx.paging.PagingData
 import androidx.paging.compose.collectAsLazyPagingItems
-import com.strmr.ai.ui.components.PagingCenteredMediaRow
+import com.strmr.ai.ui.components.UnifiedMediaRow
+import com.strmr.ai.ui.components.MediaRowConfig
+import com.strmr.ai.ui.components.DataSource
+import com.strmr.ai.ui.components.CardType
+import com.strmr.ai.ui.components.MediaCard
+import com.strmr.ai.ui.components.getTitle
+import com.strmr.ai.ui.components.getPosterUrl
 import com.strmr.ai.ui.components.MediaHero
 import com.strmr.ai.ui.components.MediaDetails
 import com.strmr.ai.data.OmdbResponse
@@ -218,30 +224,41 @@ fun <T : Any> MediaPagingPage(
                     val lazyPagingItems = pagingFlow.collectAsLazyPagingItems()
                     
                     if (lazyPagingItems.itemCount > 0) {
-                        PagingCenteredMediaRow(
-                            title = rowTitle,
-                            items = lazyPagingItems,
-                            selectedIndex = selectedItemIndex,
-                            onItemSelected = { itemIndex ->
-                                onItemSelected(selectedRowIndex, itemIndex)
-                            },
-                            onSelectionChanged = { newIndex ->
-                                onSelectionChanged(newIndex)
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            focusRequester = focusRequester,
-                            onUpDown = { direction ->
-                                val newRowIndex = selectedRowIndex + direction
-                                if (newRowIndex in 0 until rowCount) {
-                                    Log.d("MediaPagingPage", "🎯 Row navigation: $selectedRowIndex -> $newRowIndex, maintaining content focus")
-                                    onItemSelected(newRowIndex, 0)
-                                    // Ensure content focus is maintained during row transitions
-                                    onContentFocusChanged?.invoke(true)
+                        UnifiedMediaRow(
+                            config = MediaRowConfig(
+                                title = rowTitle,
+                                dataSource = DataSource.PagingList(lazyPagingItems),
+                                selectedIndex = selectedItemIndex,
+                                isRowSelected = true,
+                                onSelectionChanged = { newIndex ->
+                                    onSelectionChanged(newIndex)
+                                    onItemSelected(selectedRowIndex, newIndex)
+                                },
+                                onUpDown = { direction ->
+                                    val newRowIndex = selectedRowIndex + direction
+                                    if (newRowIndex in 0 until rowCount) {
+                                        Log.d("MediaPagingPage", "🎯 Row navigation: $selectedRowIndex -> $newRowIndex, maintaining content focus")
+                                        onItemSelected(newRowIndex, 0)
+                                        onContentFocusChanged?.invoke(true)
+                                    }
+                                },
+                                focusRequester = focusRequester,
+                                onContentFocusChanged = onContentFocusChanged,
+                                onItemClick = onItemClick,
+                                cardType = CardType.PORTRAIT,
+                                itemWidth = 120.dp,
+                                itemSpacing = 12.dp,
+                                contentPadding = PaddingValues(horizontal = 48.dp),
+                                itemContent = { item, isSelected ->
+                                    MediaCard(
+                                        title = item.getTitle(),
+                                        posterUrl = item.getPosterUrl(),
+                                        isSelected = isSelected,
+                                        onClick = { onItemClick?.invoke(item) }
+                                    )
                                 }
-                            },
-                            isContentFocused = isContentFocused,
-                            onContentFocusChanged = onContentFocusChanged,
-                            onItemClick = onItemClick
+                            ),
+                            modifier = Modifier.fillMaxWidth()
                         )
                     } else {
                         // Show skeleton when no items loaded yet
