@@ -87,7 +87,7 @@ fun <T : Any> UnifiedMediaRow(
             Text(
                 text = config.title,
                 color = Color.White,
-                modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
+                modifier = Modifier.padding(start = 22.dp, bottom = 4.dp)
             )
         }
         

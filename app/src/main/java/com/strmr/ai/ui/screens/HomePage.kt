@@ -71,6 +71,7 @@ import com.strmr.ai.config.PageConfiguration
 import com.strmr.ai.config.RowConfig
 import com.strmr.ai.data.NetworkInfo
 import androidx.compose.ui.platform.LocalContext
+import com.strmr.ai.ui.theme.StrmrConstants
 
 private data class HeroData(
     val backdropUrl: String? = null,
@@ -583,7 +584,7 @@ fun HomePage(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(start = navBarWidth)
+                .padding(start = 39.dp)
         ) {
             Spacer(modifier = Modifier.height(if (shouldShowHero) 290.dp else 32.dp)) // Dynamic space for hero overlay
             Column(
