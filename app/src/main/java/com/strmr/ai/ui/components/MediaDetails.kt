@@ -80,15 +80,7 @@ fun MediaDetails(
             modifier = Modifier.padding(bottom = 1.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-
-            //rating?.let { ratingValue ->
-              //  Text(
-                //    text = "★ ${String.format("%.1f", ratingValue)}",
-                //    color = Color.White.copy(alpha = 0.8f),
-                //    fontSize = 16.sp
-                //)
-            //}
-            
+            if (runtime != null) {
             runtime?.let { runtimeValue ->
                 if (runtimeValue > 0) {
                     Text(
@@ -96,9 +88,10 @@ fun MediaDetails(
                         color = Color.White.copy(alpha = 0.8f),
                         style = MaterialTheme.typography.bodyLarge
                     )
+                    }
                 }
+                Spacer(modifier = Modifier.width(20.dp))
             }
-            Spacer(modifier = Modifier.width(20.dp))
             // Display formatted date if available, otherwise fall back to year
             (formattedDate ?: year?.toString())?.let { dateValue ->
                 Text(
@@ -108,7 +101,6 @@ fun MediaDetails(
                 )
             }
             Spacer(modifier = Modifier.width(20.dp))
-            //extraContent?.invoke()
         }
         Spacer(modifier = Modifier.height(8.dp))
         // Genres (max 1 line)
