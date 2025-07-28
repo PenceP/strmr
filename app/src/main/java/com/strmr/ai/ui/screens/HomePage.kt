@@ -237,6 +237,9 @@ fun HomePage(
     // Use the new SelectionManager
     val selectionManager = rememberSelectionManager()
     
+    // Row position memory - tracks last position in each row by row title
+    val rowPositionMemory = remember { mutableMapOf<String, Int>() }
+    
     // Load configuration from JSON
     var pageConfiguration by remember { mutableStateOf<PageConfiguration?>(null) }
     var collections by remember { mutableStateOf<List<HomeMediaItem.Collection>>(emptyList()) }
@@ -631,25 +634,50 @@ fun HomePage(
                             onSelectionChanged = { newIndex ->
                                 if (rowIndex == validRowIndex) {
                                     selectionManager.updateSelection(validRowIndex, newIndex)
+                                    
+                                    // Update position memory for current row when selection changes
+                                    val currentRowTitle = rowTitles.getOrNull(validRowIndex)
+                                    if (currentRowTitle != null) {
+                                        rowPositionMemory[currentRowTitle] = newIndex
+                                        Log.d("HomePage", "💾 Updated position $newIndex for row '$currentRowTitle'")
+                                    }
                                 }
                             },
                             focusRequester = if (rowIndex == validRowIndex) focusRequesters.getOrNull(rowIndex) else null,
                             onUpDown = { direction ->
                                 val newRowIndex = validRowIndex + direction
                                 if (newRowIndex >= 0 && newRowIndex < rows.size) {
-                                    Log.d("HomePage", "🎯 Row navigation: $validRowIndex -> $newRowIndex, direction=$direction")
+                                    val currentRowTitle = rowTitles.getOrNull(validRowIndex)
+                                    val newRowTitle = rowTitles.getOrNull(newRowIndex)
                                     
-                                    // Maintain current item position or clamp to new row bounds
+                                    Log.d("HomePage", "🎯 Row navigation: $validRowIndex($currentRowTitle) -> $newRowIndex($newRowTitle), direction=$direction")
+                                    
+                                    // Save current position in memory for the row we're leaving
+                                    if (currentRowTitle != null) {
+                                        val currentItemIndex = selectionManager.selectedItemIndex
+                                        rowPositionMemory[currentRowTitle] = currentItemIndex
+                                        Log.d("HomePage", "💾 Saved position $currentItemIndex for row '$currentRowTitle'")
+                                    }
+                                    
+                                    // Get target position from memory or use default
                                     val newRowItems = rows.getOrNull(newRowIndex) ?: emptyList()
-                                    val currentItemIndex = selectionManager.selectedItemIndex
-                                    val newItemIndex = if (newRowItems.isNotEmpty()) {
-                                        // Keep current position or clamp to last item if new row is shorter
-                                        minOf(currentItemIndex, newRowItems.size - 1)
+                                    val newItemIndex = if (newRowTitle != null && rowPositionMemory.containsKey(newRowTitle)) {
+                                        // Use remembered position, but clamp to row bounds
+                                        val rememberedPosition = rowPositionMemory[newRowTitle]!!
+                                        val clampedPosition = if (newRowItems.isNotEmpty()) {
+                                            minOf(rememberedPosition, newRowItems.size - 1)
+                                        } else {
+                                            0
+                                        }
+                                        Log.d("HomePage", "🧠 Recalling position $rememberedPosition -> $clampedPosition for row '$newRowTitle'")
+                                        clampedPosition
                                     } else {
+                                        // First time visiting this row, start at position 0
+                                        Log.d("HomePage", "🆕 First visit to row '$newRowTitle', starting at position 0")
                                         0
                                     }
                                     
-                                    Log.d("HomePage", "🎯 Updating selection: row $validRowIndex->$newRowIndex, item $currentItemIndex->$newItemIndex (row size: ${newRowItems.size})")
+                                    Log.d("HomePage", "🎯 Updating selection: row $validRowIndex->$newRowIndex, item ${selectionManager.selectedItemIndex}->$newItemIndex (row size: ${newRowItems.size})")
                                     selectionManager.updateSelection(newRowIndex, newItemIndex)
                                     // Ensure content focus is maintained during row transitions
                                     selectionManager.updateContentFocus(true)
