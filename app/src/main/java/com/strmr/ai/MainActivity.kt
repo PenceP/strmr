@@ -252,7 +252,9 @@ fun MainScreen(
     val handleReturnToNavigation: () -> Unit = {
         try {
             android.util.Log.d("MainActivity", "🎯 Returning focus to navigation bar")
-            // Just request focus on navigation bar - let onFocusReceived handle the state change
+            // Immediately set content focus to false for instant navbar color update
+            isContentFocused = false
+            // Request focus on navigation bar
             navFocusRequester.requestFocus()
         } catch (e: Exception) {
             android.util.Log.e("MainActivity", "❌ Error in handleReturnToNavigation", e)
@@ -779,6 +781,7 @@ fun MainScreen(
                     .align(Alignment.CenterStart)
                     .zIndex(1f)
                     .focusRequester(navFocusRequester),
+                isContentFocused = isContentFocused,
                 onRightPressed = {
                     android.util.Log.d("MainActivity", "🎯 NavigationBar right pressed, setting isContentFocused = true")
                     isContentFocused = true

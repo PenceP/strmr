@@ -121,6 +121,7 @@ fun HomeMediaRow(
             cardType = if (cardType == "landscape") CardType.LANDSCAPE else CardType.PORTRAIT,
             itemWidth = if (cardType == "landscape") 200.dp else 120.dp,
             itemSpacing = 12.dp, // Use EpisodeView spacing
+            isContentFocused = isContentFocused,
             //contentPadding = PaddingValues(horizontal = 56.dp), // Align with hero text
             itemContent = { mediaItem, isSelected ->
                 when (mediaItem) {
@@ -369,32 +370,20 @@ fun HomePage(
     // Initialize focus state when HomePage loads and ensure first row is selected
     LaunchedEffect(Unit) {
         Log.d("HomePage", "🎯 HomePage composition started")
-        // Ensure we start with the first row selected and content focused
-        if (!selectionManager.isContentFocused) {
-            Log.d("HomePage", "🎯 Initializing content focus on HomePage startup")
-            selectionManager.updateContentFocus(true)
-            onContentFocusChanged?.invoke(true)
-        }
-        // Ensure first row is selected
+        // Don't auto-focus - let the user navigate from the nav bar
+        // This matches the behavior of Movies and TV Shows pages
+        
+        // Still ensure first row is selected (but don't focus it)
         if (selectionManager.selectedRowIndex != 0) {
             selectionManager.updateSelection(0, 0)
-        }
-        // Request focus on the first available row when composition completes
-        Log.d("HomePage", "🎯 Requesting focus on first row")
-        if (focusRequesters.isNotEmpty() && rows.isNotEmpty()) {
-            try {
-                focusRequesters[0].requestFocus()
-                Log.d("HomePage", "🎯 Successfully requested initial focus")
-            } catch (e: Exception) {
-                Log.w("HomePage", "🚨 Failed to request initial focus: ${e.message}")
-            }
         }
     }
 
     // Handle focus changes when selectedRowIndex changes
-    LaunchedEffect(selectionManager.selectedRowIndex, focusRequesters.size) {
+    LaunchedEffect(selectionManager.selectedRowIndex, focusRequesters.size, selectionManager.isContentFocused) {
         val index = selectionManager.selectedRowIndex
-        if (index >= 0 && index < focusRequesters.size && index < rows.size) {
+        // Only request focus if content is focused (user has navigated from nav bar)
+        if (selectionManager.isContentFocused && index >= 0 && index < focusRequesters.size && index < rows.size) {
             try {
                 // Add delay to ensure composition is complete (like EpisodeView)
                 kotlinx.coroutines.delay(100)
@@ -403,6 +392,8 @@ fun HomePage(
             } catch (e: Exception) {
                 Log.w("HomePage", "🚨 Failed to request focus on row $index: ${e.message}")
             }
+        } else if (!selectionManager.isContentFocused) {
+            Log.d("HomePage", "🎯 Skipping focus request - content not focused")
         } else {
             Log.w("HomePage", "🚨 Invalid focus request: index=$index, focusRequesters.size=${focusRequesters.size}, rows.size=${rows.size}")
         }

@@ -294,7 +294,7 @@ private fun <T : Any> MediaRowItem(
     config: MediaRowConfig<T>,
     onFocusChanged: (androidx.compose.ui.focus.FocusState) -> Unit
 ) {
-    val isSelected = config.isRowSelected && index == config.selectedIndex
+    val isSelected = config.isRowSelected && index == config.selectedIndex && config.isContentFocused
 
     Box(
         modifier = Modifier
@@ -365,6 +365,7 @@ data class MediaRowConfig<T : Any>(
     val isLoading: Boolean = false,
     val skeletonCount: Int = 8,
     val keyExtractor: ((T) -> Any)? = null,
+    val isContentFocused: Boolean = true,
     val itemContent: @Composable (item: T, isSelected: Boolean) -> Unit
 ) {
     fun getRowHeight(): Dp = when (cardType) {

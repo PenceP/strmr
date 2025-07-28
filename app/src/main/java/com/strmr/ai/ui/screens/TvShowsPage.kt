@@ -267,6 +267,7 @@ fun TvShowsPage(
                             cardType = CardType.PORTRAIT,
                             itemWidth = 120.dp,
                             itemSpacing = 12.dp,
+                            isContentFocused = selectionManager.isContentFocused,
                             //contentPadding = PaddingValues(horizontal = 48.dp),
                             onItemClick = { show ->
                                 if (show is TvShowEntity) {
@@ -319,6 +320,7 @@ fun TvShowsPage(
                                 cardType = CardType.PORTRAIT,
                                 itemWidth = 120.dp,
                                 itemSpacing = 12.dp,
+                                isContentFocused = selectionManager.isContentFocused,
                                 //contentPadding = PaddingValues(horizontal = 48.dp),
                                 onItemClick = { show ->
                                     if (show is TvShowEntity) {

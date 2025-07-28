@@ -25,6 +25,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 fun NavigationBar(
     navController: NavHostController,
     modifier: Modifier = Modifier,
+    isContentFocused: Boolean = false,
     onRightPressed: (() -> Unit)? = null,
     onFocusReceived: (() -> Unit)? = null
 ) {
@@ -33,10 +34,20 @@ fun NavigationBar(
     val navFocusRequester = remember { FocusRequester() }
     var initialLoad by remember { mutableStateOf(true) }
     var hasNavBarFocus by remember { mutableStateOf(false) }
+    var forceRecomposition by remember { mutableStateOf(0) }
     
     // Auto-focus the NavigationBar on app start
     LaunchedEffect(Unit) {
         navFocusRequester.requestFocus()
+        hasNavBarFocus = true // Ensure navbar focus state is set on app start
+    }
+    
+    // Update navbar focus state when content focus changes
+    LaunchedEffect(isContentFocused) {
+        hasNavBarFocus = !isContentFocused
+        android.util.Log.d("NavigationBar", "🎯 Content focus changed: isContentFocused=$isContentFocused, hasNavBarFocus=$hasNavBarFocus")
+        // Force recomposition when focus state changes
+        forceRecomposition++
     }
     
     // Update focused index when route changes
@@ -77,6 +88,9 @@ fun NavigationBar(
                 launchSingleTop = true
                 restoreState = true
             }
+            // Add a small delay to ensure navigation completes before requesting focus
+            kotlinx.coroutines.delay(100)
+            navFocusRequester.requestFocus()
         }
     }
     
@@ -93,6 +107,18 @@ fun NavigationBar(
                         "NavigationBar",
                         "🎯 NavigationBar gained focus, triggering onFocusReceived callback"
                     )
+                    // Update focusedIndex to match current route when navbar gains focus
+                    focusedIndex = when (currentRoute) {
+                        "search" -> 0
+                        "home" -> 1
+                        "movies" -> 2
+                        "tvshows" -> 3
+                        "debridcloud" -> 4
+                        "settings" -> 5
+                        else -> 1
+                    }
+                    // Force recomposition to update colors
+                    forceRecomposition++
                     onFocusReceived?.invoke()
                 }
             }
@@ -168,6 +194,7 @@ fun NavigationBar(
             isSelected = currentRoute == "search",
             isFocused = focusedIndex == 0,
             hasNavBarFocus = hasNavBarFocus,
+            recompositionTrigger = forceRecomposition,
             onClick = { 
                 focusedIndex = 0
             }
@@ -182,6 +209,7 @@ fun NavigationBar(
             isSelected = currentRoute == "home",
             isFocused = focusedIndex == 1,
             hasNavBarFocus = hasNavBarFocus,
+            recompositionTrigger = forceRecomposition,
             onClick = { 
                 focusedIndex = 1
             }
@@ -196,6 +224,7 @@ fun NavigationBar(
             isSelected = currentRoute == "movies",
             isFocused = focusedIndex == 2,
             hasNavBarFocus = hasNavBarFocus,
+            recompositionTrigger = forceRecomposition,
             onClick = { 
                 focusedIndex = 2
             }
@@ -210,6 +239,7 @@ fun NavigationBar(
             isSelected = currentRoute == "tvshows",
             isFocused = focusedIndex == 3,
             hasNavBarFocus = hasNavBarFocus,
+            recompositionTrigger = forceRecomposition,
             onClick = { 
                 focusedIndex = 3
             }
@@ -224,6 +254,7 @@ fun NavigationBar(
             isSelected = currentRoute == "debridcloud",
             isFocused = focusedIndex == 4,
             hasNavBarFocus = hasNavBarFocus,
+            recompositionTrigger = forceRecomposition,
             onClick = { 
                 focusedIndex = 4
             }
@@ -238,6 +269,7 @@ fun NavigationBar(
             isSelected = currentRoute == "settings",
             isFocused = focusedIndex == 5,
             hasNavBarFocus = hasNavBarFocus,
+            recompositionTrigger = forceRecomposition,
             onClick = { 
                 focusedIndex = 5
             }
@@ -253,6 +285,7 @@ private fun NavigationItem(
     isSelected: Boolean,
     isFocused: Boolean,
     hasNavBarFocus: Boolean,
+    recompositionTrigger: Int = 0,
     onClick: () -> Unit
 ) {
     // Debug logging
@@ -271,18 +304,19 @@ private fun NavigationItem(
             imageVector = icon,
             contentDescription = label,
             tint = when {
-                hasNavBarFocus && isFocused -> {
+                // Show red when navbar has focus AND (this item is focused OR it's the selected route)
+                hasNavBarFocus && (isFocused || isSelected) -> {
                     android.util.Log.d(
                         "NavigationItem",
-                        "🔴 Item $label is focused with navbar focus - should be RED"
+                        "🔴 Item $label is actively focused with navbar focus - should be RED"
                     )
                     Color(0xFFFF0000) // Explicit bright red
                 }
-
+                
                 isSelected -> {
                     android.util.Log.d(
                         "NavigationItem",
-                        "⚪ Item $label is selected - should be WHITE"
+                        "⚪ Item $label is current page - should be WHITE"
                     )
                     Color.White
                 }
@@ -297,16 +331,5 @@ private fun NavigationItem(
             },
             modifier = Modifier.size(24.dp)
         )
-        
-        // Current page indicator - white underline
-        if (isSelected) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .width(24.dp)
-                    .height(2.dp)
-                    .background(Color.White)
-            )
-        }
     }
 } 
