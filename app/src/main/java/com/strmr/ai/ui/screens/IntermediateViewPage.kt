@@ -16,7 +16,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.strmr.ai.ui.components.MediaDetails
 import com.strmr.ai.ui.components.MediaHero
-import com.strmr.ai.ui.components.MediaRow
+import com.strmr.ai.ui.components.UnifiedMediaRow
+import com.strmr.ai.ui.components.MediaRowConfig
+import com.strmr.ai.ui.components.DataSource
+import com.strmr.ai.ui.components.CardType
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.blur
@@ -260,42 +263,47 @@ fun IntermediateViewPage(
                             .fillMaxWidth()
                             .weight(0.51f)
                     ) {
-                        MediaRow(
-                            title = itemName,
-                            mediaItems = uiState.mediaItems,
-                            selectedIndex = selectedIndex,
-                            isRowSelected = true,
-                            onSelectionChanged = { newIndex ->
-                                selectedIndex = newIndex
-                            },
-                            onUpDown = { /* No up/down navigation needed */ },
-                            onItemClick = { item ->
-                                val mediaType = when (item) {
-                                    is com.strmr.ai.viewmodel.HomeMediaItem.Movie -> "movie"
-                                    is com.strmr.ai.viewmodel.HomeMediaItem.TvShow -> "tvshow"
-                                    else -> null
+                        UnifiedMediaRow(
+                            config = MediaRowConfig(
+                                title = itemName,
+                                dataSource = DataSource.RegularList(uiState.mediaItems),
+                                selectedIndex = selectedIndex,
+                                isRowSelected = true,
+                                onSelectionChanged = { newIndex ->
+                                    selectedIndex = newIndex
+                                },
+                                onLoadMore = {
+                                    viewModel.loadMore()
+                                },
+                                cardType = CardType.PORTRAIT,
+                                itemWidth = 120.dp,
+                                itemSpacing = 12.dp,
+                                contentPadding = PaddingValues(horizontal = 48.dp),
+                                onItemClick = { item ->
+                                    val mediaType = when (item) {
+                                        is com.strmr.ai.viewmodel.HomeMediaItem.Movie -> "movie"
+                                        is com.strmr.ai.viewmodel.HomeMediaItem.TvShow -> "tvshow"
+                                        else -> null
+                                    }
+                                    val tmdbId = when (item) {
+                                        is com.strmr.ai.viewmodel.HomeMediaItem.Movie -> item.movie.tmdbId
+                                        is com.strmr.ai.viewmodel.HomeMediaItem.TvShow -> item.show.tmdbId
+                                        else -> null
+                                    }
+                                    if (mediaType != null && tmdbId != null) {
+                                        android.util.Log.d("IntermediateViewPage", "🎯 Navigating to details: mediaType=$mediaType, tmdbId=$tmdbId")
+                                        onNavigateToDetails(mediaType, tmdbId)
+                                    }
+                                },
+                                itemContent = { item, isSelected ->
+                                    MediaCard(
+                                        title = item.getTitle(),
+                                        posterUrl = item.getPosterUrl(),
+                                        isSelected = isSelected,
+                                        onClick = { /* UnifiedMediaRow handles clicks via onItemClick */ }
+                                    )
                                 }
-                                val tmdbId = when (item) {
-                                    is com.strmr.ai.viewmodel.HomeMediaItem.Movie -> item.movie.tmdbId
-                                    is com.strmr.ai.viewmodel.HomeMediaItem.TvShow -> item.show.tmdbId
-                                    else -> null
-                                }
-                                if (mediaType != null && tmdbId != null) {
-                                    android.util.Log.d("IntermediateViewPage", "🎯 Navigating to details: mediaType=$mediaType, tmdbId=$tmdbId")
-                                    onNavigateToDetails(mediaType, tmdbId)
-                                }
-                            },
-                            onLoadMore = {
-                                viewModel.loadMore()
-                            },
-                            itemContent = { item, isSelected ->
-                                MediaCard(
-                                    title = item.getTitle(),
-                                    posterUrl = item.getPosterUrl(),
-                                    isSelected = isSelected,
-                                    onClick = { /* MediaRow handles clicks via onItemClick */ }
-                                )
-                            }
+                            )
                         )
                     }
                 }

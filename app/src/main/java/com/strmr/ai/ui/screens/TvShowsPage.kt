@@ -29,8 +29,10 @@ import androidx.compose.ui.draw.blur
 import coil.compose.AsyncImage
 import com.strmr.ai.ui.components.MediaHero
 import com.strmr.ai.ui.components.MediaDetails
-import com.strmr.ai.ui.components.CenteredMediaRow
-import com.strmr.ai.ui.components.PagingMediaRow
+import com.strmr.ai.ui.components.UnifiedMediaRow
+import com.strmr.ai.ui.components.MediaRowConfig
+import com.strmr.ai.ui.components.DataSource
+import com.strmr.ai.ui.components.CardType
 import com.strmr.ai.ui.components.MediaRowSkeleton
 import com.strmr.ai.ui.components.SkeletonCardType
 import com.strmr.ai.ui.components.MediaCard
@@ -232,57 +234,21 @@ fun TvShowsPage(
                     .weight(if (shouldShowHero) 0.51f else 1f)
             ) {
                 // Check if we have paging data for this row
-                if (currentPagingFlow != null) {
-                    // Use paging version of the row
-                    PagingMediaRow(
-                        title = currentRowTitle,
-                        pagingFlow = currentPagingFlow,
-                        selectedIndex = selectionManager.selectedItemIndex,
-                        isRowSelected = true,
-                        onSelectionChanged = { newIndex ->
-                            selectionManager.updateSelection(validRowIndex, newIndex)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        focusRequester = if (selectionManager.isContentFocused) focusRequesters.getOrNull(validRowIndex) else null,
-                        onUpDown = { direction ->
-                            val newRowIndex = validRowIndex + direction
-                            if (newRowIndex >= 0 && newRowIndex < rowCount) {
-                                Log.d("TvShowsPage", "🎯 Row navigation: $validRowIndex -> $newRowIndex, maintaining focus")
-                                selectionManager.updateSelection(newRowIndex, 0)
-                                selectionManager.updateContentFocus(true)
-                            }
-                        },
-                        isContentFocused = selectionManager.isContentFocused,
-                        onContentFocusChanged = { focused ->
-                            selectionManager.updateContentFocus(focused)
-                            onContentFocusChanged?.invoke(focused)
-                        },
-                        onLeftBoundary = onLeftBoundary,
-                        currentRowIndex = validRowIndex,
-                        totalRowCount = rowCount,
-                        onItemClick = { show ->
-                            onNavigateToDetails?.invoke(show.tmdbId)
-                        },
-                        onPositionChanged = { currentPosition, totalItems ->
-                            viewModel.updateRowPosition(currentRowTitle, currentPosition, totalItems)
-                        },
-                        logTag = "PagingTvShowRow"
-                    )
-                } else {
-                    // Fallback to regular row if no paging data
-                    val rowItems = selectedRow
-                    
-                    if (rowItems.isNotEmpty()) {
-                        CenteredMediaRow(
+                if (currentPagingFlow != null && pagingItems != null) {
+                    // Use UnifiedMediaRow with paging data source
+                    UnifiedMediaRow(
+                        config = MediaRowConfig(
                             title = currentRowTitle,
-                            mediaItems = rowItems,
+                            dataSource = DataSource.PagingList(pagingItems),
                             selectedIndex = selectionManager.selectedItemIndex,
                             isRowSelected = true,
                             onSelectionChanged = { newIndex ->
                                 selectionManager.updateSelection(validRowIndex, newIndex)
+                                // Update row position in view model
+                                if (pagingItems.itemCount > 0) {
+                                    viewModel.updateRowPosition(currentRowTitle, newIndex, pagingItems.itemCount)
+                                }
                             },
-                            modifier = Modifier.fillMaxWidth(),
-                            focusRequester = if (selectionManager.isContentFocused) focusRequesters.getOrNull(validRowIndex) else null,
                             onUpDown = { direction ->
                                 val newRowIndex = validRowIndex + direction
                                 if (newRowIndex >= 0 && newRowIndex < rowCount) {
@@ -291,27 +257,87 @@ fun TvShowsPage(
                                     selectionManager.updateContentFocus(true)
                                 }
                             },
-                            isContentFocused = selectionManager.isContentFocused,
+                            onLeftBoundary = onLeftBoundary,
                             onContentFocusChanged = { focused ->
                                 selectionManager.updateContentFocus(focused)
                                 onContentFocusChanged?.invoke(focused)
                             },
-                            onLeftBoundary = onLeftBoundary,
-                            currentRowIndex = validRowIndex,
-                            totalRowCount = rowCount,
+                            focusRequester = if (selectionManager.isContentFocused) focusRequesters.getOrNull(validRowIndex) else null,
+                            cardType = CardType.PORTRAIT,
+                            itemWidth = 120.dp,
+                            itemSpacing = 12.dp,
+                            contentPadding = PaddingValues(horizontal = 48.dp),
                             onItemClick = { show ->
-                                onNavigateToDetails?.invoke((show as TvShowEntity).tmdbId)
+                                if (show is TvShowEntity) {
+                                    onNavigateToDetails?.invoke(show.tmdbId)
+                                }
                             },
                             itemContent = { show, isSelected ->
-                                MediaCard(
-                                    title = (show as TvShowEntity).title,
-                                    posterUrl = show.posterUrl,
-                                    isSelected = isSelected,
-                                    onClick = {
+                                if (show is TvShowEntity) {
+                                    MediaCard(
+                                        title = show.title,
+                                        posterUrl = show.posterUrl,
+                                        isSelected = isSelected,
+                                        onClick = {
+                                            onNavigateToDetails?.invoke(show.tmdbId)
+                                        }
+                                    )
+                                }
+                            }
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    // Fallback to regular row if no paging data
+                    val rowItems = selectedRow
+                    
+                    if (rowItems.isNotEmpty()) {
+                        UnifiedMediaRow(
+                            config = MediaRowConfig(
+                                title = currentRowTitle,
+                                dataSource = DataSource.RegularList(rowItems),
+                                selectedIndex = selectionManager.selectedItemIndex,
+                                isRowSelected = true,
+                                onSelectionChanged = { newIndex ->
+                                    selectionManager.updateSelection(validRowIndex, newIndex)
+                                },
+                                onUpDown = { direction ->
+                                    val newRowIndex = validRowIndex + direction
+                                    if (newRowIndex >= 0 && newRowIndex < rowCount) {
+                                        Log.d("TvShowsPage", "🎯 Row navigation: $validRowIndex -> $newRowIndex, maintaining focus")
+                                        selectionManager.updateSelection(newRowIndex, 0)
+                                        selectionManager.updateContentFocus(true)
+                                    }
+                                },
+                                onLeftBoundary = onLeftBoundary,
+                                onContentFocusChanged = { focused ->
+                                    selectionManager.updateContentFocus(focused)
+                                    onContentFocusChanged?.invoke(focused)
+                                },
+                                focusRequester = if (selectionManager.isContentFocused) focusRequesters.getOrNull(validRowIndex) else null,
+                                cardType = CardType.PORTRAIT,
+                                itemWidth = 120.dp,
+                                itemSpacing = 12.dp,
+                                contentPadding = PaddingValues(horizontal = 48.dp),
+                                onItemClick = { show ->
+                                    if (show is TvShowEntity) {
                                         onNavigateToDetails?.invoke(show.tmdbId)
                                     }
-                                )
-                            }
+                                },
+                                itemContent = { show, isSelected ->
+                                    if (show is TvShowEntity) {
+                                        MediaCard(
+                                            title = show.title,
+                                            posterUrl = show.posterUrl,
+                                            isSelected = isSelected,
+                                            onClick = {
+                                                onNavigateToDetails?.invoke(show.tmdbId)
+                                            }
+                                        )
+                                    }
+                                }
+                            ),
+                            modifier = Modifier.fillMaxWidth()
                         )
                     } else {
                         // Show skeleton when no items loaded yet

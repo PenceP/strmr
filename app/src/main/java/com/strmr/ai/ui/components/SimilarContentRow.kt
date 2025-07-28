@@ -19,7 +19,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.strmr.ai.data.SimilarContent
-import com.strmr.ai.ui.components.CenteredMediaRow
+import com.strmr.ai.ui.components.UnifiedMediaRow
+import com.strmr.ai.ui.components.MediaRowConfig
+import com.strmr.ai.ui.components.DataSource
+import com.strmr.ai.ui.components.CardType
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.animation.core.animateFloatAsState
@@ -44,28 +47,30 @@ fun SimilarContentRow(
     
     val title = "Similar ${if (similarContent.firstOrNull()?.mediaType == "movie") "Movies" else "TV Shows"}"
     
-    CenteredMediaRow(
-        title = title,
-        mediaItems = similarContent.take(10),
-        selectedIndex = selectedIndex,
-        isRowSelected = isRowSelected,
-        onSelectionChanged = onSelectionChanged,
-        onUpDown = onUpDown,
-        onItemClick = { content -> onItemClick(content as SimilarContent) },
-        modifier = modifier,
-        itemWidth = 90.dp,
-        itemSpacing = 12.dp,
-        rowHeight = 200.dp,
-        focusRequester = focusRequester,
-        isContentFocused = isContentFocused,
-        onContentFocusChanged = onContentFocusChanged,
-        itemContent = { content, isSelected ->
-            SimilarContentCard(
-                content = content as SimilarContent,
-                onClick = { onItemClick(content) },
-                isSelected = isSelected
-            )
-        }
+    UnifiedMediaRow(
+        config = MediaRowConfig(
+            title = title,
+            dataSource = DataSource.RegularList(similarContent.take(10)),
+            selectedIndex = selectedIndex,
+            isRowSelected = isRowSelected,
+            onSelectionChanged = onSelectionChanged,
+            onUpDown = onUpDown,
+            onItemClick = { content -> onItemClick(content) },
+            focusRequester = focusRequester,
+            onContentFocusChanged = onContentFocusChanged,
+            cardType = CardType.PORTRAIT,
+            itemWidth = 120.dp,
+            itemSpacing = 12.dp,
+            contentPadding = PaddingValues(horizontal = 48.dp),
+            itemContent = { content, isSelected ->
+                SimilarContentCard(
+                    content = content,
+                    onClick = { onItemClick(content) },
+                    isSelected = isSelected
+                )
+            }
+        ),
+        modifier = modifier
     )
 }
 

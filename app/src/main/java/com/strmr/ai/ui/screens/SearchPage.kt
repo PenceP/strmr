@@ -10,7 +10,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -19,6 +18,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -55,19 +55,28 @@ import com.strmr.ai.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
 import coil.compose.AsyncImage
 import com.strmr.ai.data.SearchResultItem
 import com.strmr.ai.ui.components.MediaCard
 import com.strmr.ai.ui.components.MediaRowSkeleton
 import com.strmr.ai.ui.components.SkeletonCardType
-import com.strmr.ai.ui.components.CenteredMediaRow
+import com.strmr.ai.ui.components.UnifiedMediaRow
+import com.strmr.ai.ui.components.MediaRowConfig
+import com.strmr.ai.ui.components.DataSource
+import com.strmr.ai.ui.components.CardType
 import com.strmr.ai.viewmodel.SearchViewModel
 import java.util.Locale
+import com.strmr.ai.ui.components.rememberSelectionManager
+import androidx.compose.runtime.rememberCoroutineScope
 
 @Composable
 fun SearchPage(
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = hiltViewModel(),
+    isContentFocused: Boolean = false,
+    onContentFocusChanged: ((Boolean) -> Unit)? = null,
+    onLeftBoundary: (() -> Unit)? = null,
     onNavigateToDetails: ((String, Int) -> Unit)? = null
 ) {
     val context = LocalContext.current
@@ -97,6 +106,10 @@ fun SearchPage(
     
     val navBarWidth = 56.dp
     
+    // Local state for managing focus - don't use external isContentFocused for auto-focus
+    var localContentFocused by remember { mutableStateOf(false) }
+    val searchBarFocusRequester = remember { FocusRequester() }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -110,16 +123,13 @@ fun SearchPage(
                 .blur(radius = 8.dp),
             contentScale = ContentScale.Crop
         )
-        // Create focus requesters that can be shared between components
-        val searchBarFocusRequester = remember { FocusRequester() }
         
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(start = navBarWidth)
-                .verticalScroll(rememberScrollState())
         ) {
-            // Search bar section
+            // Search bar section (fixed at top)
             SearchBar(
                 query = searchQuery,
                 onQueryChange = viewModel::updateSearchQuery,
@@ -138,81 +148,97 @@ fun SearchPage(
                 },
                 hasSearchResults = searchResults != null,
                 searchBarFocusRequester = searchBarFocusRequester,
+                onDownPressed = {
+                    // Only transfer focus to results when user explicitly presses DOWN
+                    if (searchResults != null) {
+                        Log.d("SearchPage", "🎯 User pressed DOWN - transferring focus to results")
+                        localContentFocused = true
+                        onContentFocusChanged?.invoke(true)
+                    }
+                },
+                onFocusReceived = {
+                    // Keep focus on search bar, don't auto-transfer to results
+                    Log.d("SearchPage", "🎯 Search bar focused - maintaining search bar focus")
+                    localContentFocused = false
+                    onContentFocusChanged?.invoke(false)
+                },
                 modifier = Modifier.padding(16.dp)
             )
             
-            // Show suggestions or recent/popular searches when query is empty or short
-            if (searchQuery.length < 2) {
-                SearchSuggestions(
-                    recentSearches = recentSearches,
-                    popularSearches = popularSearches,
-                    onSuggestionClick = { suggestion ->
-                        viewModel.selectSuggestion(suggestion)
-                    },
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-            } else if (searchSuggestions.isNotEmpty()) {
-                // Show search suggestions
-                SearchSuggestionsList(
-                    suggestions = searchSuggestions,
-                    onSuggestionClick = { suggestion ->
-                        viewModel.selectSuggestion(suggestion)
-                    },
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-            }
+            // Scrollable content area
+            val scrollState = rememberScrollState()
+            val coroutineScope = rememberCoroutineScope()
             
-            // Error message
-            errorMessage?.let { error ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.Red.copy(alpha = 0.1f))
-                ) {
-                    Text(
-                        text = error,
-                        color = Color.Red,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
-            }
-            
-            // Search results
-            when {
-                isLoading -> {
-                    SearchResultsLoading(
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-                searchResults != null -> {
-                    searchResults?.let { results ->
-                        Log.d("SearchPage", "📊 Search results received: movies=${results.movies.size}, shows=${results.tvShows.size}, people=${results.people.size}")
-                        SearchResultsContent(
-                            searchResults = results,
-                            onNavigateToDetails = onNavigateToDetails,
-                            onFocusReturnToSearchBar = {
-                                // Return focus to search bar when UP pressed on first row
-                                searchBarFocusRequester.requestFocus()
-                            },
-                            modifier = Modifier.fillMaxWidth()
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(scrollState)
+                    .padding(horizontal = 16.dp)
+            ) {
+                
+                // Error message
+                errorMessage?.let { error ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.Red.copy(alpha = 0.1f))
+                    ) {
+                        Text(
+                            text = error,
+                            color = Color.Red,
+                            modifier = Modifier.padding(16.dp)
                         )
                     }
                 }
-                searchQuery.length >= 2 -> {
-                    // Show empty state
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "No results found for \"$searchQuery\"",
-                            color = Color.White.copy(alpha = 0.7f),
-                            fontSize = 18.sp,
-                            textAlign = TextAlign.Center
+                
+                // Search results
+                when {
+                    isLoading -> {
+                        SearchResultsLoading(
+                            modifier = Modifier.fillMaxWidth()
                         )
+                    }
+                    searchResults != null -> {
+                        searchResults?.let { results ->
+                            Log.d("SearchPage", "📊 Search results received: movies=${results.movies.size}, shows=${results.tvShows.size}, people=${results.people.size}")
+                            SearchResultsContent(
+                                searchResults = results,
+                                onNavigateToDetails = onNavigateToDetails,
+                                onFocusReturnToSearchBar = {
+                                    // Return focus to search bar when UP pressed on first row
+                                    searchBarFocusRequester.requestFocus()
+                                    localContentFocused = false
+                                    onContentFocusChanged?.invoke(false)
+                                },
+                                isContentFocused = localContentFocused,
+                                onContentFocusChanged = { focused ->
+                                    localContentFocused = focused
+                                    onContentFocusChanged?.invoke(focused)
+                                },
+                                onLeftBoundary = onLeftBoundary,
+                                scrollState = scrollState,
+                                coroutineScope = coroutineScope,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                    searchQuery.length >= 2 -> {
+                        // Show empty state
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "No results found for \"$searchQuery\"",
+                                color = Color.White.copy(alpha = 0.7f),
+                                fontSize = 18.sp,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
             }
@@ -228,9 +254,10 @@ private fun SearchBar(
     onVoiceSearch: () -> Unit,
     hasSearchResults: Boolean,
     searchBarFocusRequester: FocusRequester,
+    onDownPressed: () -> Unit = {},
+    onFocusReceived: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val focusRequester = searchBarFocusRequester
     val voiceFocusRequester = remember { FocusRequester() }
     var isSearchBarFocused by remember { mutableStateOf(false) }
     var isVoiceButtonFocused by remember { mutableStateOf(false) }
@@ -254,13 +281,12 @@ private fun SearchBar(
                     if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
                         when (event.nativeKeyEvent.keyCode) {
                             android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                                focusRequester.requestFocus()
+                                searchBarFocusRequester.requestFocus()
                                 true
                             }
                             android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
                                 if (hasSearchResults) {
-                                    isSearchBarFocused = false
-                                    isVoiceButtonFocused = false
+                                    onDownPressed()
                                     true
                                 } else false
                             }
@@ -297,8 +323,13 @@ private fun SearchBar(
                     onValueChange = onQueryChange,
                     modifier = Modifier
                         .weight(1f)
-                        .focusRequester(focusRequester)
-                        .onFocusChanged { isSearchBarFocused = it.isFocused }
+                        .focusRequester(searchBarFocusRequester)
+                        .onFocusChanged { focusState ->
+                            isSearchBarFocused = focusState.isFocused
+                            if (focusState.isFocused) {
+                                onFocusReceived()
+                            }
+                        }
                         .onKeyEvent { event ->
                             if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
                                 when (event.nativeKeyEvent.keyCode) {
@@ -308,7 +339,8 @@ private fun SearchBar(
                                     }
                                     android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
                                         if (hasSearchResults) {
-                                            isSearchBarFocused = false
+                                            Log.d("SearchPage", "🎯 DOWN pressed in search bar - user wants to navigate to results")
+                                            onDownPressed()
                                             true
                                         } else false
                                     }
@@ -356,133 +388,6 @@ private fun SearchBar(
 }
 
 @Composable
-private fun SearchSuggestions(
-    recentSearches: List<String>,
-    popularSearches: List<String>,
-    onSuggestionClick: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier) {
-        if (recentSearches.isNotEmpty()) {
-            Text(
-                text = "Recent Searches",
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-            
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(recentSearches) { search ->
-                    SuggestionChip(
-                        text = search,
-                        onClick = { onSuggestionClick(search) }
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-        
-        if (popularSearches.isNotEmpty()) {
-            Text(
-                text = "Popular Searches",
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-            
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(popularSearches) { search ->
-                    SuggestionChip(
-                        text = search,
-                        onClick = { onSuggestionClick(search) }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SearchSuggestionsList(
-    suggestions: List<String>,
-    onSuggestionClick: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    LazyColumn(
-        modifier = modifier.heightIn(max = 200.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        items(suggestions) { suggestion ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onSuggestionClick(suggestion) }
-                    .padding(vertical = 8.dp, horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.5f),
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = suggestion,
-                    color = Color.White,
-                    fontSize = 16.sp
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SuggestionChip(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    isSelected: Boolean = false
-) {
-    var isFocused by remember { mutableStateOf(false) }
-    
-    Card(
-        modifier = modifier
-            .clickable { onClick() }
-            .focusable()
-            .onFocusChanged { isFocused = it.isFocused },
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected || isFocused) {
-                Color(0xFFF0F0F0) // Light light gray when selected or focused
-            } else {
-                Color(0xFF101010) // Dark gray when not selected
-            }
-        ),
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Text(
-            text = text,
-            color = if (isSelected || isFocused) {
-                Color.Black // Black text on light gray background
-            } else {
-                Color.White // White text on dark gray background
-            },
-            fontSize = 14.sp,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
-    }
-}
-
-@Composable
 private fun SearchResultsLoading(
     modifier: Modifier = Modifier
 ) {
@@ -518,6 +423,11 @@ private fun SearchResultsContent(
     searchResults: com.strmr.ai.data.SearchResults,
     onNavigateToDetails: ((String, Int) -> Unit)?,
     onFocusReturnToSearchBar: () -> Unit = {},
+    isContentFocused: Boolean = false,
+    onContentFocusChanged: ((Boolean) -> Unit)? = null,
+    onLeftBoundary: (() -> Unit)? = null,
+    scrollState: ScrollState? = null,
+    coroutineScope: CoroutineScope? = null,
     modifier: Modifier = Modifier
 ) {
     // Build list of available sections - always include sections if they have data
@@ -539,102 +449,169 @@ private fun SearchResultsContent(
         Log.d("SearchPage", "  Section $index: $title (${items.size} items)")
     }
     
-    // State management similar to MediaPage
-    var selectedRowIndex by remember { mutableStateOf(0) }
-    var selectedItemIndex by remember { mutableStateOf(0) }
-    var isContentFocused by remember { mutableStateOf(false) }
-    val focusRequester = remember { FocusRequester() }
+    // Use the unified SelectionManager like HomePage and DetailsPage
+    val selectionManager = rememberSelectionManager()
     
-    // Reset selection when sections change
+    // Update SelectionManager with external focus state - but only when user explicitly focuses
+    LaunchedEffect(isContentFocused) {
+        Log.d("SearchPage", "🎯 Content focus changed: isContentFocused=$isContentFocused")
+        selectionManager.updateContentFocus(isContentFocused)
+    }
+    
+    // Row position memory - tracks last position in each row by row index
+    val rowPositionMemory = remember { mutableMapOf<Int, Int>() }
+    
+    // Build rows array based on available sections
+    val rows = remember(sections) {
+        sections.map { it.first } // Extract section titles
+    }
+    
+    val rowCount = rows.size
+    val focusRequesters = remember(rowCount) { List(rowCount) { FocusRequester() } }
+    
+    // Initialize selection state only once
     LaunchedEffect(sections.size) {
-        selectedRowIndex = 0
-        selectedItemIndex = 0
-        isContentFocused = false
+        Log.d("SearchPage", "🎯 Initializing selection state for ${sections.size} sections")
+        if (sections.isNotEmpty() && selectionManager.selectedRowIndex == -1) {
+            selectionManager.updateSelection(0, 0)
+        }
+    }
+    
+    // Handle focus changes when user explicitly navigates to content
+    LaunchedEffect(selectionManager.selectedRowIndex, isContentFocused) {
+        val index = selectionManager.selectedRowIndex
+        // Only request focus if user has explicitly focused content and we have valid row
+        if (index >= 0 && index < focusRequesters.size && index < rows.size && isContentFocused) {
+            try {
+                kotlinx.coroutines.delay(100)
+                focusRequesters[index].requestFocus()
+                Log.d("SearchPage", "🎯 Successfully requested focus on row $index (${rows[index]})")
+            } catch (e: Exception) {
+                Log.w("SearchPage", "🚨 Failed to request focus on row $index: ${e.message}")
+            }
+        }
+    }
+    
+    // Auto-scroll to bring focused row into view when row changes
+    LaunchedEffect(selectionManager.selectedRowIndex) {
+        val index = selectionManager.selectedRowIndex
+        Log.d("SearchPage", "🎯 Row selection changed to $index, isContentFocused=$isContentFocused, scrollState=${scrollState != null}")
+        
+        if (scrollState != null && index >= 0 && index < rows.size) {
+            try {
+                // Wait for focus request to complete first
+                kotlinx.coroutines.delay(250)
+                
+                // Calculate scroll position to bring row into view
+                // Using actual measured scroll positions when rows are properly visible
+                val scrollOffset = when (index) {
+                    0 -> 0 // Movies - already at top
+                    1 -> 641 // TV Shows - exact position when fully visible
+                    2 -> 1342 // People - exact position when fully visible
+                    else -> index * 641 // Fallback for additional rows
+                }
+                
+                Log.d("SearchPage", "🎯 Attempting to scroll to row $index (${rows[index]}) at offset $scrollOffset")
+                scrollState.animateScrollTo(scrollOffset)
+                Log.d("SearchPage", "🎯 Successfully auto-scrolled to row $index (${rows[index]}) at offset $scrollOffset")
+            } catch (e: Exception) {
+                Log.w("SearchPage", "🚨 Failed to auto-scroll to row $index: ${e.message}")
+            }
+        } else {
+            Log.d("SearchPage", "🚨 Auto-scroll skipped: scrollState=${scrollState != null}, index=$index, rows.size=${rows.size}")
+        }
+    }
+    
+    // Log scroll position when horizontal navigation occurs (to capture desired positions)
+    LaunchedEffect(selectionManager.selectedItemIndex, selectionManager.selectedRowIndex) {
+        if (scrollState != null && selectionManager.selectedRowIndex >= 0) {
+            val currentScrollPosition = scrollState.value
+            val rowIndex = selectionManager.selectedRowIndex
+            val itemIndex = selectionManager.selectedItemIndex
+            val rowName = rows.getOrNull(rowIndex) ?: "Unknown"
+            
+            Log.d("SearchPage", "📍 POSITION LOG - Row: $rowIndex ($rowName), Item: $itemIndex, Current Scroll Position: $currentScrollPosition")
+        }
     }
     
     Column(
         modifier = modifier
-            .fillMaxWidth()
-            .focusable()
-            .onKeyEvent { event ->
-                if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
-                    when (event.nativeKeyEvent.keyCode) {
-                        android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
-                            // Navigate to first row if not already focused on content
-                            if (!isContentFocused && sections.isNotEmpty()) {
-                                isContentFocused = true
-                                selectedRowIndex = 0
-                                selectedItemIndex = 0
-                                true
-                            } else {
-                                false // Let individual rows handle navigation
-                            }
-                        }
-                        else -> false
-                    }
-                } else false
-            },
+            .fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         sections.forEachIndexed { rowIndex, (title, items) ->
-            CenteredMediaRow(
-                title = title,
-                mediaItems = items,
-                selectedIndex = if (rowIndex == selectedRowIndex) selectedItemIndex else 0,
-                isRowSelected = rowIndex == selectedRowIndex,
-                onSelectionChanged = { newIndex ->
-                    if (rowIndex == selectedRowIndex) {
-                        selectedItemIndex = newIndex
-                    }
-                },
-                onUpDown = { direction ->
-                    val newRowIndex = selectedRowIndex + direction
-                    if (newRowIndex in 0 until sections.size) {
-                        selectedRowIndex = newRowIndex
-                        selectedItemIndex = 0
-                    } else if (newRowIndex < 0) {
-                        // Go back to search bar
-                        isContentFocused = false
-                        onFocusReturnToSearchBar()
-                    }
-                },
-                focusRequester = if (rowIndex == selectedRowIndex) focusRequester else null,
-                isContentFocused = isContentFocused,
-                onContentFocusChanged = { focused ->
-                    isContentFocused = focused
-                },
-                onItemClick = { item ->
-                    when (item) {
-                        is SearchResultItem.Movie -> {
-                            onNavigateToDetails?.invoke("movie", item.tmdbId ?: item.id)
+            UnifiedMediaRow(
+                config = MediaRowConfig(
+                    title = title,
+                    dataSource = DataSource.RegularList(items),
+                    selectedIndex = if (selectionManager.selectedRowIndex == rowIndex) selectionManager.selectedItemIndex else 0,
+                    isRowSelected = selectionManager.selectedRowIndex == rowIndex,
+                    onSelectionChanged = { newIndex ->
+                        if (selectionManager.selectedRowIndex == rowIndex) {
+                            selectionManager.updateSelection(rowIndex, newIndex)
+                            rowPositionMemory[rowIndex] = newIndex
+                            Log.d("SearchPage", "💾 Updated position $newIndex for row $rowIndex ($title)")
                         }
-                        is SearchResultItem.TvShow -> {
-                            onNavigateToDetails?.invoke("tvshow", item.tmdbId ?: item.id)
+                    },
+                    onUpDown = { direction ->
+                        val newRowIndex = selectionManager.selectedRowIndex + direction
+                        if (newRowIndex >= 0 && newRowIndex < sections.size) {
+                            // Save current position
+                            rowPositionMemory[selectionManager.selectedRowIndex] = selectionManager.selectedItemIndex
+                            
+                            // Get target position from memory or use default
+                            val newItemIndex = rowPositionMemory[newRowIndex] ?: 0
+                            
+                            Log.d("SearchPage", "🎯 Row navigation: ${selectionManager.selectedRowIndex}(${rows[selectionManager.selectedRowIndex]}) -> $newRowIndex(${rows[newRowIndex]}), direction=$direction")
+                            selectionManager.updateSelection(newRowIndex, newItemIndex)
+                        } else if (newRowIndex < 0) {
+                            // Go back to search bar
+                            onFocusReturnToSearchBar()
                         }
-                        is SearchResultItem.Person -> {
-                            Log.d("SearchPage", "Person clicked: ${item.name}")
-                        }
-                    }
-                },
-                itemContent = { item, isSelected ->
-                    SearchResultCard(
-                        item = item,
-                        isSelected = isSelected,
-                        onClick = { 
-                            when (item) {
-                                is SearchResultItem.Movie -> {
-                                    onNavigateToDetails?.invoke("movie", item.tmdbId ?: item.id)
-                                }
-                                is SearchResultItem.TvShow -> {
-                                    onNavigateToDetails?.invoke("tvshow", item.tmdbId ?: item.id)
-                                }
-                                is SearchResultItem.Person -> {
-                                    Log.d("SearchPage", "Person clicked: ${item.name}")
-                                }
+                    },
+                    focusRequester = if (selectionManager.selectedRowIndex == rowIndex && isContentFocused) focusRequesters.getOrNull(rowIndex) else null,
+                    onContentFocusChanged = { focused ->
+                        selectionManager.updateContentFocus(focused)
+                        onContentFocusChanged?.invoke(focused)
+                    },
+                    onLeftBoundary = if (rowIndex == selectionManager.selectedRowIndex) onLeftBoundary else null,
+                    cardType = CardType.PORTRAIT,
+                    itemWidth = 120.dp,
+                    itemSpacing = 12.dp,
+                    contentPadding = PaddingValues(horizontal = 48.dp),
+                    onItemClick = { item ->
+                        when (item) {
+                            is SearchResultItem.Movie -> {
+                                onNavigateToDetails?.invoke("movie", item.tmdbId ?: item.id)
+                            }
+                            is SearchResultItem.TvShow -> {
+                                onNavigateToDetails?.invoke("tvshow", item.tmdbId ?: item.id)
+                            }
+                            is SearchResultItem.Person -> {
+                                Log.d("SearchPage", "Person clicked: ${item.name}")
                             }
                         }
-                    )
-                }
+                    },
+                    itemContent = { item, isSelected ->
+                        SearchResultCard(
+                            item = item,
+                            isSelected = isSelected,
+                            onClick = { 
+                                when (item) {
+                                    is SearchResultItem.Movie -> {
+                                        onNavigateToDetails?.invoke("movie", item.tmdbId ?: item.id)
+                                    }
+                                    is SearchResultItem.TvShow -> {
+                                        onNavigateToDetails?.invoke("tvshow", item.tmdbId ?: item.id)
+                                    }
+                                    is SearchResultItem.Person -> {
+                                        Log.d("SearchPage", "Person clicked: ${item.name}")
+                                    }
+                                }
+                            }
+                        )
+                    }
+                )
             )
         }
     }
@@ -695,7 +672,6 @@ private fun PersonCard(
             .width(targetWidth)
             .height(targetHeight)
             .clickable { onClick() }
-            .focusable()
             .let { mod ->
                 if (isSelected) {
                     mod.border(2.dp, Color.White, RoundedCornerShape(8.dp))

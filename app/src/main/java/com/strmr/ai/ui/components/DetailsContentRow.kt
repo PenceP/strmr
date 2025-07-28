@@ -21,6 +21,10 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.border
 import com.strmr.ai.utils.resolveImageSource
+import com.strmr.ai.ui.components.UnifiedMediaRow
+import com.strmr.ai.ui.components.MediaRowConfig
+import com.strmr.ai.ui.components.DataSource
+import com.strmr.ai.ui.components.CardType
 
 data class DetailsContentData(
     val title: String,
@@ -46,28 +50,31 @@ fun <T : Any> DetailsContentRow(
 ) {
     if (items.isEmpty()) return
     
-    CenteredMediaRow<T>(
-        title = title,
-        mediaItems = items.take(10),
-        selectedIndex = selectedIndex,
-        isRowSelected = isRowSelected,
-        onSelectionChanged = onSelectionChanged,
-        onUpDown = onUpDown,
-        onItemClick = onItemClick,
-        modifier = modifier,
-        itemWidth = 90.dp,
-        itemSpacing = 12.dp,
-        rowHeight = 200.dp,
-        focusRequester = focusRequester,
-        isContentFocused = isContentFocused,
-        onContentFocusChanged = onContentFocusChanged
-    ) { item, isSelected ->
-        DetailsContentCard(
-            content = contentMapper(item),
-            onClick = { onItemClick(item) },
-            isSelected = isSelected
-        )
-    }
+    UnifiedMediaRow(
+        config = MediaRowConfig(
+            title = title,
+            dataSource = DataSource.RegularList(items.take(10)),
+            selectedIndex = selectedIndex,
+            isRowSelected = isRowSelected,
+            onSelectionChanged = onSelectionChanged,
+            onUpDown = onUpDown,
+            onItemClick = onItemClick,
+            focusRequester = focusRequester,
+            onContentFocusChanged = onContentFocusChanged,
+            cardType = CardType.PORTRAIT,
+            itemWidth = 120.dp,
+            itemSpacing = 12.dp,
+            contentPadding = PaddingValues(horizontal = 48.dp),
+            itemContent = { item, isSelected ->
+                DetailsContentCard(
+                    content = contentMapper(item),
+                    onClick = { onItemClick(item) },
+                    isSelected = isSelected
+                )
+            }
+        ),
+        modifier = modifier
+    )
 }
 
 @Composable

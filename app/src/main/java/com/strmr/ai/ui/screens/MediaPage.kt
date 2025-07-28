@@ -23,7 +23,10 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.strmr.ai.ui.components.MediaDetails
 import com.strmr.ai.ui.components.MediaHero
-import com.strmr.ai.ui.components.CenteredMediaRow
+import com.strmr.ai.ui.components.UnifiedMediaRow
+import com.strmr.ai.ui.components.MediaRowConfig
+import com.strmr.ai.ui.components.DataSource
+import com.strmr.ai.ui.components.CardType
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.TransformOrigin
@@ -293,32 +296,37 @@ LaunchedEffect(isContentFocused, selectedRowIndex, selectedItemIndex) {
                             val rowTitle = rowTitles.getOrNull(rowIdx) ?: ""
                             val rowItems = rows.getOrNull(rowIdx) as? List<T> ?: emptyList()
                             if (rowItems.isNotEmpty()) {
-                                CenteredMediaRow(
-                                    title = rowTitle,
-                                    mediaItems = rowItems,
-                                    selectedIndex = if (rowIdx == selectedRowIndex) selectedItemIndex else 0,
-                                    isRowSelected = rowIdx == selectedRowIndex,
-                                    onSelectionChanged = { newIndex ->
-                                        if (rowIdx == selectedRowIndex) onItemSelected(rowIdx, newIndex)
-                                    },
-                                    onUpDown = { direction ->
-                                        val newRowIndex = selectedRowIndex + direction
-                                        if (newRowIndex in 0 until rowCount) {
-                                            onItemSelected(newRowIndex, 0)
+                                UnifiedMediaRow(
+                                    config = MediaRowConfig(
+                                        title = rowTitle,
+                                        dataSource = DataSource.RegularList(rowItems),
+                                        selectedIndex = if (rowIdx == selectedRowIndex) selectedItemIndex else 0,
+                                        isRowSelected = rowIdx == selectedRowIndex,
+                                        onSelectionChanged = { newIndex ->
+                                            if (rowIdx == selectedRowIndex) onItemSelected(rowIdx, newIndex)
+                                        },
+                                        onUpDown = { direction ->
+                                            val newRowIndex = selectedRowIndex + direction
+                                            if (newRowIndex in 0 until rowCount) {
+                                                onItemSelected(newRowIndex, 0)
+                                            }
+                                        },
+                                        onItemClick = onItemClick,
+                                        focusRequester = if (rowIdx == selectedRowIndex) focusRequester else null,
+                                        onContentFocusChanged = onContentFocusChanged,
+                                        cardType = CardType.PORTRAIT,
+                                        itemWidth = 120.dp,
+                                        itemSpacing = 12.dp,
+                                        contentPadding = PaddingValues(horizontal = 48.dp),
+                                        itemContent = { item, isSelected ->
+                                            MediaCard(
+                                                title = item.getTitle(),
+                                                posterUrl = item.getPosterUrl(),
+                                                isSelected = isSelected,
+                                                onClick = { onItemClick?.invoke(item) }
+                                            )
                                         }
-                                    },
-                                    onItemClick = onItemClick,
-                                    focusRequester = if (rowIdx == selectedRowIndex) focusRequester else null,
-                                    isContentFocused = isContentFocused,
-                                    onContentFocusChanged = onContentFocusChanged,
-                                    itemContent = { item, isSelected ->
-                                        MediaCard(
-                                            title = item.getTitle(),
-                                            posterUrl = item.getPosterUrl(),
-                                            isSelected = isSelected,
-                                            onClick = { onItemClick?.invoke(item) }
-                                        )
-                                    }
+                                    )
                                 )
                             }
                         }

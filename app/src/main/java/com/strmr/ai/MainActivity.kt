@@ -283,6 +283,11 @@ fun MainScreen(
             ) {
                 composable("search") {
                     SearchPage(
+                        isContentFocused = isContentFocused,
+                        onContentFocusChanged = { focused ->
+                            isContentFocused = focused
+                        },
+                        onLeftBoundary = handleReturnToNavigation,
                         onNavigateToDetails = { mediaType, tmdbId ->
                             navController.navigate("details/$mediaType/$tmdbId")
                         }

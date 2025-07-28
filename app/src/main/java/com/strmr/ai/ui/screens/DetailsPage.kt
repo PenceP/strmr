@@ -69,7 +69,10 @@ import androidx.compose.ui.layout.boundsInParent
 import com.strmr.ai.ui.components.MediaHero
 import com.strmr.ai.ui.components.MediaDetails
 import com.strmr.ai.ui.components.DetailsContentRow
-import com.strmr.ai.ui.components.CenteredMediaRow
+import com.strmr.ai.ui.components.UnifiedMediaRow
+import com.strmr.ai.ui.components.MediaRowConfig
+import com.strmr.ai.ui.components.DataSource
+import com.strmr.ai.ui.components.CardType
 import com.strmr.ai.ui.components.DetailsContentData
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
@@ -88,6 +91,8 @@ import androidx.compose.material.icons.filled.Visibility
 import com.strmr.ai.data.MovieRepository
 import com.strmr.ai.data.SimilarContent
 import androidx.lifecycle.viewModelScope
+import com.strmr.ai.ui.components.rememberSelectionManager
+import androidx.compose.runtime.rememberCoroutineScope
 
 sealed class MediaDetailsType {
     data class Movie(val movie: MovieEntity) : MediaDetailsType()
@@ -149,30 +154,61 @@ fun MovieDetailsView(
     onNavigateToSimilar: (String, Int) -> Unit,
     onTrailer: (String, String) -> Unit
 ) {
-    val playButtonFocusRequester = remember { FocusRequester() }
     var omdbRatings by remember(movie.imdbId) { mutableStateOf<OmdbResponse?>(null) }
     var logoUrl by remember { mutableStateOf(movie.logoUrl) }
     var similarContent by remember { mutableStateOf<List<SimilarContent>>(emptyList()) }
     val scrollState = rememberScrollState()
-    
-    // Selection state for actors, collection, and similar content rows
-    var actorsSelectedIndex by remember { mutableStateOf(0) }
-    var collectionSelectedIndex by remember { mutableStateOf(0) }
-    var similarSelectedIndex by remember { mutableStateOf(0) }
-    var isActorsRowSelected by remember { mutableStateOf(false) }
-    var isCollectionRowSelected by remember { mutableStateOf(false) }
-    var isSimilarRowSelected by remember { mutableStateOf(false) }
-    val actorsFocusRequester = remember { FocusRequester() }
-    val collectionFocusRequester = remember { FocusRequester() }
-    val similarFocusRequester = remember { FocusRequester() }
     var collection by remember { mutableStateOf<com.strmr.ai.data.database.CollectionEntity?>(null) }
+    
+    // Use the unified SelectionManager like HomePage
+    val selectionManager = rememberSelectionManager()
+    
+    // Row position memory - tracks last position in each row by row index
+    val rowPositionMemory = remember { mutableMapOf<Int, Int>() }
+    
+    // Build rows array dynamically based on available content
+    val rows = remember(movie.cast, collection, similarContent) {
+        mutableListOf<String>().apply {
+            add("buttons") // Row 0: Always present
+            if (movie.cast.isNotEmpty()) add("actors") // Row 1: Actors if available
+            if (collection != null && collection!!.parts.size > 1) add("collection") // Row 2: Collection if available
+            if (similarContent.isNotEmpty()) add("similar") // Row 3: Similar content if available
+        }.toList()
+    }
+    
+    val rowCount = rows.size
+    val focusRequesters = remember(rowCount) { List(rowCount) { FocusRequester() } }
 
+    // Initialize focus state - start with buttons row (index 0)
+    LaunchedEffect(Unit) {
+        Log.d("MovieDetailsView", "🎯 Initializing selection state")
+        if (selectionManager.selectedRowIndex != 0) {
+            selectionManager.updateSelection(0, 0)
+        }
+    }
+    
+    // Handle focus changes when selectedRowIndex changes
+    LaunchedEffect(selectionManager.selectedRowIndex, focusRequesters.size) {
+        val index = selectionManager.selectedRowIndex
+        if (index >= 0 && index < focusRequesters.size && index < rows.size) {
+            try {
+                kotlinx.coroutines.delay(100)
+                focusRequesters[index].requestFocus()
+                Log.d("MovieDetailsView", "🎯 Successfully requested focus on row $index (${rows[index]})")
+            } catch (e: Exception) {
+                Log.w("MovieDetailsView", "🚨 Failed to request focus on row $index: ${e.message}")
+            }
+        }
+    }
+    
     // Fetch collection if movie belongs to one
     LaunchedEffect(movie.belongsToCollection?.id) {
         val collectionId = movie.belongsToCollection?.id
         Log.d("MovieDetailsView", "🎬 Collection LaunchedEffect triggered")
+        Log.d("MovieDetailsView", "🎬 Movie: ${movie.title} (TMDB ID: ${movie.tmdbId})")
         Log.d("MovieDetailsView", "🎬 Movie belongsToCollection: ${movie.belongsToCollection}")
         Log.d("MovieDetailsView", "🎬 Collection ID: $collectionId")
+        Log.d("MovieDetailsView", "🎬 Collection Name: ${movie.belongsToCollection?.name}")
         Log.d("MovieDetailsView", "🎬 DetailsViewModel available: true")
         
         if (collectionId != null) {
@@ -191,6 +227,7 @@ fun MovieDetailsView(
             }
         } else {
             Log.d("MovieDetailsView", "⚠️ Skipping collection fetch - ID: $collectionId")
+            Log.d("MovieDetailsView", "⚠️ Movie belongs_to_collection is null or has no ID")
         }
     }
 
@@ -316,7 +353,7 @@ fun MovieDetailsView(
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
-                                    .focusRequester(playButtonFocusRequester),
+                                    .focusRequester(focusRequesters.getOrNull(0) ?: remember { FocusRequester() }),
                                 interactionSource = playButtonInteractionSource,
                                 isFocused = playButtonIsFocused,
                                 text = "Play",
@@ -347,24 +384,31 @@ fun MovieDetailsView(
                             )
                         }
                         Spacer(Modifier.height(StrmrConstants.Dimensions.SPACING_MEDIUM))
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(StrmrConstants.Dimensions.SPACING_STANDARD)) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .onKeyEvent { event ->
+                                    if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
+                                        event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
+                                        selectionManager.selectedRowIndex == 0 && rows.size > 1
+                                    ) {
+                                        // Navigate from buttons to next available row
+                                        val newRowIndex = 1
+                                        val newItemIndex = rowPositionMemory[newRowIndex] ?: 0
+                                        selectionManager.updateSelection(newRowIndex, newItemIndex)
+                                        Log.d("MovieDetailsView", "🎯 Button navigation: moving to row $newRowIndex (${rows[newRowIndex]})")
+                                        true
+                                    } else false
+                                }, 
+                            horizontalArrangement = Arrangement.spacedBy(StrmrConstants.Dimensions.SPACING_STANDARD)
+                        ) {
                             val collectionButtonInteractionSource = remember { MutableInteractionSource() }
                             val collectionButtonIsFocused by collectionButtonInteractionSource.collectIsFocusedAsState()
                             FrostedGlassButton(
                                 onClick = onAddToCollection,
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
-                                    .onKeyEvent { event ->
-                                        if (
-                                            event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
-                                            event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
-                                            !isActorsRowSelected && !isSimilarRowSelected && movie.cast.isNotEmpty()
-                                        ) {
-                                            isActorsRowSelected = true
-                                            true
-                                        } else false
-                                    },
+                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT),
                                 interactionSource = collectionButtonInteractionSource,
                                 isFocused = collectionButtonIsFocused,
                                 text = "",
@@ -383,17 +427,7 @@ fun MovieDetailsView(
                                 onClick = { /* TODO: Watchlist */ },
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
-                                    .onKeyEvent { event ->
-                                        if (
-                                            event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
-                                            event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
-                                            !isActorsRowSelected && !isSimilarRowSelected && movie.cast.isNotEmpty()
-                                        ) {
-                                            isActorsRowSelected = true
-                                            true
-                                        } else false
-                                    },
+                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT),
                                 interactionSource = watchlistButtonInteractionSource,
                                 isFocused = watchlistButtonIsFocused,
                                 text = "",
@@ -413,17 +447,7 @@ fun MovieDetailsView(
                                 onClick = { /* TODO: Watched/Unwatched */ },
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
-                                    .onKeyEvent { event ->
-                                        if (
-                                            event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
-                                            event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
-                                            !isActorsRowSelected && !isSimilarRowSelected && movie.cast.isNotEmpty()
-                                        ) {
-                                            isActorsRowSelected = true
-                                            true
-                                        } else false
-                                    },
+                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT),
                                 interactionSource = watchedButtonInteractionSource,
                                 isFocused = watchedButtonIsFocused,
                                 text = "",
@@ -443,17 +467,7 @@ fun MovieDetailsView(
                                 onClick = { /* TODO: More */ },
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
-                                    .onKeyEvent { event ->
-                                        if (
-                                            event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
-                                            event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
-                                            !isActorsRowSelected && !isSimilarRowSelected && movie.cast.isNotEmpty()
-                                        ) {
-                                            isActorsRowSelected = true
-                                            true
-                                        } else false
-                                    },
+                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT),
                                 interactionSource = moreButtonInteractionSource,
                                 isFocused = moreButtonIsFocused,
                                 text = "...",
@@ -462,108 +476,136 @@ fun MovieDetailsView(
                         }
                     }
                 }
+                
+                // Focus management is now handled by the unified LaunchedEffect above
+                
                 Spacer(Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
-                // Actors row
-                if (movie.cast.isNotEmpty()) {
-                    ActorsRow(
-                        actors = movie.cast,
-                        modifier = Modifier.fillMaxWidth(),
-                        selectedIndex = actorsSelectedIndex,
-                        isRowSelected = isActorsRowSelected,
-                        onSelectionChanged = { actorsSelectedIndex = it },
-                        onUpDown = { direction ->
-                            if (direction < 0) {
-                                isActorsRowSelected = false
-                            } else {
-                                val currentCollection = collection
-                                if (currentCollection != null && currentCollection.parts.size > 1) {
-                                    isActorsRowSelected = false
-                                    isCollectionRowSelected = true
-                                } else {
-                                    isActorsRowSelected = false
-                                    isSimilarRowSelected = true
-                                }
-                            }
-                        },
-                        focusRequester = actorsFocusRequester,
-                        isContentFocused = isActorsRowSelected,
-                        onContentFocusChanged = { isActorsRowSelected = it }
-                    )
-                }
-                // Collection row (if present)
-                val currentCollection = collection
-                Log.d("MovieDetailsView", "🎬 Rendering collection row check")
-                Log.d("MovieDetailsView", "🎬 Current collection: $currentCollection")
-                Log.d("MovieDetailsView", "🎬 Collection parts size: ${currentCollection?.parts?.size}")
-                if (currentCollection != null && currentCollection.parts.size > 1) {
-                    DetailsContentRow(
-                        title = "Part of Collection",
-                        items = currentCollection.parts,
-                        onItemClick = { /* TODO: handle collection movie click */ },
-                        contentMapper = { movie ->
-                            DetailsContentData(
-                                title = movie.title,
-                                posterUrl = if (!movie.poster_path.isNullOrBlank()) "https://image.tmdb.org/t/p/w500${movie.poster_path}" else null,
-                                subtitle = movie.release_date?.take(4), // Extract year
-                                rating = String.format("%.1f", movie.vote_average)
+                // Render rows dynamically based on the rows array
+                for ((index, rowType) in rows.withIndex()) {
+                    when (rowType) {
+                        "actors" -> {
+                            val actorsRowIndex = index
+                            ActorsRow(
+                                actors = movie.cast,
+                                modifier = Modifier.fillMaxWidth(),
+                                selectedIndex = if (selectionManager.selectedRowIndex == actorsRowIndex) selectionManager.selectedItemIndex else 0,
+                                isRowSelected = selectionManager.selectedRowIndex == actorsRowIndex,
+                                onSelectionChanged = { newIndex ->
+                                    if (selectionManager.selectedRowIndex == actorsRowIndex) {
+                                        selectionManager.updateSelection(actorsRowIndex, newIndex)
+                                        rowPositionMemory[actorsRowIndex] = newIndex
+                                        Log.d("MovieDetailsView", "💾 Updated position $newIndex for actors row")
+                                    }
+                                },
+                                onUpDown = { direction ->
+                                    val newRowIndex = actorsRowIndex + direction
+                                    if (newRowIndex >= 0 && newRowIndex < rows.size) {
+                                        // Save current position
+                                        rowPositionMemory[actorsRowIndex] = selectionManager.selectedItemIndex
+                                        
+                                        // Get target position from memory or use default
+                                        val newItemIndex = rowPositionMemory[newRowIndex] ?: 0
+                                        
+                                        Log.d("MovieDetailsView", "🎯 Actor row navigation: $actorsRowIndex(${rows[actorsRowIndex]}) -> $newRowIndex(${rows[newRowIndex]}), direction=$direction")
+                                        selectionManager.updateSelection(newRowIndex, newItemIndex)
+                                    }
+                                },
+                                focusRequester = if (selectionManager.selectedRowIndex == actorsRowIndex) focusRequesters.getOrNull(actorsRowIndex) else null,
+                                isContentFocused = selectionManager.selectedRowIndex == actorsRowIndex,
+                                onContentFocusChanged = { /* Handled by selectionManager */ }
                             )
-                        },
-                        selectedIndex = collectionSelectedIndex,
-                        isRowSelected = isCollectionRowSelected,
-                        onSelectionChanged = { collectionSelectedIndex = it },
-                        onUpDown = { direction ->
-                            if (direction < 0) {
-                                isCollectionRowSelected = false
-                                isActorsRowSelected = true
-                            } else {
-                                isCollectionRowSelected = false
-                                isSimilarRowSelected = true
+                        }
+                        "collection" -> {
+                            val collectionRowIndex = index
+                            val currentCollection = collection
+                            Log.d("MovieDetailsView", "🎬 Rendering collection row")
+                            if (currentCollection != null && currentCollection.parts.size > 1) {
+                                DetailsContentRow(
+                                    title = "Part of Collection",
+                                    items = currentCollection.parts,
+                                    onItemClick = { /* TODO: handle collection movie click */ },
+                                    contentMapper = { movie ->
+                                        DetailsContentData(
+                                            title = movie.title,
+                                            posterUrl = if (!movie.poster_path.isNullOrBlank()) "https://image.tmdb.org/t/p/w500${movie.poster_path}" else null,
+                                            subtitle = movie.release_date?.take(4), // Extract year
+                                            rating = String.format("%.1f", movie.vote_average)
+                                        )
+                                    },
+                                    selectedIndex = if (selectionManager.selectedRowIndex == collectionRowIndex) selectionManager.selectedItemIndex else 0,
+                                    isRowSelected = selectionManager.selectedRowIndex == collectionRowIndex,
+                                    onSelectionChanged = { newIndex ->
+                                        if (selectionManager.selectedRowIndex == collectionRowIndex) {
+                                            selectionManager.updateSelection(collectionRowIndex, newIndex)
+                                            rowPositionMemory[collectionRowIndex] = newIndex
+                                            Log.d("MovieDetailsView", "💾 Updated position $newIndex for collection row")
+                                        }
+                                    },
+                                    onUpDown = { direction ->
+                                        val newRowIndex = collectionRowIndex + direction
+                                        if (newRowIndex >= 0 && newRowIndex < rows.size) {
+                                            // Save current position
+                                            rowPositionMemory[collectionRowIndex] = selectionManager.selectedItemIndex
+                                            
+                                            // Get target position from memory or use default
+                                            val newItemIndex = rowPositionMemory[newRowIndex] ?: 0
+                                            
+                                            Log.d("MovieDetailsView", "🎯 Collection row navigation: $collectionRowIndex(${rows[collectionRowIndex]}) -> $newRowIndex(${rows[newRowIndex]}), direction=$direction")
+                                            selectionManager.updateSelection(newRowIndex, newItemIndex)
+                                        }
+                                    },
+                                    focusRequester = if (selectionManager.selectedRowIndex == collectionRowIndex) focusRequesters.getOrNull(collectionRowIndex) else null,
+                                    isContentFocused = selectionManager.selectedRowIndex == collectionRowIndex,
+                                    onContentFocusChanged = { /* Handled by selectionManager */ }
+                                )
                             }
-                        },
-                        focusRequester = collectionFocusRequester,
-                        isContentFocused = isCollectionRowSelected,
-                        onContentFocusChanged = { isCollectionRowSelected = it }
-                    )
-                }
-                // Similar content row
-                if (similarContent.isNotEmpty()) {
-                    DetailsContentRow(
-                        title = "Similar ${if (similarContent.firstOrNull()?.mediaType == "movie") "Movies" else "TV Shows"}",
-                        items = similarContent,
-                        onItemClick = { content ->
-                            onNavigateToSimilar(content.mediaType, content.tmdbId)
-                        },
-                        contentMapper = { content ->
-                            DetailsContentData(
-                                title = content.title,
-                                posterUrl = content.posterUrl,
-                                subtitle = content.year?.toString(),
-                                rating = content.rating?.let { String.format("%.1f", it) }
+                        }
+                        "similar" -> {
+                            val similarRowIndex = index
+                            DetailsContentRow(
+                                title = "Similar ${if (similarContent.firstOrNull()?.mediaType == "movie") "Movies" else "TV Shows"}",
+                                items = similarContent,
+                                onItemClick = { content ->
+                                    onNavigateToSimilar(content.mediaType, content.tmdbId)
+                                },
+                                contentMapper = { content ->
+                                    DetailsContentData(
+                                        title = content.title,
+                                        posterUrl = content.posterUrl,
+                                        subtitle = content.year?.toString(),
+                                        rating = content.rating?.let { String.format("%.1f", it) }
+                                    )
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                selectedIndex = if (selectionManager.selectedRowIndex == similarRowIndex) selectionManager.selectedItemIndex else 0,
+                                isRowSelected = selectionManager.selectedRowIndex == similarRowIndex,
+                                onSelectionChanged = { newIndex ->
+                                    if (selectionManager.selectedRowIndex == similarRowIndex) {
+                                        selectionManager.updateSelection(similarRowIndex, newIndex)
+                                        rowPositionMemory[similarRowIndex] = newIndex
+                                        Log.d("MovieDetailsView", "💾 Updated position $newIndex for similar row")
+                                    }
+                                },
+                                onUpDown = { direction ->
+                                    val newRowIndex = similarRowIndex + direction
+                                    if (newRowIndex >= 0 && newRowIndex < rows.size) {
+                                        // Save current position
+                                        rowPositionMemory[similarRowIndex] = selectionManager.selectedItemIndex
+                                        
+                                        // Get target position from memory or use default
+                                        val newItemIndex = rowPositionMemory[newRowIndex] ?: 0
+                                        
+                                        Log.d("MovieDetailsView", "🎯 Similar row navigation: $similarRowIndex(${rows[similarRowIndex]}) -> $newRowIndex(${rows[newRowIndex]}), direction=$direction")
+                                        selectionManager.updateSelection(newRowIndex, newItemIndex)
+                                    }
+                                    // Stay on current row when at bottom boundary
+                                },
+                                focusRequester = if (selectionManager.selectedRowIndex == similarRowIndex) focusRequesters.getOrNull(similarRowIndex) else null,
+                                isContentFocused = selectionManager.selectedRowIndex == similarRowIndex,
+                                onContentFocusChanged = { /* Handled by selectionManager */ }
                             )
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        selectedIndex = similarSelectedIndex,
-                        isRowSelected = isSimilarRowSelected,
-                        onSelectionChanged = { similarSelectedIndex = it },
-                        onUpDown = { direction ->
-                            if (direction < 0) {
-                                val currentCollection = collection
-                                if (currentCollection != null && currentCollection.parts.size > 1) {
-                                    isSimilarRowSelected = false
-                                    isCollectionRowSelected = true
-                                } else {
-                                    isSimilarRowSelected = false
-                                    isActorsRowSelected = true
-                                }
-                            } else {
-                                // Stay on current row when at bottom boundary
-                                // Don't clear focus to prevent focus escape
-                            }
-                        },
-                        focusRequester = similarFocusRequester,
-                        isContentFocused = isSimilarRowSelected,
-                        onContentFocusChanged = { isSimilarRowSelected = it }
-                    )
+                        }
+                    }
                 }
             }
         }
@@ -780,34 +822,12 @@ fun TvShowDetailsView(
     focusMemoryManager: com.strmr.ai.FocusMemoryManager? = null,
     screenKey: String = ""
 ) {
-    val playButtonFocusRequester = remember { FocusRequester() }
-    val trailerButtonFocusRequester = remember { FocusRequester() }
-    val moreEpisodesButtonFocusRequester = remember { FocusRequester() }
-    val collectionButtonFocusRequester = remember { FocusRequester() }
-    val watchlistButtonFocusRequester = remember { FocusRequester() }
-    val watchedButtonFocusRequester = remember { FocusRequester() }
-    val moreButtonFocusRequester = remember { FocusRequester() }
 
-    // Restore focus when coming back from another screen
-    LaunchedEffect(screenKey) {
-        if (focusMemoryManager != null && screenKey.isNotEmpty()) {
-            val focusMemory = focusMemoryManager.getFocus(screenKey)
-            focusMemory?.let { memory ->
-                when (memory.lastFocusedItem) {
-                    "play" -> playButtonFocusRequester.requestFocus()
-                    "trailer" -> trailerButtonFocusRequester.requestFocus()
-                    "more_episodes" -> moreEpisodesButtonFocusRequester.requestFocus()
-                    "collection" -> collectionButtonFocusRequester.requestFocus()
-                    "watchlist" -> watchlistButtonFocusRequester.requestFocus()
-                    "watched" -> watchedButtonFocusRequester.requestFocus()
-                    "more" -> moreButtonFocusRequester.requestFocus()
-                    else -> playButtonFocusRequester.requestFocus()
-                }
-                // Clear the memory after restoring focus
-                focusMemoryManager.clearFocus(screenKey)
-            }
-        }
-    }
+    // Use the unified SelectionManager like HomePage
+    val selectionManager = rememberSelectionManager()
+    
+    // Row position memory - tracks last position in each row by row index
+    val rowPositionMemory = remember { mutableMapOf<Int, Int>() }
     var omdbRatings by remember(show.imdbId) { mutableStateOf<OmdbResponse?>(null) }
     var seasons by remember { mutableStateOf<List<SeasonEntity>>(emptyList()) }
     var selectedSeason by remember { mutableStateOf<Int?>(cachedSeason) }
@@ -817,13 +837,53 @@ fun TvShowDetailsView(
     var similarContent by remember { mutableStateOf<List<SimilarContent>>(emptyList()) }
     val scrollState = rememberScrollState()
     
-    // Selection state for actors and similar content rows
-    var actorsSelectedIndex by remember { mutableStateOf(0) }
-    var similarSelectedIndex by remember { mutableStateOf(0) }
-    var isActorsRowSelected by remember { mutableStateOf(false) }
-    var isSimilarRowSelected by remember { mutableStateOf(false) }
-    val actorsFocusRequester = remember { FocusRequester() }
-    val similarFocusRequester = remember { FocusRequester() }
+    // Build rows array dynamically based on available content
+    val rows = remember(show.cast, similarContent) {
+        mutableListOf<String>().apply {
+            add("buttons") // Row 0: Always present
+            if (show.cast.isNotEmpty()) add("actors") // Row 1: Actors if available
+            if (similarContent.isNotEmpty()) add("similar") // Row 2: Similar content if available
+        }.toList()
+    }
+    
+    val rowCount = rows.size
+    val focusRequesters = remember(rowCount) { List(rowCount) { FocusRequester() } }
+    
+    // Initialize focus state - start with buttons row (index 0)
+    LaunchedEffect(Unit) {
+        Log.d("TvShowDetailsView", "🎯 Initializing selection state")
+        if (selectionManager.selectedRowIndex != 0) {
+            selectionManager.updateSelection(0, 0)
+        }
+    }
+    
+    // Handle focus changes when selectedRowIndex changes
+    LaunchedEffect(selectionManager.selectedRowIndex, focusRequesters.size) {
+        val index = selectionManager.selectedRowIndex
+        if (index >= 0 && index < focusRequesters.size && index < rows.size) {
+            try {
+                kotlinx.coroutines.delay(100)
+                focusRequesters[index].requestFocus()
+                Log.d("TvShowDetailsView", "🎯 Successfully requested focus on row $index (${rows[index]})")
+            } catch (e: Exception) {
+                Log.w("TvShowDetailsView", "🚨 Failed to request focus on row $index: ${e.message}")
+            }
+        }
+    }
+    
+    // Restore focus when coming back from another screen
+    LaunchedEffect(screenKey) {
+        if (focusMemoryManager != null && screenKey.isNotEmpty()) {
+            val focusMemory = focusMemoryManager.getFocus(screenKey)
+            focusMemory?.let { memory ->
+                // Use the unified focus system instead of individual requesters
+                Log.d("TvShowDetailsView", "Restoring focus from memory: ${memory.lastFocusedItem}")
+                focusRequesters.getOrNull(0)?.requestFocus() // Default to buttons row
+                // Clear the memory after restoring focus
+                focusMemoryManager.clearFocus(screenKey)
+            }
+        }
+    }
 
     // Debug logging for cached values
     Log.d("TvShowDetailsView", "🎯 DEBUG: Show: ${show.title} (TMDB: ${show.tmdbId})")
@@ -1021,7 +1081,7 @@ fun TvShowDetailsView(
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
-                                    .focusRequester(playButtonFocusRequester),
+                                    .focusRequester(focusRequesters.getOrNull(0) ?: remember { FocusRequester() }),
                                 interactionSource = playButtonInteractionSource,
                                 isFocused = playButtonIsFocused,
                                 text = playButtonText,
@@ -1045,7 +1105,7 @@ fun TvShowDetailsView(
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
-                                    .focusRequester(trailerButtonFocusRequester),
+                                    .focusRequester(focusRequesters.getOrNull(0) ?: remember { FocusRequester() }),
                                 interactionSource = trailerButtonInteractionSource,
                                 isFocused = trailerButtonIsFocused,
                                 text = "Trailer",
@@ -1058,7 +1118,7 @@ fun TvShowDetailsView(
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
-                                    .focusRequester(moreEpisodesButtonFocusRequester),
+                                    .focusRequester(focusRequesters.getOrNull(0) ?: remember { FocusRequester() }),
                                 interactionSource = moreEpisodesButtonInteractionSource,
                                 isFocused = moreEpisodesButtonIsFocused,
                                 text = "More Episodes",
@@ -1066,7 +1126,24 @@ fun TvShowDetailsView(
                             )
                         }
                         Spacer(Modifier.height(StrmrConstants.Dimensions.SPACING_MEDIUM))
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(StrmrConstants.Dimensions.SPACING_STANDARD)) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .onKeyEvent { event ->
+                                    if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
+                                        event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
+                                        selectionManager.selectedRowIndex == 0 && rows.size > 1
+                                    ) {
+                                        // Navigate from buttons to next available row
+                                        val newRowIndex = 1
+                                        val newItemIndex = rowPositionMemory[newRowIndex] ?: 0
+                                        selectionManager.updateSelection(newRowIndex, newItemIndex)
+                                        Log.d("TvShowDetailsView", "🎯 Button navigation: moving to row $newRowIndex (${rows[newRowIndex]})")
+                                        true
+                                    } else false
+                                }, 
+                            horizontalArrangement = Arrangement.spacedBy(StrmrConstants.Dimensions.SPACING_STANDARD)
+                        ) {
                             val collectionButtonInteractionSource = remember { MutableInteractionSource() }
                             val collectionButtonIsFocused by collectionButtonInteractionSource.collectIsFocusedAsState()
                             FrostedGlassButton(
@@ -1074,17 +1151,7 @@ fun TvShowDetailsView(
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
-                                    .focusRequester(collectionButtonFocusRequester)
-                                    .onKeyEvent { event ->
-                                        if (
-                                            event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
-                                            event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
-                                            !isActorsRowSelected && !isSimilarRowSelected && show.cast.isNotEmpty()
-                                        ) {
-                                            isActorsRowSelected = true
-                                            true
-                                        } else false
-                                    },
+                                    .focusRequester(focusRequesters.getOrNull(0) ?: remember { FocusRequester() }),
                                 interactionSource = collectionButtonInteractionSource,
                                 isFocused = collectionButtonIsFocused,
                                 text = "",
@@ -1104,17 +1171,7 @@ fun TvShowDetailsView(
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
-                                    .focusRequester(watchlistButtonFocusRequester)
-                                    .onKeyEvent { event ->
-                                        if (
-                                            event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
-                                            event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
-                                            !isActorsRowSelected && !isSimilarRowSelected && show.cast.isNotEmpty()
-                                        ) {
-                                            isActorsRowSelected = true
-                                            true
-                                        } else false
-                                    },
+                                    .focusRequester(focusRequesters.getOrNull(0) ?: remember { FocusRequester() }),
                                 interactionSource = watchlistButtonInteractionSource,
                                 isFocused = watchlistButtonIsFocused,
                                 text = "",
@@ -1135,17 +1192,7 @@ fun TvShowDetailsView(
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
-                                    .focusRequester(watchedButtonFocusRequester)
-                                    .onKeyEvent { event ->
-                                        if (
-                                            event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
-                                            event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
-                                            !isActorsRowSelected && !isSimilarRowSelected && show.cast.isNotEmpty()
-                                        ) {
-                                            isActorsRowSelected = true
-                                            true
-                                        } else false
-                                    },
+                                    .focusRequester(focusRequesters.getOrNull(0) ?: remember { FocusRequester() }),
                                 interactionSource = watchedButtonInteractionSource,
                                 isFocused = watchedButtonIsFocused,
                                 text = "",
@@ -1166,17 +1213,7 @@ fun TvShowDetailsView(
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
-                                    .focusRequester(moreButtonFocusRequester)
-                                    .onKeyEvent { event ->
-                                        if (
-                                            event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
-                                            event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
-                                            !isActorsRowSelected && !isSimilarRowSelected && show.cast.isNotEmpty()
-                                        ) {
-                                            isActorsRowSelected = true
-                                            true
-                                        } else false
-                                    },
+                                    .focusRequester(focusRequesters.getOrNull(0) ?: remember { FocusRequester() }),
                                 interactionSource = moreButtonInteractionSource,
                                 isFocused = moreButtonIsFocused,
                                 text = "...",
@@ -1186,65 +1223,91 @@ fun TvShowDetailsView(
                     }
                 }
 
+                // Focus management is now handled by the unified LaunchedEffect above
+
                 Spacer(Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
-                // Actors row
-                if (show.cast.isNotEmpty()) {
-                    ActorsRow(
-                        actors = show.cast,
-                        modifier = Modifier.fillMaxWidth(),
-                        selectedIndex = actorsSelectedIndex,
-                        isRowSelected = isActorsRowSelected,
-                        onSelectionChanged = { actorsSelectedIndex = it },
-                        onUpDown = { direction ->
-                            if (direction < 0) {
-                                // Move up to buttons
-                                isActorsRowSelected = false
-                            } else {
-                                // Move down to similar content
-                                isActorsRowSelected = false
-                                isSimilarRowSelected = true
-                            }
-                        },
-                        focusRequester = actorsFocusRequester,
-                        isContentFocused = isActorsRowSelected,
-                        onContentFocusChanged = { isActorsRowSelected = it }
-                    )
-                }
-                Spacer(Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
-                // Similar content row
-                if (similarContent.isNotEmpty()) {
-                    DetailsContentRow(
-                        title = "Similar ${if (similarContent.firstOrNull()?.mediaType == "movie") "Movies" else "TV Shows"}",
-                        items = similarContent,
-                        onItemClick = { content ->
-                            onNavigateToSimilar(content.mediaType, content.tmdbId)
-                        },
-                        contentMapper = { content ->
-                            DetailsContentData(
-                                title = content.title,
-                                posterUrl = content.posterUrl,
-                                subtitle = content.year?.toString(),
-                                rating = content.rating?.let { String.format("%.1f", it) }
+                // Render rows dynamically based on the rows array
+                for ((index, rowType) in rows.withIndex()) {
+                    when (rowType) {
+                        "actors" -> {
+                            val actorsRowIndex = index
+                            ActorsRow(
+                                actors = show.cast,
+                                modifier = Modifier.fillMaxWidth(),
+                                selectedIndex = if (selectionManager.selectedRowIndex == actorsRowIndex) selectionManager.selectedItemIndex else 0,
+                                isRowSelected = selectionManager.selectedRowIndex == actorsRowIndex,
+                                onSelectionChanged = { newIndex ->
+                                    if (selectionManager.selectedRowIndex == actorsRowIndex) {
+                                        selectionManager.updateSelection(actorsRowIndex, newIndex)
+                                        rowPositionMemory[actorsRowIndex] = newIndex
+                                        Log.d("TvShowDetailsView", "💾 Updated position $newIndex for actors row")
+                                    }
+                                },
+                                onUpDown = { direction ->
+                                    val newRowIndex = actorsRowIndex + direction
+                                    if (newRowIndex >= 0 && newRowIndex < rows.size) {
+                                        // Save current position
+                                        rowPositionMemory[actorsRowIndex] = selectionManager.selectedItemIndex
+                                        
+                                        // Get target position from memory or use default
+                                        val newItemIndex = rowPositionMemory[newRowIndex] ?: 0
+                                        
+                                        Log.d("TvShowDetailsView", "🎯 Actor row navigation: $actorsRowIndex(${rows[actorsRowIndex]}) -> $newRowIndex(${rows[newRowIndex]}), direction=$direction")
+                                        selectionManager.updateSelection(newRowIndex, newItemIndex)
+                                    }
+                                },
+                                focusRequester = if (selectionManager.selectedRowIndex == actorsRowIndex) focusRequesters.getOrNull(actorsRowIndex) else null,
+                                isContentFocused = selectionManager.selectedRowIndex == actorsRowIndex,
+                                onContentFocusChanged = { /* Handled by selectionManager */ }
                             )
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        selectedIndex = similarSelectedIndex,
-                        isRowSelected = isSimilarRowSelected,
-                        onSelectionChanged = { similarSelectedIndex = it },
-                        onUpDown = { direction ->
-                            if (direction < 0) {
-                                // Move up to actors
-                                isSimilarRowSelected = false
-                                isActorsRowSelected = true
-                            } else {
-                                // Stay on current row when at bottom boundary
-                                // Don't clear focus to prevent focus escape
-                            }
-                        },
-                        focusRequester = similarFocusRequester,
-                        isContentFocused = isSimilarRowSelected,
-                        onContentFocusChanged = { isSimilarRowSelected = it }
-                    )
+                        }
+                        "similar" -> {
+                            val similarRowIndex = index
+                            Spacer(Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
+                            DetailsContentRow(
+                                title = "Similar ${if (similarContent.firstOrNull()?.mediaType == "movie") "Movies" else "TV Shows"}",
+                                items = similarContent,
+                                onItemClick = { content ->
+                                    onNavigateToSimilar(content.mediaType, content.tmdbId)
+                                },
+                                contentMapper = { content ->
+                                    DetailsContentData(
+                                        title = content.title,
+                                        posterUrl = content.posterUrl,
+                                        subtitle = content.year?.toString(),
+                                        rating = content.rating?.let { String.format("%.1f", it) }
+                                    )
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                selectedIndex = if (selectionManager.selectedRowIndex == similarRowIndex) selectionManager.selectedItemIndex else 0,
+                                isRowSelected = selectionManager.selectedRowIndex == similarRowIndex,
+                                onSelectionChanged = { newIndex ->
+                                    if (selectionManager.selectedRowIndex == similarRowIndex) {
+                                        selectionManager.updateSelection(similarRowIndex, newIndex)
+                                        rowPositionMemory[similarRowIndex] = newIndex
+                                        Log.d("TvShowDetailsView", "💾 Updated position $newIndex for similar row")
+                                    }
+                                },
+                                onUpDown = { direction ->
+                                    val newRowIndex = similarRowIndex + direction
+                                    if (newRowIndex >= 0 && newRowIndex < rows.size) {
+                                        // Save current position
+                                        rowPositionMemory[similarRowIndex] = selectionManager.selectedItemIndex
+                                        
+                                        // Get target position from memory or use default
+                                        val newItemIndex = rowPositionMemory[newRowIndex] ?: 0
+                                        
+                                        Log.d("TvShowDetailsView", "🎯 Similar row navigation: $similarRowIndex(${rows[similarRowIndex]}) -> $newRowIndex(${rows[newRowIndex]}), direction=$direction")
+                                        selectionManager.updateSelection(newRowIndex, newItemIndex)
+                                    }
+                                    // Stay on current row when at bottom boundary
+                                },
+                                focusRequester = if (selectionManager.selectedRowIndex == similarRowIndex) focusRequesters.getOrNull(similarRowIndex) else null,
+                                isContentFocused = selectionManager.selectedRowIndex == similarRowIndex,
+                                onContentFocusChanged = { /* Handled by selectionManager */ }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -1265,23 +1328,25 @@ fun ActorsRow(
 ) {
     if (actors.isEmpty()) return
     
-    CenteredMediaRow(
-        title = "Actors",
-        mediaItems = actors.take(StrmrConstants.UI.MAX_CAST_ITEMS),
-        selectedIndex = selectedIndex,
-        isRowSelected = isRowSelected,
-        onSelectionChanged = onSelectionChanged,
-        onUpDown = onUpDown,
-        modifier = modifier,
-        itemWidth = 90.dp, // Keep as 90.dp since it's specific for actors
-        itemSpacing = StrmrConstants.Dimensions.SPACING_MEDIUM,
-        rowHeight = StrmrConstants.Dimensions.Cards.MEDIUM_HEIGHT,
-        focusRequester = focusRequester,
-        isContentFocused = isContentFocused,
-        onContentFocusChanged = onContentFocusChanged,
-        itemContent = { actor, isSelected ->
-            ActorCard(actor = actor as Actor, isSelected = isSelected)
-        }
+    UnifiedMediaRow(
+        config = MediaRowConfig(
+            title = "Actors",
+            dataSource = DataSource.RegularList(actors.take(StrmrConstants.UI.MAX_CAST_ITEMS)),
+            selectedIndex = selectedIndex,
+            isRowSelected = isRowSelected,
+            onSelectionChanged = onSelectionChanged,
+            onUpDown = onUpDown,
+            focusRequester = focusRequester,
+            onContentFocusChanged = onContentFocusChanged,
+            cardType = CardType.PORTRAIT,
+            itemWidth = 90.dp, // Keep as 90.dp since it's specific for actors
+            itemSpacing = StrmrConstants.Dimensions.SPACING_MEDIUM,
+            contentPadding = PaddingValues(horizontal = 48.dp),
+            itemContent = { actor, isSelected ->
+                ActorCard(actor = actor, isSelected = isSelected)
+            }
+        ),
+        modifier = modifier
     )
 }
 

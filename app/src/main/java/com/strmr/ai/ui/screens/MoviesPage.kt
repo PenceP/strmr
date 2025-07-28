@@ -28,11 +28,14 @@ import androidx.compose.ui.draw.blur
 import coil.compose.AsyncImage
 import com.strmr.ai.ui.components.MediaHero
 import com.strmr.ai.ui.components.MediaDetails
-import com.strmr.ai.ui.components.CenteredMediaRow
-import com.strmr.ai.ui.components.PagingMediaRow
+import com.strmr.ai.ui.components.UnifiedMediaRow
+import com.strmr.ai.ui.components.MediaRowConfig
+import com.strmr.ai.ui.components.DataSource
+import com.strmr.ai.ui.components.CardType
+import com.strmr.ai.ui.components.MediaCard
+import com.strmr.ai.ui.components.MediaCardSkeleton
 import com.strmr.ai.ui.components.MediaRowSkeleton
 import com.strmr.ai.ui.components.SkeletonCardType
-import com.strmr.ai.ui.components.MediaCard
 import com.strmr.ai.data.OmdbResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -239,56 +242,20 @@ fun MoviesPage(
             ) {
                 // Check if we have paging data for this row
                 if (currentPagingFlow != null && pagingItems != null) {
-                    // Use paging version of the row
-                    PagingMediaRow(
-                        title = currentRowTitle,
-                        pagingFlow = currentPagingFlow,
-                        selectedIndex = selectionManager.selectedItemIndex,
-                        isRowSelected = true,
-                        onSelectionChanged = { newIndex ->
-                            selectionManager.updateSelection(validRowIndex, newIndex)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        focusRequester = if (selectionManager.isContentFocused) focusRequesters.getOrNull(validRowIndex) else null,
-                        onUpDown = { direction ->
-                            val newRowIndex = validRowIndex + direction
-                            if (newRowIndex >= 0 && newRowIndex < rowCount) {
-                                Log.d("MoviesPage", "🎯 Row navigation: $validRowIndex -> $newRowIndex, maintaining focus")
-                                selectionManager.updateSelection(newRowIndex, 0)
-                                selectionManager.updateContentFocus(true)
-                            }
-                        },
-                        isContentFocused = selectionManager.isContentFocused,
-                        onContentFocusChanged = { focused ->
-                            selectionManager.updateContentFocus(focused)
-                            onContentFocusChanged?.invoke(focused)
-                        },
-                        onLeftBoundary = onLeftBoundary,
-                        currentRowIndex = validRowIndex,
-                        totalRowCount = rowCount,
-                        onItemClick = { movie ->
-                            onNavigateToDetails?.invoke(movie.tmdbId)
-                        },
-                        onPositionChanged = { currentPosition, totalItems ->
-                            viewModel.updateRowPosition(currentRowTitle, currentPosition, totalItems)
-                        },
-                        logTag = "PagingMovieRow"
-                    )
-                } else {
-                    // Fallback to regular row if no paging data
-                    val rowItems = selectedRow
-                    
-                    if (rowItems.isNotEmpty()) {
-                        CenteredMediaRow(
+                    // Use UnifiedMediaRow with paging data source
+                    UnifiedMediaRow(
+                        config = MediaRowConfig(
                             title = currentRowTitle,
-                            mediaItems = rowItems,
+                            dataSource = DataSource.PagingList(pagingItems),
                             selectedIndex = selectionManager.selectedItemIndex,
                             isRowSelected = true,
                             onSelectionChanged = { newIndex ->
                                 selectionManager.updateSelection(validRowIndex, newIndex)
+                                // Update row position in view model
+                                if (pagingItems.itemCount > 0) {
+                                    viewModel.updateRowPosition(currentRowTitle, newIndex, pagingItems.itemCount)
+                                }
                             },
-                            modifier = Modifier.fillMaxWidth(),
-                            focusRequester = if (selectionManager.isContentFocused) focusRequesters.getOrNull(validRowIndex) else null,
                             onUpDown = { direction ->
                                 val newRowIndex = validRowIndex + direction
                                 if (newRowIndex >= 0 && newRowIndex < rowCount) {
@@ -297,27 +264,87 @@ fun MoviesPage(
                                     selectionManager.updateContentFocus(true)
                                 }
                             },
-                            isContentFocused = selectionManager.isContentFocused,
+                            onLeftBoundary = onLeftBoundary,
                             onContentFocusChanged = { focused ->
                                 selectionManager.updateContentFocus(focused)
                                 onContentFocusChanged?.invoke(focused)
                             },
-                            currentRowIndex = validRowIndex,
-                            totalRowCount = rowCount,
+                            focusRequester = if (selectionManager.isContentFocused) focusRequesters.getOrNull(validRowIndex) else null,
+                            cardType = CardType.PORTRAIT,
+                            itemWidth = 120.dp,
+                            itemSpacing = 12.dp,
+                            contentPadding = PaddingValues(horizontal = 48.dp),
                             onItemClick = { movie ->
-                                onNavigateToDetails?.invoke((movie as MovieEntity).tmdbId)
+                                if (movie is MovieEntity) {
+                                    onNavigateToDetails?.invoke(movie.tmdbId)
+                                }
                             },
                             itemContent = { movie, isSelected ->
-                                MediaCard(
-                                    title = (movie as MovieEntity).title,
-                                    posterUrl = movie.posterUrl,
-                                    isSelected = isSelected,
-                                    onClick = {
+                                if (movie is MovieEntity) {
+                                    MediaCard(
+                                        title = movie.title,
+                                        posterUrl = movie.posterUrl,
+                                        isSelected = isSelected,
+                                        onClick = {
+                                            onNavigateToDetails?.invoke(movie.tmdbId)
+                                        }
+                                    )
+                                }
+                            }
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    // Fallback to regular row if no paging data
+                    val rowItems = selectedRow
+                    
+                    if (rowItems.isNotEmpty()) {
+                        UnifiedMediaRow(
+                            config = MediaRowConfig(
+                                title = currentRowTitle,
+                                dataSource = DataSource.RegularList(rowItems),
+                                selectedIndex = selectionManager.selectedItemIndex,
+                                isRowSelected = true,
+                                onSelectionChanged = { newIndex ->
+                                    selectionManager.updateSelection(validRowIndex, newIndex)
+                                },
+                                onUpDown = { direction ->
+                                    val newRowIndex = validRowIndex + direction
+                                    if (newRowIndex >= 0 && newRowIndex < rowCount) {
+                                        Log.d("MoviesPage", "🎯 Row navigation: $validRowIndex -> $newRowIndex, maintaining focus")
+                                        selectionManager.updateSelection(newRowIndex, 0)
+                                        selectionManager.updateContentFocus(true)
+                                    }
+                                },
+                                onLeftBoundary = onLeftBoundary,
+                                onContentFocusChanged = { focused ->
+                                    selectionManager.updateContentFocus(focused)
+                                    onContentFocusChanged?.invoke(focused)
+                                },
+                                focusRequester = if (selectionManager.isContentFocused) focusRequesters.getOrNull(validRowIndex) else null,
+                                cardType = CardType.PORTRAIT,
+                                itemWidth = 120.dp,
+                                itemSpacing = 12.dp,
+                                contentPadding = PaddingValues(horizontal = 48.dp),
+                                onItemClick = { movie ->
+                                    if (movie is MovieEntity) {
                                         onNavigateToDetails?.invoke(movie.tmdbId)
                                     }
-                                )
-                            },
-                            onLeftBoundary = onLeftBoundary
+                                },
+                                itemContent = { movie, isSelected ->
+                                    if (movie is MovieEntity) {
+                                        MediaCard(
+                                            title = movie.title,
+                                            posterUrl = movie.posterUrl,
+                                            isSelected = isSelected,
+                                            onClick = {
+                                                onNavigateToDetails?.invoke(movie.tmdbId)
+                                            }
+                                        )
+                                    }
+                                }
+                            ),
+                            modifier = Modifier.fillMaxWidth()
                         )
                     } else {
                         // Show skeleton when no items loaded yet
