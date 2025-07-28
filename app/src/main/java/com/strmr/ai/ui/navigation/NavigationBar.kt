@@ -82,7 +82,7 @@ fun NavigationBar(
     
     Column(
         modifier = modifier
-            .background(Color.Black.copy(alpha = 0.1f))
+            .background(Color.Black.copy(alpha = 0.5f))
             .padding(vertical = 22.dp)
             .focusRequester(navFocusRequester)
             .focusable()
