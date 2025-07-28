@@ -12,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -68,6 +69,8 @@ import com.strmr.ai.data.ScraperRepository
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import androidx.lifecycle.lifecycleScope
 import javax.inject.Inject
 import androidx.media3.common.util.UnstableApi
 import android.view.KeyEvent
@@ -354,11 +357,16 @@ fun MainScreen(
                 }
                 composable("trakt_settings") {
                     val homeViewModel: HomeViewModel = hiltViewModel()
+                    val scope = rememberCoroutineScope()
                     TraktSettingsPage(
                         onBackPressed = { navController.popBackStack() },
                         onTraktAuthorized = { 
-                            homeViewModel.refreshContinueWatching()
-                            homeViewModel.refreshTraktLists()
+                            // Add small delay to ensure tokens are fully saved
+                            scope.launch {
+                                delay(100) // Small delay to ensure token persistence
+                                homeViewModel.refreshContinueWatching()
+                                homeViewModel.refreshTraktLists()
+                            }
                         }
                     )
                 }

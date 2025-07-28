@@ -87,7 +87,7 @@ fun <T : Any> UnifiedMediaRow(
             Text(
                 text = config.title,
                 color = Color.White,
-                modifier = Modifier.padding(start = 22.dp, bottom = 4.dp)
+                modifier = Modifier.padding(start = 56.dp, bottom = 4.dp)
             )
         }
         
@@ -361,7 +361,7 @@ data class MediaRowConfig<T : Any>(
     val cardType: CardType = CardType.PORTRAIT,
     val itemWidth: Dp = 120.dp,
     val itemSpacing: Dp = 12.dp,
-    val contentPadding: PaddingValues = PaddingValues(horizontal = 48.dp),
+    val contentPadding: PaddingValues = PaddingValues(horizontal = 56.dp),
     val isLoading: Boolean = false,
     val skeletonCount: Int = 8,
     val keyExtractor: ((T) -> Any)? = null,

@@ -174,7 +174,7 @@ fun SearchPage(
                     .fillMaxWidth()
                     .weight(1f)
                     .verticalScroll(scrollState)
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = 0.dp)
             ) {
                 
                 // Error message

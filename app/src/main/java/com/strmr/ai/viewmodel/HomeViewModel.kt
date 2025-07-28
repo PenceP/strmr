@@ -53,10 +53,16 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             homeRepository.getContinueWatching().collectLatest { continueWatchingEntities ->
                 _isContinueWatchingLoading.value = false
+                Log.d("HomeViewModel", "🔍 Received ${continueWatchingEntities.size} entities from database")
+                
                 val mappedItems = continueWatchingEntities
                     .filter { entity ->
-                        // Include items with progress between 1-95% OR next episodes (no progress but has next episode)
-                        (entity.progress != null && entity.progress in 1f..95f) || entity.isNextEpisode
+                        val hasValidProgress = entity.progress != null && entity.progress in 1f..95f
+                        val isNext = entity.isNextEpisode
+                        val shouldInclude = hasValidProgress || isNext
+                        
+                        Log.d("HomeViewModel", "Filtering ${entity.movieTitle ?: entity.showTitle}: progress=${entity.progress}, isNext=$isNext, include=$shouldInclude")
+                        shouldInclude
                     }
                     .mapNotNull { entity ->
                         when (entity.type) {
@@ -128,6 +134,8 @@ class HomeViewModel @Inject constructor(
                             else -> null
                         }
                     }
+                Log.d("HomeViewModel", "🔍 After filtering: ${continueWatchingEntities.filter { entity -> (entity.progress != null && entity.progress in 1f..95f) || entity.isNextEpisode }.size} items remain")
+                Log.d("HomeViewModel", "🔍 After mapping: ${mappedItems.size} items final")
                 _continueWatching.value = mappedItems
             }
         }

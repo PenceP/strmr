@@ -209,7 +209,7 @@ fun IntermediateViewPage(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(start = navBarWidth)
+                        .padding(start = 1.dp)
                         .verticalScroll(rememberScrollState())
                 ) {
                     // Hero section (top 49%)
@@ -217,6 +217,7 @@ fun IntermediateViewPage(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(0.49f)
+                            .padding(start = navBarWidth-2.dp)
                     ) {
                         MediaHero(
                             mediaDetails = {
@@ -262,6 +263,7 @@ fun IntermediateViewPage(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(0.51f)
+                            .padding(start = 2.dp)
                     ) {
                         UnifiedMediaRow(
                             config = MediaRowConfig(
@@ -278,7 +280,7 @@ fun IntermediateViewPage(
                                 cardType = CardType.PORTRAIT,
                                 itemWidth = 120.dp,
                                 itemSpacing = 12.dp,
-                                contentPadding = PaddingValues(horizontal = 48.dp),
+                                //contentPadding = PaddingValues(horizontal = 48.dp),
                                 onItemClick = { item ->
                                     val mediaType = when (item) {
                                         is com.strmr.ai.viewmodel.HomeMediaItem.Movie -> "movie"

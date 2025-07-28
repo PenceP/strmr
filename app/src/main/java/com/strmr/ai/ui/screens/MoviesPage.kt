@@ -203,7 +203,7 @@ fun MoviesPage(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(start = navBarWidth)
+                .padding(start = 1.dp)
         ) {
             // Hero section (based on configuration)
             if (shouldShowHero && selectedItem is MovieEntity) {
@@ -211,6 +211,7 @@ fun MoviesPage(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(0.49f)
+                        .padding(start = navBarWidth-2.dp)
                 ) {
                     MediaHero(
                         mediaDetails = {
@@ -273,7 +274,7 @@ fun MoviesPage(
                             cardType = CardType.PORTRAIT,
                             itemWidth = 120.dp,
                             itemSpacing = 12.dp,
-                            contentPadding = PaddingValues(horizontal = 48.dp),
+                            //contentPadding = PaddingValues(horizontal = 48.dp),
                             onItemClick = { movie ->
                                 if (movie is MovieEntity) {
                                     onNavigateToDetails?.invoke(movie.tmdbId)
@@ -325,7 +326,7 @@ fun MoviesPage(
                                 cardType = CardType.PORTRAIT,
                                 itemWidth = 120.dp,
                                 itemSpacing = 12.dp,
-                                contentPadding = PaddingValues(horizontal = 48.dp),
+                                //contentPadding = PaddingValues(horizontal = 48.dp),
                                 onItemClick = { movie ->
                                     if (movie is MovieEntity) {
                                         onNavigateToDetails?.invoke(movie.tmdbId)

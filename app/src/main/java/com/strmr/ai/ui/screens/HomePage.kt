@@ -121,7 +121,7 @@ fun HomeMediaRow(
             cardType = if (cardType == "landscape") CardType.LANDSCAPE else CardType.PORTRAIT,
             itemWidth = if (cardType == "landscape") 200.dp else 120.dp,
             itemSpacing = 12.dp, // Use EpisodeView spacing
-            contentPadding = PaddingValues(horizontal = 48.dp), // Use EpisodeView padding
+            //contentPadding = PaddingValues(horizontal = 56.dp), // Align with hero text
             itemContent = { mediaItem, isSelected ->
                 when (mediaItem) {
                     is HomeMediaItem.Movie -> LandscapeMediaCard(
@@ -583,7 +583,7 @@ fun HomePage(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(start = 39.dp)
+                .padding(start = 0.dp)
         ) {
             Spacer(modifier = Modifier.height(if (shouldShowHero) 290.dp else 32.dp)) // Dynamic space for hero overlay
             Column(

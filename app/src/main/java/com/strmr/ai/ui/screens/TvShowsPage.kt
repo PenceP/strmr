@@ -196,7 +196,7 @@ fun TvShowsPage(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(start = navBarWidth)
+                .padding(start = 1.dp)
         ) {
             // Hero section (based on configuration)
             if (shouldShowHero && selectedItem is TvShowEntity) {
@@ -204,6 +204,7 @@ fun TvShowsPage(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(0.49f)
+                        .padding(start = navBarWidth-2.dp)
                 ) {
                     MediaHero(
                         mediaDetails = {
@@ -266,7 +267,7 @@ fun TvShowsPage(
                             cardType = CardType.PORTRAIT,
                             itemWidth = 120.dp,
                             itemSpacing = 12.dp,
-                            contentPadding = PaddingValues(horizontal = 48.dp),
+                            //contentPadding = PaddingValues(horizontal = 48.dp),
                             onItemClick = { show ->
                                 if (show is TvShowEntity) {
                                     onNavigateToDetails?.invoke(show.tmdbId)
@@ -318,7 +319,7 @@ fun TvShowsPage(
                                 cardType = CardType.PORTRAIT,
                                 itemWidth = 120.dp,
                                 itemSpacing = 12.dp,
-                                contentPadding = PaddingValues(horizontal = 48.dp),
+                                //contentPadding = PaddingValues(horizontal = 48.dp),
                                 onItemClick = { show ->
                                     if (show is TvShowEntity) {
                                         onNavigateToDetails?.invoke(show.tmdbId)
