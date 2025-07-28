@@ -53,7 +53,7 @@ fun MediaDetails(
                 .height(72.dp)
                 .fillMaxWidth()
                 .padding(bottom = 8.dp),
-            contentAlignment = Alignment.CenterStart
+            contentAlignment = Alignment.TopStart
         ) {
             val resolvedLogoSource = resolveImageSource(logoUrl)
             if (resolvedLogoSource != null) {
@@ -62,7 +62,6 @@ fun MediaDetails(
                     contentDescription = title,
                     modifier = Modifier
                         .height(72.dp)
-                        .fillMaxWidth()
                 )
             } else {
                 // Show title text as placeholder when logo is not available
