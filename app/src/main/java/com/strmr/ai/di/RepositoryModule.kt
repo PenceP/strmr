@@ -4,6 +4,12 @@ import android.content.Context
 import com.strmr.ai.data.*
 import com.strmr.ai.data.database.*
 import com.strmr.ai.data.database.TraktRatingsDao
+import com.strmr.ai.data.repository.MovieRepositoryImpl
+import com.strmr.ai.data.repository.TvShowRepositoryImpl
+import com.strmr.ai.data.repository.AccountRepositoryImpl
+import com.strmr.ai.data.mapper.MovieMapper
+import com.strmr.ai.data.mapper.TvShowMapper
+import com.strmr.ai.data.mapper.AccountMapper
 import com.strmr.ai.domain.usecase.FetchLogoUseCase
 import dagger.Module
 import dagger.Provides
@@ -16,6 +22,7 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object RepositoryModule {
     
+    // Legacy repository providers (will be gradually phased out)
     @Provides
     @Singleton
     fun provideMovieRepository(
@@ -139,5 +146,36 @@ object RepositoryModule {
         genericRepository: GenericTraktRepository
     ): OnboardingService {
         return OnboardingService(context, database, genericRepository)
+    }
+
+    // =================
+    // CLEAN ARCHITECTURE DOMAIN REPOSITORIES
+    // =================
+
+    @Provides
+    @Singleton
+    fun provideDomainMovieRepository(
+        legacyRepository: MovieRepository,
+        movieMapper: MovieMapper
+    ): com.strmr.ai.domain.repository.MovieRepository {
+        return MovieRepositoryImpl(legacyRepository, movieMapper)
+    }
+
+    @Provides
+    @Singleton
+    fun provideDomainTvShowRepository(
+        legacyRepository: TvShowRepository,
+        tvShowMapper: TvShowMapper
+    ): com.strmr.ai.domain.repository.TvShowRepository {
+        return TvShowRepositoryImpl(legacyRepository, tvShowMapper)
+    }
+
+    @Provides
+    @Singleton
+    fun provideDomainAccountRepository(
+        legacyRepository: AccountRepository,
+        accountMapper: AccountMapper
+    ): com.strmr.ai.domain.repository.AccountRepository {
+        return AccountRepositoryImpl(legacyRepository, accountMapper)
     }
 } 

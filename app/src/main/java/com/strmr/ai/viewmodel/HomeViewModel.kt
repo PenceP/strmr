@@ -4,6 +4,13 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.strmr.ai.data.*
+import com.strmr.ai.domain.usecase.GetContinueWatchingUseCase
+import com.strmr.ai.domain.usecase.CheckTraktAuthorizationUseCase
+import com.strmr.ai.domain.usecase.FetchMediaLogoUseCase
+import com.strmr.ai.presentation.state.HomeUiState
+import com.strmr.ai.presentation.state.ContinueWatchingState
+import com.strmr.ai.presentation.state.TraktListsState
+import com.strmr.ai.presentation.state.TraktAuthState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -17,13 +24,17 @@ class HomeViewModel @Inject constructor(
     private val movieRepository: MovieRepository,
     private val tvShowRepository: TvShowRepository,
     private val homeRepository: HomeRepository,
-    private val omdbRepository: OmdbRepository
+    private val omdbRepository: OmdbRepository,
+    // Clean architecture use cases (optional for gradual migration)
+    private val getContinueWatchingUseCase: GetContinueWatchingUseCase,
+    private val checkTraktAuthorizationUseCase: CheckTraktAuthorizationUseCase,
+    private val fetchMediaLogoUseCase: FetchMediaLogoUseCase
 ) : ViewModel() {
 
     private val _continueWatching = MutableStateFlow<List<HomeMediaItem>>(emptyList())
     val continueWatching = _continueWatching.asStateFlow()
 
-    private val _networks = MutableStateFlow<List<NetworkInfo>>(emptyList())
+    private val _networks = MutableStateFlow<List<com.strmr.ai.data.NetworkInfo>>(emptyList())
     val networks = _networks.asStateFlow()
 
     private val _isContinueWatchingLoading = MutableStateFlow(true)
@@ -154,7 +165,7 @@ class HomeViewModel @Inject constructor(
     private fun loadNetworks() {
         val config = homeRepository.getHomeConfig()
         val networkSection = config?.homePage?.rows?.find { it.id == "networks" }
-        _networks.value = networkSection?.networks ?: emptyList()
+        _networks.value = networkSection?.networks ?: emptyList<com.strmr.ai.data.NetworkInfo>()
         _isNetworksLoading.value = false
     }
 
@@ -253,5 +264,130 @@ class HomeViewModel @Inject constructor(
     fun refreshTraktLists() {
         Log.d("HomeViewModel", "🔄 refreshTraktLists() called - reloading Trakt lists")
         loadTraktLists()
+    }
+
+    // =================
+    // CLEAN ARCHITECTURE METHODS
+    // =================
+
+    // Clean architecture unified UI state
+    private val _uiState = MutableStateFlow(HomeUiState())
+    val uiState = _uiState.asStateFlow()
+
+    /**
+     * Load continue watching using clean architecture
+     * This demonstrates improved architecture with proper error handling
+     */
+    fun loadContinueWatchingWithCleanArchitecture() {
+        viewModelScope.launch {
+            Log.d("HomeViewModel", "🏗️ Loading continue watching with clean architecture")
+            
+            _uiState.value = _uiState.value.copy(
+                continueWatching = ContinueWatchingState.Loading
+            )
+            
+            getContinueWatchingUseCase.refreshContinueWatching()
+                .onSuccess { items ->
+                    Log.d("HomeViewModel", "✅ Successfully loaded ${items.size} continue watching items")
+                    _uiState.value = _uiState.value.copy(
+                        continueWatching = ContinueWatchingState.Success(items)
+                    )
+                }
+                .onFailure { exception ->
+                    Log.e("HomeViewModel", "❌ Failed to load continue watching", exception)
+                    _uiState.value = _uiState.value.copy(
+                        continueWatching = ContinueWatchingState.Error(
+                            exception.message ?: "Failed to load continue watching"
+                        )
+                    )
+                }
+        }
+    }
+
+    /**
+     * Check Trakt authorization using clean architecture
+     */
+    fun checkTraktAuthorizationWithCleanArchitecture() {
+        viewModelScope.launch {
+            Log.d("HomeViewModel", "🏗️ Checking Trakt authorization with clean architecture")
+            
+            _uiState.value = _uiState.value.copy(
+                traktAuthorization = TraktAuthState.Checking
+            )
+            
+            checkTraktAuthorizationUseCase()
+                .onSuccess { isAuthorized ->
+                    Log.d("HomeViewModel", "✅ Trakt authorization check: $isAuthorized")
+                    _uiState.value = _uiState.value.copy(
+                        traktAuthorization = if (isAuthorized) {
+                            TraktAuthState.Authorized
+                        } else {
+                            TraktAuthState.NotAuthorized
+                        }
+                    )
+                    
+                    // If authorized, load Trakt lists
+                    if (isAuthorized) {
+                        loadTraktListsWithCleanArchitecture()
+                    }
+                }
+                .onFailure { exception ->
+                    Log.e("HomeViewModel", "❌ Failed to check Trakt authorization", exception)
+                    _uiState.value = _uiState.value.copy(
+                        traktAuthorization = TraktAuthState.NotAuthorized
+                    )
+                }
+        }
+    }
+
+    /**
+     * Load Trakt lists using clean architecture
+     */
+    private fun loadTraktListsWithCleanArchitecture() {
+        viewModelScope.launch {
+            Log.d("HomeViewModel", "🏗️ Loading Trakt lists with clean architecture")
+            
+            _uiState.value = _uiState.value.copy(
+                traktLists = TraktListsState.Loading
+            )
+            
+            // TODO: Implement TraktListsUseCase when needed
+            // For now, just set success with empty list
+            _uiState.value = _uiState.value.copy(
+                traktLists = TraktListsState.Success(emptyList())
+            )
+        }
+    }
+
+    /**
+     * Refresh all data using clean architecture
+     */
+    fun refreshAllWithCleanArchitecture() {
+        Log.d("HomeViewModel", "🔄 Refreshing all data with clean architecture")
+        loadContinueWatchingWithCleanArchitecture()
+        checkTraktAuthorizationWithCleanArchitecture()
+    }
+
+    /**
+     * Clear error for a specific section
+     */
+    fun clearError(section: String) {
+        when (section) {
+            "continue_watching" -> {
+                if (_uiState.value.continueWatching is ContinueWatchingState.Error) {
+                    _uiState.value = _uiState.value.copy(
+                        continueWatching = ContinueWatchingState.Success(emptyList())
+                    )
+                }
+            }
+            "trakt_lists" -> {
+                if (_uiState.value.traktLists is TraktListsState.Error) {
+                    _uiState.value = _uiState.value.copy(
+                        traktLists = TraktListsState.NotLoaded
+                    )
+                }
+            }
+        }
+        Log.d("HomeViewModel", "🧹 Cleared error for section: $section")
     }
 } 

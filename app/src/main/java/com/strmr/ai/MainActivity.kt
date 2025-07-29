@@ -62,6 +62,7 @@ import com.strmr.ai.ui.screens.IntermediateViewPage
 import android.util.Log
 import dagger.hilt.android.AndroidEntryPoint
 import com.strmr.ai.viewmodel.HomeViewModel
+import com.strmr.ai.domain.usecase.ClearObsoleteDataUseCase
 import com.strmr.ai.data.MovieRepository
 import com.strmr.ai.data.TvShowRepository
 import com.strmr.ai.data.YouTubeExtractor
@@ -135,6 +136,10 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var youtubeExtractor: YouTubeExtractor
     
+    // Clean architecture use case
+    @Inject
+    lateinit var clearObsoleteDataUseCase: ClearObsoleteDataUseCase
+    
     @Inject
     lateinit var onboardingService: OnboardingService
     
@@ -196,21 +201,17 @@ class MainActivity : ComponentActivity() {
     }
     
     private fun clearNullLogos() {
-        // Use a coroutine to clear null logos asynchronously with proper error handling
+        // Use clean architecture use case to clear null logos
         CoroutineScope(Dispatchers.IO).launch {
-            try {
-                // Batch these operations for better performance
-                val movieJob = launch { movieRepository.clearNullLogos() }
-                val tvShowJob = launch { tvShowRepository.clearNullLogos() }
-                
-                // Wait for both to complete
-                movieJob.join()
-                tvShowJob.join()
-                
-                Log.d("MainActivity", "✅ Cleared null logos for retry")
-            } catch (e: Exception) {
-                Log.e("MainActivity", "❌ Error clearing null logos", e)
-            }
+            Log.d("MainActivity", "🏗️ Clearing obsolete data with clean architecture")
+            
+            clearObsoleteDataUseCase()
+                .onSuccess {
+                    Log.d("MainActivity", "✅ Successfully cleared obsolete data")
+                }
+                .onFailure { exception ->
+                    Log.e("MainActivity", "❌ Error clearing obsolete data", exception)
+                }
         }
     }
     
