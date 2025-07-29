@@ -603,6 +603,32 @@
 
 ---
 
+---
+Current functional issues:
+
+Navigation bugs:
+- [ ] If I click into a details page from any poster or setting, and press back the selector focus should be on what you last clicked.
+- [ ] when entering tv shows details page, the selector should always start on the "play" button
+- [ ] when you navigate on the side bar to the settings icon it shouldn't pop you to the search icon, it should do nothing. same goes fro when you navigate up from the search icon it should do nothing.
+  -if you're on search and you navigate from a movie down to a tv show title, it should bring you down to that row, but it will not have the title selected, you have to press to the right for it to come in focus, then that kind of also messes up when you navigate down to actors, it will lok like its infocus but I have to press to the right to twice to get to the next item on that list.
+
+
+UI issues:
+- [ ] When scrolling on posters, the one in focus stretches upwards and zooms in a bit cutting off part of the poster content, the aspect ratio shouldn't change, all that should happen is the poster gets a bit bigger from the center point.
+- [ ] Graphical issues with some elements bouncing around, and then coming into place when you scroll fast on posters, also the focus will get messed up when it refreshes due to scroll, the focus poster will no longer be correct and there wont be a poster in focus at all as far as being scaled up
+- [ ] On the details screen, the actor thumbnails and similar movies/similar tv shows should be left inline with the description of the content page.
+- [ ] Similar movies/ tv shows there aspect ratio isn't correct it, it should be 2:3
+- [ ] Actor images should be 2:3 aspect ratio and shouldn't  have that weird stretch/zoom in when in focus, it be like this: the aspect ratio shouldn't change, all that should happen is the poster gets a bit bigger from the center point.
+- [ ] Settings screen needs better focus presents where you can clearly see what youre focused on
+
+
+
+issues:
+voice search doesn't work
+---
+
+
+
 ## 🎯 Implementation Strategy
 
 ### **Phase 1: Foundation (Current Priority)**
