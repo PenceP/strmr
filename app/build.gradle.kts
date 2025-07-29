@@ -13,6 +13,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     id("com.google.devtools.ksp") version "2.0.0-1.0.21"
     id("com.google.dagger.hilt.android") version "2.48"
+    id("io.gitlab.arturbosch.detekt") version "1.23.4"
+    id("org.jlleitschuh.gradle.ktlint") version "12.1.0"
 }
 
 android {
@@ -25,6 +27,7 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = rootProject.file("version.txt").readText().trim()
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "TRAKT_API_KEY", "\"${secrets.getProperty("TRAKT_API_KEY", "")}\"")
         buildConfigField("String", "OMDB_API_KEY", "\"${secrets.getProperty("OMDB_API_KEY", "")}\"")
         buildConfigField("String", "TMDB_READ_KEY", "\"${secrets.getProperty("TMDB_READ_KEY", "")}\"")
@@ -147,5 +150,46 @@ dependencies {
     testImplementation("androidx.arch.core:core-testing:2.2.0")
     testImplementation("androidx.room:room-testing:2.6.1")
     testImplementation("com.google.dagger:hilt-android-testing:2.48")
+    testImplementation("app.cash.turbine:turbine:1.0.0")
     kspTest("com.google.dagger:hilt-compiler:2.48")
+    
+    // Android Test dependencies
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation("androidx.room:room-testing:2.6.1")
+    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
+    androidTestImplementation("com.google.dagger:hilt-android-testing:2.48")
+    androidTestImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    kspAndroidTest("com.google.dagger:hilt-compiler:2.48")
+}
+
+// Detekt Configuration
+detekt {
+    config.setFrom(file("../config/detekt/detekt.yml"))
+    buildUponDefaultConfig = true
+    autoCorrect = false
+    
+    reports {
+        html.required.set(true)
+        xml.required.set(true)
+        txt.required.set(true)
+        sarif.required.set(true)
+    }
+}
+
+// KtLint Configuration
+ktlint {
+    version.set("1.0.1")
+    debug.set(false)
+    verbose.set(true)
+    android.set(true)
+    outputToConsole.set(true)
+    outputColorName.set("RED")
+    ignoreFailures.set(false)
+    
+    filter {
+        exclude("**/generated/**")
+        include("**/src/**")
+    }
 }

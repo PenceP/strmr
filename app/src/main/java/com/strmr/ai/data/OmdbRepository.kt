@@ -32,7 +32,9 @@ class OmdbRepository(
             
             // Fetch from API
             Log.d("OmdbRepository", "📡 Fetching from API for $imdbId")
-            Log.d("OmdbRepository", "📡 API Key: ${BuildConfig.OMDB_API_KEY.take(5)}...")
+            if (BuildConfig.DEBUG) {
+                Log.d("OmdbRepository", "📡 API Key: ${BuildConfig.OMDB_API_KEY.take(5)}...")
+            }
             val response = omdbApiService.getOmdbRatings(apiKey = BuildConfig.OMDB_API_KEY, imdbId = imdbId)
             Log.d("OmdbRepository", "✅ API response received: $response")
             
