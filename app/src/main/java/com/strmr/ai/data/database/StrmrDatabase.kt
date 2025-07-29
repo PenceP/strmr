@@ -24,6 +24,7 @@ import com.strmr.ai.data.database.SeasonDao
 import com.strmr.ai.data.database.EpisodeDao
 import com.strmr.ai.data.database.TraktRatingsEntity
 import com.strmr.ai.data.database.TraktRatingsDao
+import com.strmr.ai.utils.DatabaseOptimizer
 
 @Database(
     entities = [
@@ -42,7 +43,7 @@ import com.strmr.ai.data.database.TraktRatingsDao
         IntermediateViewEntity::class,
         IntermediateViewItemEntity::class
     ],
-    version = 12, // bumped for intermediate view caching tables and episode rating column
+    version = 13, // bumped for performance indices
     exportSchema = false
 )
 @TypeConverters(ListConverter::class)
@@ -194,7 +195,7 @@ abstract class StrmrDatabase : RoomDatabase() {
 
         fun getDatabase(context: Context): StrmrDatabase {
             return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
+                val baseBuilder = Room.databaseBuilder(
                     context.applicationContext,
                     StrmrDatabase::class.java,
                     "strmr_database"
@@ -203,10 +204,14 @@ abstract class StrmrDatabase : RoomDatabase() {
                         MIGRATION_10_11,
                         MIGRATION_9_10,
                         MIGRATION_8_9,
-                        MIGRATION_11_12
-                    ) // Add the new migrations
-                .fallbackToDestructiveMigration()
-                .build()
+                        MIGRATION_11_12,
+                        DatabaseOptimizer.MIGRATION_PERFORMANCE_INDICES
+                    )
+                    .fallbackToDestructiveMigration()
+                
+                // Apply database optimizations
+                val optimizedBuilder = DatabaseOptimizer.optimizeDatabaseBuilder(baseBuilder)
+                val instance = optimizedBuilder.build()
                 INSTANCE = instance
                 instance
             }

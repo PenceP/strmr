@@ -1,8 +1,11 @@
 package com.strmr.ai.domain.model
 
+import androidx.compose.runtime.Immutable
+
 /**
  * Domain model for media genres
  */
+@Immutable
 data class Genre(
     val name: String
 ) {

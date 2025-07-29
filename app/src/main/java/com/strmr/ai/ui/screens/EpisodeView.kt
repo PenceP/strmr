@@ -89,7 +89,7 @@ fun EpisodeView(
                 "EpisodeView",
                 " Fetching seasons for show: ${show.title} (tmdbId: ${show.tmdbId})"
             )
-            val fetchedSeasons = viewModel.getSeasons(show.tmdbId)
+            val fetchedSeasons = viewModel.fetchTvShowSeasons(show.tmdbId)
             seasons = fetchedSeasons
             Log.d("EpisodeView", " Fetched ${fetchedSeasons.size} seasons for ${show.title}")
             fetchedSeasons.forEachIndexed { index, season ->
@@ -111,7 +111,7 @@ fun EpisodeView(
             if (fetchedSeasons.isNotEmpty()) {
                 val selectedSeason = fetchedSeasons[selectedSeasonIndex]
                 val fetchedEpisodes =
-                    viewModel.getEpisodes(show.tmdbId, selectedSeason.seasonNumber)
+                    viewModel.fetchTvShowEpisodes(show.tmdbId, selectedSeason.seasonNumber)
                 episodes = fetchedEpisodes
                 Log.d(
                     "EpisodeView",
@@ -146,7 +146,7 @@ fun EpisodeView(
 
                 // Use the current coroutine scope for the API call
                 val fetchedEpisodes = withContext(Dispatchers.IO) {
-                    viewModel.getEpisodes(show.tmdbId, selectedSeason.seasonNumber)
+                    viewModel.fetchTvShowEpisodes(show.tmdbId, selectedSeason.seasonNumber)
                 }
 
                 // Only update if this coroutine wasn't cancelled

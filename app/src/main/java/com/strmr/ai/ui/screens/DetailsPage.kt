@@ -215,7 +215,7 @@ fun MovieDetailsView(
             try {
                 Log.d("MovieDetailsView", "📡 Fetching collection for ID: $collectionId")
                 collection = withContext(Dispatchers.IO) {
-                    val fetchedCollection = viewModel.getCollection(collectionId)
+                    val fetchedCollection = viewModel.fetchMovieCollection(collectionId)
                     Log.d("MovieDetailsView", "✅ Collection fetched: $fetchedCollection")
                     Log.d("MovieDetailsView", "✅ Collection parts count: ${fetchedCollection?.parts?.size}")
                     fetchedCollection
@@ -243,7 +243,7 @@ fun MovieDetailsView(
             try {
                 Log.d("MovieDetailsView", "📡 Fetching OMDb ratings for: ${movie.imdbId}")
                 omdbRatings = withContext(Dispatchers.IO) {
-                    val response = viewModel.getOmdbRatings(movie.imdbId)
+                    val response = viewModel.fetchOmdbRatings(movie.imdbId)
                     Log.d("MovieDetailsView", "✅ OMDb API response received: $response")
                     response
                 }
@@ -263,7 +263,7 @@ fun MovieDetailsView(
         try {
             Log.d("MovieDetailsView", "📡 Fetching similar movies for: ${movie.title}")
             similarContent = withContext(Dispatchers.IO) {
-                val similar = viewModel.getSimilarMovies(movie.tmdbId)
+                val similar = viewModel.fetchSimilarMovies(movie.tmdbId)
                 Log.d("MovieDetailsView", "✅ Similar movies fetched: ${similar.size} items")
                 similar
             }
@@ -365,7 +365,7 @@ fun MovieDetailsView(
                                 onClick = {
                                     viewModel.viewModelScope.launch {
                                         try {
-                                            val trailerUrl = viewModel.getMovieTrailer(movie.tmdbId)
+                                            val trailerUrl = viewModel.fetchMovieTrailer(movie.tmdbId)
                                             if (trailerUrl != null) {
                                                 onTrailer(trailerUrl, movie.title)
                                             }
@@ -904,7 +904,7 @@ fun TvShowDetailsView(
             try {
                 Log.d("TvShowDetailsView", "📡 Fetching OMDb ratings for: ${show.imdbId}")
                 omdbRatings = withContext(Dispatchers.IO) {
-                    val response = viewModel.getOmdbRatings(show.imdbId)
+                    val response = viewModel.fetchOmdbRatings(show.imdbId)
                     Log.d("TvShowDetailsView", "✅ OMDb API response received: $response")
                     response
                 }
@@ -924,7 +924,7 @@ fun TvShowDetailsView(
         try {
             Log.d("TvShowDetailsView", "📡 Fetching similar TV shows for: ${show.title}")
             similarContent = withContext(Dispatchers.IO) {
-                    val similar = viewModel.getSimilarTvShows(show.tmdbId)
+                    val similar = viewModel.fetchSimilarTvShows(show.tmdbId)
                 Log.d("TvShowDetailsView", "✅ Similar TV shows fetched: ${similar.size} items")
                 similar
             }
@@ -944,7 +944,7 @@ fun TvShowDetailsView(
         try {
             loading = true
             Log.d("TvShowDetailsView", "📡 Fetching seasons for show: ${show.title}")
-                                val fetchedSeasons = viewModel.getSeasons(show.tmdbId)
+                                val fetchedSeasons = viewModel.fetchTvShowSeasons(show.tmdbId)
             seasons = fetchedSeasons
             Log.d("TvShowDetailsView", "✅ Fetched ${fetchedSeasons.size} seasons")
             Log.d("TvShowDetailsView", "🎯 DEBUG: Available seasons: ${fetchedSeasons.map { it.seasonNumber }}")
@@ -960,7 +960,7 @@ fun TvShowDetailsView(
             
             // Fetch episodes for the selected season
             if (selectedSeason != null) {
-                val fetchedEpisodes = viewModel.getEpisodes(show.tmdbId, selectedSeason!!)
+                val fetchedEpisodes = viewModel.fetchTvShowEpisodes(show.tmdbId, selectedSeason!!)
                 episodes = fetchedEpisodes
                 Log.d("TvShowDetailsView", "✅ Fetched ${fetchedEpisodes.size} episodes for season $selectedSeason")
                 Log.d("TvShowDetailsView", "🎯 DEBUG: Available episodes: ${fetchedEpisodes.map { it.episodeNumber }}")
@@ -986,7 +986,7 @@ fun TvShowDetailsView(
         if (selectedSeason != null) {
             try {
                 Log.d("TvShowDetailsView", "📡 Fetching episodes for season: $selectedSeason")
-                val fetchedEpisodes = viewModel.getEpisodes(show.tmdbId, selectedSeason!!)
+                val fetchedEpisodes = viewModel.fetchTvShowEpisodes(show.tmdbId, selectedSeason!!)
                 episodes = fetchedEpisodes
                 Log.d("TvShowDetailsView", "✅ Fetched ${fetchedEpisodes.size} episodes for season $selectedSeason")
                 
@@ -1093,7 +1093,7 @@ fun TvShowDetailsView(
                                 onClick = {
                                     viewModel.viewModelScope.launch {
                                         try {
-                                            val trailerUrl = viewModel.getTvShowTrailer(show.tmdbId)
+                                            val trailerUrl = viewModel.fetchTvShowTrailer(show.tmdbId)
                                             if (trailerUrl != null) {
                                                 onTrailer(trailerUrl, show.title)
                                             }

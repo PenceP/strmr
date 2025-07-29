@@ -33,6 +33,9 @@ import com.strmr.ai.ui.components.DataSource
 import com.strmr.ai.ui.components.CardType
 import com.strmr.ai.viewmodel.HomeMediaItem
 import com.strmr.ai.viewmodel.HomeViewModel
+import com.strmr.ai.presentation.state.ContinueWatchingState
+import com.strmr.ai.presentation.state.TraktListsState
+import com.strmr.ai.presentation.state.TraktAuthState
 import androidx.compose.material3.Text
 import androidx.compose.foundation.focusable
 import androidx.compose.ui.focus.FocusRequester
@@ -74,6 +77,8 @@ import com.strmr.ai.config.RowConfig
 import com.strmr.ai.data.NetworkInfo
 import androidx.compose.ui.platform.LocalContext
 import com.strmr.ai.ui.theme.StrmrConstants
+import com.strmr.ai.utils.ComposeOptimizationUtils
+import com.strmr.ai.utils.OptimizedLaunchedEffect
 
 private data class HeroData(
     val backdropUrl: String? = null,
@@ -221,20 +226,30 @@ fun HomePage(
     onNavigateToIntermediateView: ((String, String, String, String?, String?) -> Unit)? = null
 ) {
     val context = LocalContext.current
-    val continueWatching by viewModel.continueWatching.collectAsState()
-    val isContinueWatchingLoading by viewModel.isContinueWatchingLoading.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
     val isNetworksLoading by viewModel.isNetworksLoading.collectAsState()
-    val traktLists by viewModel.traktLists.collectAsState()
-    val isTraktListsLoading by viewModel.isTraktListsLoading.collectAsState()
+    
+    // Extract data from clean architecture state
+    val isContinueWatchingLoading = uiState.continueWatching is ContinueWatchingState.Loading
+    
+    // Get the converted continue watching items from ViewModel
+    val continueWatching by viewModel.continueWatchingHomeItems.collectAsState()
+    
+    val traktLists = remember(uiState.traktLists) {
+        (uiState.traktLists as? TraktListsState.Success)?.lists ?: emptyList()
+    }
+    val isTraktListsLoading = uiState.traktLists is TraktListsState.Loading
+    val isTraktAuthorized = uiState.traktAuthorization is TraktAuthState.Authorized
     
     // Debug logging for Trakt Lists
     LaunchedEffect(traktLists.size, isTraktListsLoading) {
         Log.d("HomePage", "🔍 Trakt Lists state: size=${traktLists.size}, loading=$isTraktListsLoading")
     }
     
-    // Initialize Trakt lists when HomePage loads
+    // Initialize Trakt authorization and lists when HomePage loads
     LaunchedEffect(Unit) {
-        Log.d("HomePage", "🚀 Initializing Trakt Lists on HomePage load")
+        Log.d("HomePage", "🚀 Initializing Trakt authorization and lists on HomePage load")
+        viewModel.refreshTraktAuthorization()
         viewModel.refreshTraktLists()
     }
     
@@ -242,20 +257,20 @@ fun HomePage(
     val selectionManager = rememberSelectionManager()
     
     // Row position memory - tracks last position in each row by row title
-    val rowPositionMemory = remember { mutableMapOf<String, Int>() }
+    val rowPositionMemory = ComposeOptimizationUtils.rememberMutableMap<String, Int>()
     
     // Load configuration from JSON
     var pageConfiguration by remember { mutableStateOf<PageConfiguration?>(null) }
     var collections by remember { mutableStateOf<List<HomeMediaItem.Collection>>(emptyList()) }
-    var networks by remember { mutableStateOf<List<com.strmr.ai.data.NetworkInfo>>(emptyList()) }
+    var networkInfos by remember { mutableStateOf<List<com.strmr.ai.data.NetworkInfo>>(emptyList()) }
     var directors by remember { mutableStateOf<List<HomeMediaItem.Collection>>(emptyList()) }
     
-    LaunchedEffect(Unit) {
+    OptimizedLaunchedEffect(Unit, operation = "loadPageConfiguration") {
         val configLoader = ConfigurationLoader(context)
         pageConfiguration = configLoader.loadPageConfiguration("HOME")
         pageConfiguration?.let { config ->
             collections = configLoader.getCollectionsFromConfig(config)
-            networks = configLoader.getNetworksFromConfig(config)
+            networkInfos = configLoader.getNetworksFromConfig(config)
             directors = configLoader.getDirectorsFromConfig(config)
         }
     }
@@ -266,12 +281,15 @@ fun HomePage(
         selectionManager.updateContentFocus(isContentFocused)
     }
     
-    // Create media rows dynamically based on configuration
-    // Rebuild rows when data changes
-    val mediaRows = remember(continueWatching, traktLists, networks, collections, directors, pageConfiguration) { 
+    // Create media rows dynamically based on configuration - optimized with expensive calculation helper
+    val mediaRows = ComposeOptimizationUtils.rememberExpensiveCalculation(
+        continueWatching, traktLists, networkInfos, collections, directors, pageConfiguration
+    ) { 
         mutableMapOf<String, List<Any>>() 
     }
-    val rowConfigs = remember(continueWatching, traktLists, networks, collections, directors, pageConfiguration) { 
+    val rowConfigs = ComposeOptimizationUtils.rememberExpensiveCalculation(
+        continueWatching, traktLists, networkInfos, collections, directors, pageConfiguration
+    ) { 
         mutableMapOf<String, RowConfig>() 
     }
     
@@ -285,13 +303,14 @@ fun HomePage(
         for (rowConfig in enabledRows) {
             when (rowConfig.type) {
                 "continue_watching" -> {
-                    if (continueWatching.isNotEmpty()) {
+                    // Only show continue watching if Trakt is authorized
+                    if (isTraktAuthorized && continueWatching.isNotEmpty()) {
                         mediaRows[rowConfig.title] = continueWatching
                         rowConfigs[rowConfig.title] = rowConfig
                     }
                     
                     // Add Trakt Lists row if authorized and has items
-                    if (traktLists.isNotEmpty()) {
+                    if (isTraktAuthorized && traktLists.isNotEmpty()) {
                         // Create a synthetic row config for Trakt Lists
                         val traktListsConfig = RowConfig(
                             id = "trakt_lists",
@@ -311,12 +330,12 @@ fun HomePage(
                         rowConfigs["Trakt Lists"] = traktListsConfig
                         Log.d("HomePage", "✅ Added Trakt Lists row with ${traktLists.size} items")
                     } else {
-                        Log.d("HomePage", "🔒 Trakt Lists row hidden - no items or not authorized")
+                        Log.d("HomePage", "🔒 Continue watching and Trakt Lists rows hidden - Trakt not authorized (authorized: $isTraktAuthorized)")
                     }
                 }
                 "networks" -> {
-                    if (networks.isNotEmpty()) {
-                        mediaRows[rowConfig.title] = networks
+                    if (networkInfos.isNotEmpty()) {
+                        mediaRows[rowConfig.title] = networkInfos
                         rowConfigs[rowConfig.title] = rowConfig
                     }
                 }
@@ -336,14 +355,21 @@ fun HomePage(
         }
     }
 
-    val rowTitles = mediaRows.keys.toList()
-    val rows = mediaRows.values.toList()
-    val rowCount = rowTitles.size
-    val focusRequesters = remember(rowTitles) { List(rowTitles.size) { FocusRequester() } }
+    // Use derivedStateOf for expensive computed properties that depend on mediaRows
+    val rowTitles by ComposeOptimizationUtils.rememberDerivedState(mediaRows) {
+        mediaRows.keys.toList()
+    }
+    val rows by ComposeOptimizationUtils.rememberDerivedState(mediaRows) {
+        mediaRows.values.toList()
+    }
+    val rowCount by ComposeOptimizationUtils.rememberDerivedState(rowTitles) {
+        rowTitles.size
+    }
+    val focusRequesters = ComposeOptimizationUtils.rememberFocusRequesters(rowTitles.size)
 
     // Optimized OMDb ratings prefetch - only for visible items and with batching
     val coroutineScope = rememberCoroutineScope()
-    LaunchedEffect(rows) {
+    OptimizedLaunchedEffect(rows, operation = "prefetchOMDbRatings") {
         // Only prefetch for first row items to reduce startup overhead
         val firstRowItems = rows.firstOrNull() ?: emptyList()
         val imdbIds = firstRowItems.mapNotNull { item ->
@@ -361,7 +387,7 @@ fun HomePage(
             coroutineScope.launch(Dispatchers.IO) {
                 imdbIds.forEach { imdbId ->
                     try {
-                        viewModel.getOmdbRatings(imdbId)
+                        viewModel.fetchOmdbRatings(imdbId)
                     } catch (e: Exception) {
                         Log.e("HomePage", "Failed to fetch OMDb ratings for $imdbId", e)
                     }
@@ -459,9 +485,9 @@ fun HomePage(
     }
 
     // Debug logging
-    LaunchedEffect(selectionManager.selectedRowIndex, selectionManager.selectedItemIndex, continueWatching.size, networks.size, collections.size) {
+    LaunchedEffect(selectionManager.selectedRowIndex, selectionManager.selectedItemIndex, continueWatching.size, networkInfos.size, collections.size) {
         Log.d("HomePage", "🔄 Selection updated: rowIndex=$validRowIndex, itemIndex=${selectionManager.selectedItemIndex}")
-        Log.d("HomePage", "📊 Data: continueWatching=${continueWatching.size}, networks=${networks.size}")
+        Log.d("HomePage", "📊 Data: continueWatching=${continueWatching.size}, networks=${networkInfos.size}")
         Log.d("HomePage", "📦 Collections size: ${collections.size}")
         Log.d("HomePage", "⚙️ Configuration loaded: ${pageConfiguration != null}")
     }
@@ -500,7 +526,9 @@ fun HomePage(
         val backdropUrl = if (shouldShowHero) heroData.backdropUrl else null
 
         // OMDb ratings state for hero
-        var omdbRatings by remember(selectedItem) { mutableStateOf<OmdbResponse?>(null) }
+        var omdbRatings by ComposeOptimizationUtils.rememberExpensiveCalculation(selectedItem) { 
+            mutableStateOf<OmdbResponse?>(null) 
+        }
         LaunchedEffect(selectedItem) {
             if (shouldShowHero) {
                 val imdbId = when (selectedItem) {
@@ -510,7 +538,7 @@ fun HomePage(
                 }
                 if (!imdbId.isNullOrBlank()) {
                     omdbRatings = withContext(Dispatchers.IO) {
-                        viewModel.getOmdbRatings(imdbId)
+                        viewModel.fetchOmdbRatings(imdbId)
                     }
                 } else {
                     omdbRatings = null

@@ -128,7 +128,7 @@ fun TvShowsPage(
             val imdbId = selectedItem.imdbId
             if (!imdbId.isNullOrBlank()) {
                 omdbRatings = withContext(Dispatchers.IO) {
-                    viewModel.getOmdbRatings(imdbId)
+                    viewModel.fetchOmdbRatings(imdbId)
                 }
             } else {
                 omdbRatings = null

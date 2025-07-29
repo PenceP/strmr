@@ -6,6 +6,7 @@ import com.strmr.ai.data.mapper.AccountMapper
 import com.strmr.ai.domain.repository.AccountRepository
 import com.strmr.ai.domain.repository.UserAccount
 import com.strmr.ai.domain.repository.ContinueWatchingItem
+import com.strmr.ai.data.ContinueWatchingItem as TraktContinueWatchingItem
 import com.strmr.ai.viewmodel.HomeMediaItem
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -138,37 +139,54 @@ class AccountRepositoryImpl @Inject constructor(
             Log.d(TAG, "📺 Getting continue watching items")
             val continueWatchingData = legacyRepository.getContinueWatching()
             
-            // The legacy method returns HomeMediaItems, we need to convert them
-            continueWatchingData.mapNotNull { homeMediaItem ->
+            // The legacy method returns ContinueWatchingItem objects from Trakt API
+            // We need to convert them from data layer ContinueWatchingItem to domain layer ContinueWatchingItem
+            continueWatchingData.mapNotNull { traktItem: TraktContinueWatchingItem ->
                 try {
-                    when (homeMediaItem) {
-                        is HomeMediaItem.Movie -> ContinueWatchingItem(
-                            mediaId = homeMediaItem.movie.tmdbId,
-                            mediaType = "movie",
-                            title = homeMediaItem.movie.title,
-                            posterUrl = homeMediaItem.movie.posterUrl,
-                            progress = homeMediaItem.progress ?: 0f,
-                            lastWatched = System.currentTimeMillis()
-                        )
-                        is HomeMediaItem.TvShow -> ContinueWatchingItem(
-                            mediaId = homeMediaItem.show.tmdbId,
-                            mediaType = "tv",
-                            title = homeMediaItem.show.title,
-                            posterUrl = homeMediaItem.show.posterUrl,
-                            progress = homeMediaItem.progress ?: 0f,
-                            lastWatched = System.currentTimeMillis()
-                        )
+                    when (traktItem.type) {
+                        "movie" -> {
+                            val movie = traktItem.movie
+                            if (movie != null) {
+                                ContinueWatchingItem(
+                                    mediaId = movie.ids.tmdb ?: 0,
+                                    mediaType = "movie",
+                                    title = movie.title ?: "Unknown Movie",
+                                    posterUrl = null, // Will be fetched later
+                                    progress = traktItem.progress ?: 0f,
+                                    lastWatched = System.currentTimeMillis()
+                                )
+                            } else {
+                                Log.w(TAG, "⚠️ Movie data missing in continue watching item")
+                                null
+                            }
+                        }
+                        "episode" -> {
+                            val show = traktItem.show
+                            if (show != null) {
+                                ContinueWatchingItem(
+                                    mediaId = show.ids.tmdb ?: 0,
+                                    mediaType = "tv",
+                                    title = show.title ?: "Unknown TV Show",
+                                    posterUrl = null, // Will be fetched later
+                                    progress = traktItem.progress ?: 0f,
+                                    lastWatched = System.currentTimeMillis()
+                                )
+                            } else {
+                                Log.w(TAG, "⚠️ Show data missing in continue watching item")
+                                null
+                            }
+                        }
                         else -> {
-                            Log.w(TAG, "⚠️ Unsupported HomeMediaItem type: ${homeMediaItem::class.simpleName}")
+                            Log.w(TAG, "⚠️ Unsupported continue watching item type: ${traktItem.type}")
                             null
                         }
                     }
                 } catch (e: Exception) {
-                    Log.w(TAG, "⚠️ Failed to convert continue watching item", e)
+                    Log.w(TAG, "⚠️ Failed to convert continue watching item: ${traktItem.type}", e)
                     null
                 }
             }.also {
-                Log.d(TAG, "✅ Mapped ${it.size} continue watching items")
+                Log.d(TAG, "✅ Mapped ${it.size} continue watching items from ${continueWatchingData.size} Trakt items")
             }
         } catch (e: Exception) {
             Log.e(TAG, "❌ Error getting continue watching items", e)

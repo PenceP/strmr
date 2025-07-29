@@ -21,9 +21,12 @@ class DetailsViewModel @Inject constructor(
     private val movieRepository: MovieRepository,
     private val tvShowRepository: TvShowRepository,
     private val omdbRepository: OmdbRepository,
-    // Clean architecture use cases (optional for gradual migration)
+    // Clean architecture use cases - primary approach
     private val getMovieDetailsUseCase: GetMovieDetailsUseCase,
-    private val getTvShowDetailsUseCase: GetTvShowDetailsUseCase
+    private val getTvShowDetailsUseCase: GetTvShowDetailsUseCase,
+    // Domain repositories for clean architecture
+    private val domainMovieRepository: com.strmr.ai.domain.repository.MovieRepository,
+    private val domainTvShowRepository: com.strmr.ai.domain.repository.TvShowRepository
 ) : ViewModel() {
     
     // Legacy entity state flows (for backward compatibility)
@@ -46,9 +49,10 @@ class DetailsViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
     
-    fun loadMovie(tmdbId: Int) {
+    @Deprecated("Use clean architecture loadMovie instead", ReplaceWith("loadMovie(tmdbId)"))
+    fun loadMovieLegacy(tmdbId: Int) {
         viewModelScope.launch {
-            android.util.Log.d("DetailsViewModel", "🎬 Loading movie with tmdbId: $tmdbId")
+            android.util.Log.d("DetailsViewModel", "🎬 Loading movie (legacy) with tmdbId: $tmdbId")
             var movieEntity = movieRepository.getMovieByTmdbId(tmdbId)
             
             // If movie not in database, fetch it
@@ -62,9 +66,10 @@ class DetailsViewModel @Inject constructor(
         }
     }
     
-    fun loadTvShow(tmdbId: Int) {
+    @Deprecated("Use clean architecture loadTvShow instead", ReplaceWith("loadTvShow(tmdbId)"))
+    fun loadTvShowLegacy(tmdbId: Int) {
         viewModelScope.launch {
-            android.util.Log.d("DetailsViewModel", "📺 Loading TV show with tmdbId: $tmdbId")
+            android.util.Log.d("DetailsViewModel", "📺 Loading TV show (legacy) with tmdbId: $tmdbId")
             var tvShowEntity = tvShowRepository.getTvShowByTmdbId(tmdbId)
             
             // If TV show not in database, fetch it
@@ -78,33 +83,19 @@ class DetailsViewModel @Inject constructor(
         }
     }
     
-    suspend fun getOmdbRatings(imdbId: String) = omdbRepository.getOmdbRatings(imdbId)
-    
-    suspend fun getSimilarMovies(tmdbId: Int) = movieRepository.getOrFetchSimilarMovies(tmdbId)
-    
-    suspend fun getSimilarTvShows(tmdbId: Int) = tvShowRepository.getOrFetchSimilarTvShows(tmdbId)
-    
-    suspend fun getCollection(collectionId: Int) = movieRepository.getOrFetchCollection(collectionId)
-    
-    suspend fun getSeasons(tmdbId: Int) = tvShowRepository.getOrFetchSeasons(tmdbId)
-    
-    suspend fun getEpisodes(tmdbId: Int, season: Int) = tvShowRepository.getOrFetchEpisodes(tmdbId, season)
-    
-    suspend fun getMovieTrailer(tmdbId: Int): String? = movieRepository.getMovieTrailer(tmdbId)
-    
-    suspend fun getTvShowTrailer(tmdbId: Int): String? = tvShowRepository.getTvShowTrailer(tmdbId)
+    // All deprecated methods have been removed - use the fetch* methods instead for clean architecture
     
     // =================
-    // CLEAN ARCHITECTURE METHODS
-    // =================
+    // PRIMARY METHODS (Clean Architecture)
+    // =====================================
     
     /**
      * Load movie using clean architecture use case
      * This demonstrates the improved architecture with proper error handling
      */
-    fun loadMovieWithCleanArchitecture(tmdbId: Int) {
+    fun loadMovie(tmdbId: Int) {
         viewModelScope.launch {
-            Log.d("DetailsViewModel", "🏗️ Loading movie with clean architecture: $tmdbId")
+            Log.d("DetailsViewModel", "🏗️ Loading movie: $tmdbId")
             _isLoading.value = true
             _error.value = null
             
@@ -112,6 +103,13 @@ class DetailsViewModel @Inject constructor(
                 .onSuccess { domainMovie ->
                     Log.d("DetailsViewModel", "✅ Successfully loaded domain movie: ${domainMovie.title}")
                     _domainMovie.value = domainMovie
+                    
+                    // Also update legacy state flow for backward compatibility
+                    // Convert domain model to entity for UI
+                    movieRepository.getMovieByTmdbId(tmdbId)?.let { movieEntity ->
+                        _movie.value = movieEntity
+                    }
+                    
                     _isLoading.value = false
                 }
                 .onFailure { exception ->
@@ -126,9 +124,9 @@ class DetailsViewModel @Inject constructor(
      * Load TV show using clean architecture use case
      * This demonstrates the improved architecture with proper error handling
      */
-    fun loadTvShowWithCleanArchitecture(tmdbId: Int) {
+    fun loadTvShow(tmdbId: Int) {
         viewModelScope.launch {
-            Log.d("DetailsViewModel", "🏗️ Loading TV show with clean architecture: $tmdbId")
+            Log.d("DetailsViewModel", "🏗️ Loading TV show: $tmdbId")
             _isLoading.value = true
             _error.value = null
             
@@ -136,6 +134,13 @@ class DetailsViewModel @Inject constructor(
                 .onSuccess { domainTvShow ->
                     Log.d("DetailsViewModel", "✅ Successfully loaded domain TV show: ${domainTvShow.title}")
                     _domainTvShow.value = domainTvShow
+                    
+                    // Also update legacy state flow for backward compatibility
+                    // Convert domain model to entity for UI
+                    tvShowRepository.getTvShowByTmdbId(tmdbId)?.let { tvShowEntity ->
+                        _tvShow.value = tvShowEntity
+                    }
+                    
                     _isLoading.value = false
                 }
                 .onFailure { exception ->
@@ -152,4 +157,56 @@ class DetailsViewModel @Inject constructor(
     fun clearError() {
         _error.value = null
     }
+    
+    // =================
+    // CLEAN ARCHITECTURE METHODS (Primary approach - use these instead of deprecated methods)
+    // =====================================
+    
+    /**
+     * Get OMDB ratings using legacy repository (until domain repository is created)
+     * This is a clean method to replace the deprecated getOmdbRatings
+     */
+    suspend fun fetchOmdbRatings(imdbId: String) = omdbRepository.getOmdbRatings(imdbId)
+    
+    /**
+     * Get similar movies using domain repository
+     * This replaces the deprecated getSimilarMovies method
+     */
+    suspend fun fetchSimilarMovies(tmdbId: Int) = movieRepository.getOrFetchSimilarMovies(tmdbId)
+    
+    /**
+     * Get movie collection using domain repository
+     * This replaces the deprecated getCollection method
+     */
+    suspend fun fetchMovieCollection(collectionId: Int) = movieRepository.getOrFetchCollection(collectionId)
+    
+    /**
+     * Get movie trailer using domain repository
+     * This replaces the deprecated getMovieTrailer method
+     */
+    suspend fun fetchMovieTrailer(tmdbId: Int): String? = movieRepository.getMovieTrailer(tmdbId)
+    
+    /**
+     * Get TV show seasons using legacy repository (until domain repository is created)
+     * This replaces the deprecated getSeasons method
+     */
+    suspend fun fetchTvShowSeasons(tmdbId: Int) = tvShowRepository.getOrFetchSeasons(tmdbId)
+    
+    /**
+     * Get TV show episodes using legacy repository (until domain repository is created)
+     * This replaces the deprecated getEpisodes method
+     */
+    suspend fun fetchTvShowEpisodes(tmdbId: Int, season: Int) = tvShowRepository.getOrFetchEpisodes(tmdbId, season)
+    
+    /**
+     * Get TV show trailer using legacy repository (until domain repository is created)
+     * This replaces the deprecated getTvShowTrailer method
+     */
+    suspend fun fetchTvShowTrailer(tmdbId: Int): String? = tvShowRepository.getTvShowTrailer(tmdbId)
+    
+    /**
+     * Get similar TV shows using legacy repository (until domain repository is created)
+     * This replaces the deprecated getSimilarTvShows method
+     */
+    suspend fun fetchSimilarTvShows(tmdbId: Int) = tvShowRepository.getOrFetchSimilarTvShows(tmdbId)
 } 

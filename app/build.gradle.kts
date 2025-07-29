@@ -46,6 +46,14 @@ android {
     }
     kotlinOptions {
         jvmTarget = "17"
+        
+        // Compose compiler metrics for performance analysis
+        freeCompilerArgs += listOf(
+            "-P",
+            "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=${layout.buildDirectory.get().asFile.absolutePath}/compose_compiler",
+            "-P",
+            "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=${layout.buildDirectory.get().asFile.absolutePath}/compose_compiler"
+        )
     }
     buildFeatures {
         buildConfig = true

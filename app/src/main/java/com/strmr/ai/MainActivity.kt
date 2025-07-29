@@ -367,7 +367,7 @@ fun MainScreen(
                             // Add small delay to ensure tokens are fully saved
                             scope.launch {
                                 delay(100) // Small delay to ensure token persistence
-                                homeViewModel.refreshContinueWatching()
+                                homeViewModel.loadContinueWatching()
                                 homeViewModel.refreshTraktLists()
                             }
                         }

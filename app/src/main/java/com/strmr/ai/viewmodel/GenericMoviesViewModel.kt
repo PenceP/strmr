@@ -132,7 +132,13 @@ class GenericMoviesViewModel @Inject constructor(
         _uiState.value = currentState.copy(mediaRows = updatedRows)
     }
     
-    suspend fun getOmdbRatings(imdbId: String): OmdbResponse? = omdbRepository.getOmdbRatings(imdbId)
+    // Deprecated getOmdbRatings removed - use fetchOmdbRatings instead
+    
+    /**
+     * Clean architecture method to fetch OMDB ratings
+     * This replaces the deprecated getOmdbRatings method
+     */
+    suspend fun fetchOmdbRatings(imdbId: String): OmdbResponse? = omdbRepository.getOmdbRatings(imdbId)
     
     override suspend fun isDataSourceEmpty(config: DataSourceConfig): Boolean {
         return genericRepository.isMovieDataSourceEmpty(config)

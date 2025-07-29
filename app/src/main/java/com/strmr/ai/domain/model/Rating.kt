@@ -1,10 +1,12 @@
 package com.strmr.ai.domain.model
 
+import androidx.compose.runtime.Immutable
 import kotlin.time.Duration
 
 /**
  * Domain model for media ratings from various sources
  */
+@Immutable
 data class Rating(
     val tmdbRating: Float? = null,
     val traktRating: Float? = null,
@@ -28,6 +30,7 @@ data class Rating(
 /**
  * Domain model for runtime duration
  */
+@Immutable
 @JvmInline
 value class Runtime(val minutes: Int) {
     val duration: Duration

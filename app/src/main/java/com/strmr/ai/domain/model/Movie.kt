@@ -1,10 +1,12 @@
 package com.strmr.ai.domain.model
 
+import androidx.compose.runtime.Immutable
 import java.time.LocalDate
 
 /**
  * Clean domain model for movies, free from database and network concerns
  */
+@Immutable
 data class Movie(
     val id: MovieId,
     val tmdbId: TmdbId,
@@ -46,6 +48,7 @@ data class Movie(
 /**
  * Simplified model for similar/related movies
  */
+@Immutable
 data class SimilarMovie(
     val id: MovieId,
     val tmdbId: TmdbId,

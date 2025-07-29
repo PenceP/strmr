@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import com.strmr.ai.utils.LazyLoadingOptimizer
 import com.strmr.ai.utils.LazyItemKeyOptimizer
 import com.strmr.ai.utils.PrefetchStrategy
+import com.strmr.ai.utils.ComposeOptimizationUtils
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -47,12 +48,16 @@ fun <T : Any> UnifiedMediaRow(
     )
     val scope = rememberCoroutineScope()
     
-    // Navigation throttling (EpisodeView pattern)
-    var lastNavTime by remember { mutableStateOf(0L) }
+    // Navigation throttling (EpisodeView pattern) - optimized with remember
+    var lastNavTime by ComposeOptimizationUtils.rememberExpensiveCalculation(config.title) {
+        mutableStateOf(0L)
+    }
     val throttleMs = 80L
     
-    // Focus debouncing
-    var lastFocusChangeTime by remember { mutableStateOf(0L) }
+    // Focus debouncing - optimized with remember
+    var lastFocusChangeTime by ComposeOptimizationUtils.rememberExpensiveCalculation(config.title) {
+        mutableStateOf(0L)
+    }
     
     // Memory optimization - track visible items
     val visibleItemsObserver = LazyLoadingOptimizer.rememberVisibleItemsObserver(

@@ -1,10 +1,12 @@
 package com.strmr.ai.domain.model
 
+import androidx.compose.runtime.Immutable
 import java.time.LocalDate
 
 /**
  * Clean domain model for TV shows, free from database and network concerns
  */
+@Immutable
 data class TvShow(
     val id: TvShowId,
     val tmdbId: TmdbId,
@@ -63,6 +65,7 @@ data class TvShow(
 /**
  * Simplified model for similar/related TV shows
  */
+@Immutable
 data class SimilarTvShow(
     val id: TvShowId,
     val tmdbId: TmdbId,
