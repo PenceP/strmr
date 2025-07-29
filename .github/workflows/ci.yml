@@ -94,14 +94,26 @@ jobs:
         echo "TAG_VERSION=${TAG_VERSION}" >> $GITHUB_OUTPUT
         echo "BUILD_NUMBER=${GITHUB_RUN_NUMBER}" >> $GITHUB_OUTPUT
         
-    - name: Build release APK
-      run: ./gradlew assembleRelease
-      
-    - name: Upload release APK
+    - name: Build optimized release APKs
+      run: |
+        ./gradlew assembleRelease --parallel --configure-on-demand
+        ls -la app/build/outputs/apk/release/
+        
+    - name: Analyze APK size
+      run: |
+        find app/build/outputs/apk/release/ -name "*.apk" -exec ls -lh {} \;
+        
+    - name: Upload ARM64 APK (Primary)
       uses: actions/upload-artifact@v4
       with:
-        name: strmr-v${{ steps.version.outputs.VERSION_NAME }}.apk
-        path: app/build/outputs/apk/release/app-release.apk
+        name: strmr-v${{ steps.version.outputs.VERSION_NAME }}-arm64.apk
+        path: app/build/outputs/apk/release/app-arm64-v8a-release.apk
+        
+    - name: Upload ARM32 APK (Legacy)
+      uses: actions/upload-artifact@v4
+      with:
+        name: strmr-v${{ steps.version.outputs.VERSION_NAME }}-arm32.apk  
+        path: app/build/outputs/apk/release/app-armeabi-v7a-release.apk
 
   release:
     needs: build

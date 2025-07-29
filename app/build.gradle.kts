@@ -31,16 +31,51 @@ android {
         buildConfigField("String", "TRAKT_API_KEY", "\"${secrets.getProperty("TRAKT_API_KEY", "")}\"")
         buildConfigField("String", "OMDB_API_KEY", "\"${secrets.getProperty("OMDB_API_KEY", "")}\"")
         buildConfigField("String", "TMDB_READ_KEY", "\"${secrets.getProperty("TMDB_READ_KEY", "")}\"")
+        
+        // Target specific resources for Android TV
+        resourceConfigurations += listOf("en", "xhdpi", "xxhdpi", "xxxhdpi")
     }
 
     buildTypes {
         release {
             isMinifyEnabled = true
+            isShrinkResources = true  // Enable resource shrinking - saves 10-20MB
+            isDebuggable = false
+            
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
             signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+    
+    // Target Android TV architectures only - saves 50-80MB from LibVLC
+    splits {
+        abi {
+            enable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a")  // Primary Android TV architectures
+            isUniversalApk = false
+        }
+    }
+    
+    // Exclude unnecessary resources and architectures
+    packagingOptions {
+        jniLibs {
+            excludes += listOf(
+                "**/x86/**",
+                "**/x86_64/**"  // Exclude x86 architectures if not needed
+            )
+        }
+        resources {
+            excludes += listOf(
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE",
+                "META-INF/LICENSE.txt",
+                "META-INF/NOTICE",
+                "META-INF/NOTICE.txt"
+            )
         }
     }
     compileOptions {
@@ -113,18 +148,19 @@ dependencies {
     implementation("androidx.hilt:hilt-work:1.2.0")
     ksp("androidx.hilt:hilt-compiler:1.2.0")
     
-    // ExoPlayer Media3 for video playback
-    implementation("androidx.media3:media3-exoplayer:1.6.1")
-    implementation("androidx.media3:media3-exoplayer-dash:1.6.1")
-    implementation("androidx.media3:media3-exoplayer-hls:1.6.1")
-    implementation("androidx.media3:media3-ui:1.6.1")
-    implementation("androidx.media3:media3-datasource-okhttp:1.6.1")
+    // ExoPlayer Media3 with BOM for consistent versions - saves ~5-10MB
+    implementation(platform("androidx.media3:media3-bom:1.6.1"))
+    implementation("androidx.media3:media3-exoplayer")
+    implementation("androidx.media3:media3-exoplayer-dash")
+    implementation("androidx.media3:media3-exoplayer-hls")
+    implementation("androidx.media3:media3-ui")
+    implementation("androidx.media3:media3-datasource-okhttp")
+    // Removed smoothstreaming - uncomment if needed
+    // implementation("androidx.media3:media3-exoplayer-smoothstreaming")
     
-    // LibVLC for Android - alternative player with better codec support
+    // LibVLC for Android - MAJOR APK SIZE IMPACT (~80-120MB)
+    // Consider removing if ExoPlayer handles your streaming needs
     implementation("org.videolan.android:libvlc-all:4.0.0-eap15")
-    
-    // Additional ExoPlayer decoders (experimental)
-    implementation("androidx.media3:media3-exoplayer-smoothstreaming:1.6.1")
     
     // OkHttp for network requests
     implementation("com.squareup.okhttp3:okhttp:4.12.0")

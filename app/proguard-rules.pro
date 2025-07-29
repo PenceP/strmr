@@ -84,6 +84,32 @@
 -keep class com.strmr.ai.config.** { *; }
 -keepclassmembers class com.strmr.ai.config.** { *; }
 
-## Compose
--keep class androidx.compose.** { *; }
--keep class androidx.compose.ui.tooling.** { *; }
+## Compose - More aggressive optimization
+-dontwarn androidx.compose.ui.tooling.**
+-keep class androidx.compose.runtime.** { *; }
+-keep class androidx.compose.ui.platform.** { *; }
+
+## ExoPlayer - Keep essential classes only
+-keep class com.google.android.exoplayer2.** { *; }
+-keep class androidx.media3.** { *; }
+
+## LibVLC - Keep minimal required classes
+-keep class org.videolan.libvlc.** { *; }
+-dontwarn org.videolan.libvlc.**
+
+## Room - Keep entity and DAO classes
+-keep class com.strmr.ai.data.database.** { *; }
+
+## Remove unused Android components (saves 5-10MB)
+-dontwarn android.test.**
+-dontwarn android.support.test.**
+-dontwarn org.junit.**
+-dontwarn org.hamcrest.**
+-dontwarn com.squareup.javawriter.JavaWriter
+
+## Aggressive string optimization
+-optimizations !code/simplification/string,!field/*,!class/merging/*
+
+## Remove debug information in release
+-dontoptimize
+-dontpreverify
