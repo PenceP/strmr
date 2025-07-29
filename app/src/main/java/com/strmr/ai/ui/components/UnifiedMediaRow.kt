@@ -7,6 +7,9 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import com.strmr.ai.utils.LazyLoadingOptimizer
+import com.strmr.ai.utils.LazyItemKeyOptimizer
+import com.strmr.ai.utils.PrefetchStrategy
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,7 +42,9 @@ fun <T : Any> UnifiedMediaRow(
     config: MediaRowConfig<T>,
     modifier: Modifier = Modifier
 ) {
-    val listState = rememberLazyListState()
+    val listState = LazyLoadingOptimizer.rememberOptimizedLazyListState(
+        prefetchStrategy = PrefetchStrategy.Balanced
+    )
     val scope = rememberCoroutineScope()
     
     // Navigation throttling (EpisodeView pattern)
@@ -48,6 +53,15 @@ fun <T : Any> UnifiedMediaRow(
     
     // Focus debouncing
     var lastFocusChangeTime by remember { mutableStateOf(0L) }
+    
+    // Memory optimization - track visible items
+    val visibleItemsObserver = LazyLoadingOptimizer.rememberVisibleItemsObserver(
+        listState = listState,
+        totalItemCount = when (config.dataSource) {
+            is DataSource.RegularList -> config.dataSource.items.size
+            is DataSource.PagingList -> Int.MAX_VALUE // Paging handles this
+        }
+    )
     val focusDebounceDelay = 50L
     
     // Prevent focus changes from overriding navigation for a short time

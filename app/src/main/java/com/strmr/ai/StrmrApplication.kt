@@ -8,6 +8,9 @@ import coil.ImageLoader
 import coil.ImageLoaderFactory
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
+import coil.request.CachePolicy
+import coil.util.DebugLogger
+import okhttp3.OkHttpClient
 import androidx.work.*
 import java.util.concurrent.TimeUnit
 import com.strmr.ai.BackgroundSyncWorker
@@ -25,19 +28,45 @@ class StrmrApplication : Application(), ImageLoaderFactory, Configuration.Provid
     }
 
     override fun newImageLoader(): ImageLoader {
+        Log.d("StrmrApplication", "🖼️ Configuring optimized ImageLoader for streaming app")
+        
+        // Create optimized OkHttpClient for image loading
+        val okHttpClient = OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .build()
+        
         return ImageLoader.Builder(this)
+            .okHttpClient(okHttpClient)
+            // Optimized memory cache for streaming app with lots of images
             .memoryCache {
                 MemoryCache.Builder(this)
-                    .maxSizePercent(0.25)
+                    .maxSizePercent(0.30) // Increased from 25% to 30% for better performance
+                    .strongReferencesEnabled(true) // Keep strong references to prevent GC
                     .build()
             }
+            // Optimized disk cache for streaming content
             .diskCache {
                 DiskCache.Builder()
-                    .directory(this.cacheDir.resolve("image_cache"))
-                    .maxSizePercent(0.02)
+                    .directory(this.cacheDir.resolve("strmr_image_cache"))
+                    .maxSizePercent(0.15) // Increased from 2% to 15% for streaming images
                     .build()
             }
-            .build()
+            // Performance optimizations
+            .respectCacheHeaders(false) // Ignore cache headers for faster loading
+            .diskCachePolicy(CachePolicy.ENABLED)
+            .memoryCachePolicy(CachePolicy.ENABLED)
+            .networkCachePolicy(CachePolicy.ENABLED)
+            // Debug logging in debug builds
+            .apply { 
+                if (BuildConfig.DEBUG) {
+                    logger(DebugLogger())
+                }
+            }
+            .build().also {
+                Log.d("StrmrApplication", "✅ ImageLoader configured with optimized caching")
+            }
     }
     
     override val workManagerConfiguration: Configuration

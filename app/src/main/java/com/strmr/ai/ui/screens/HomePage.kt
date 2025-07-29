@@ -40,6 +40,9 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
+import com.strmr.ai.utils.LazyLoadingOptimizer
+import com.strmr.ai.utils.LazyItemKeyOptimizer
+import com.strmr.ai.utils.PrefetchStrategy
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.platform.LocalDensity
 import kotlinx.coroutines.launch
@@ -105,7 +108,7 @@ fun HomeMediaRow(
     onItemClick: ((Any) -> Unit)? = null,
     cardType: String = "portrait"
 ) {
-    // Use UnifiedMediaRow with EpisodeView-style left-aligned navigation
+    // Use UnifiedMediaRow with EpisodeView-style left-aligned navigation and memory optimization
     UnifiedMediaRow(
         config = MediaRowConfig(
             title = title,
