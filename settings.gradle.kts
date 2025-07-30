@@ -17,7 +17,7 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven("https://jitpack.io")
-        maven("https://maven.videolan.org/")
+        // maven("https://maven.videolan.org/")  // Temporarily disabled - network issues
     }
 }
 

@@ -33,7 +33,9 @@ android {
         buildConfigField("String", "TMDB_READ_KEY", "\"${secrets.getProperty("TMDB_READ_KEY", "")}\"")
         
         // Target specific resources for Android TV
-        resourceConfigurations += listOf("en", "xhdpi", "xxhdpi", "xxxhdpi")
+        androidResources {
+            localeFilters += listOf("en")
+        }
     }
 
     buildTypes {
@@ -53,7 +55,7 @@ android {
     // Target Android TV architectures only - saves 50-80MB from LibVLC
     splits {
         abi {
-            enable = true
+            isEnable = true
             reset()
             include("arm64-v8a", "armeabi-v7a")  // Primary Android TV architectures
             isUniversalApk = false
@@ -61,7 +63,7 @@ android {
     }
     
     // Exclude unnecessary resources and architectures
-    packagingOptions {
+    packaging {
         jniLibs {
             excludes += listOf(
                 "**/x86/**",
@@ -148,19 +150,18 @@ dependencies {
     implementation("androidx.hilt:hilt-work:1.2.0")
     ksp("androidx.hilt:hilt-compiler:1.2.0")
     
-    // ExoPlayer Media3 with BOM for consistent versions - saves ~5-10MB
-    implementation(platform("androidx.media3:media3-bom:1.6.1"))
-    implementation("androidx.media3:media3-exoplayer")
-    implementation("androidx.media3:media3-exoplayer-dash")
-    implementation("androidx.media3:media3-exoplayer-hls")
-    implementation("androidx.media3:media3-ui")
-    implementation("androidx.media3:media3-datasource-okhttp")
+    // ExoPlayer Media3 with explicit versions
+    implementation("androidx.media3:media3-exoplayer:1.3.1")
+    implementation("androidx.media3:media3-exoplayer-dash:1.3.1")
+    implementation("androidx.media3:media3-exoplayer-hls:1.3.1")
+    implementation("androidx.media3:media3-ui:1.3.1")
+    implementation("androidx.media3:media3-datasource-okhttp:1.3.1")
     // Removed smoothstreaming - uncomment if needed
     // implementation("androidx.media3:media3-exoplayer-smoothstreaming")
     
     // LibVLC for Android - MAJOR APK SIZE IMPACT (~80-120MB)
-    // Consider removing if ExoPlayer handles your streaming needs
-    implementation("org.videolan.android:libvlc-all:4.0.0-eap15")
+    // TEMPORARILY REMOVED - Network issues with maven.videolan.org
+    // implementation("org.videolan.android:libvlc-all:4.0.0-eap15")
     
     // OkHttp for network requests
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
@@ -205,7 +206,9 @@ detekt {
     config.setFrom(file("../config/detekt/detekt.yml"))
     buildUponDefaultConfig = true
     autoCorrect = false
-    
+}
+
+tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
     reports {
         html.required.set(true)
         xml.required.set(true)

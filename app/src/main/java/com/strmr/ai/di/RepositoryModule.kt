@@ -11,6 +11,8 @@ import com.strmr.ai.data.mapper.MovieMapper
 import com.strmr.ai.data.mapper.TvShowMapper
 import com.strmr.ai.data.mapper.AccountMapper
 import com.strmr.ai.domain.usecase.FetchLogoUseCase
+import com.strmr.ai.utils.RemoteResourceLoader
+import com.strmr.ai.utils.ImageUtils
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -177,5 +179,26 @@ object RepositoryModule {
         accountMapper: AccountMapper
     ): com.strmr.ai.domain.repository.AccountRepository {
         return AccountRepositoryImpl(legacyRepository, accountMapper)
+    }
+    
+    // =================
+    // REMOTE RESOURCE LOADING (APK SIZE OPTIMIZATION)
+    // =================
+    
+    @Provides
+    @Singleton
+    fun provideRemoteResourceLoader(
+        @ApplicationContext context: Context
+    ): RemoteResourceLoader {
+        return RemoteResourceLoader(context)
+    }
+    
+    @Provides
+    @Singleton
+    fun provideImageUtils(
+        @ApplicationContext context: Context,
+        remoteResourceLoader: RemoteResourceLoader
+    ): ImageUtils {
+        return ImageUtils(context, remoteResourceLoader)
     }
 } 
