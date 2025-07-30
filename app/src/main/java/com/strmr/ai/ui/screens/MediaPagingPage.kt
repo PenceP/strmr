@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.unit.sp
 import androidx.paging.PagingData
 import androidx.paging.compose.collectAsLazyPagingItems
+import com.strmr.ai.ui.theme.StrmrConstants
 import com.strmr.ai.ui.components.UnifiedMediaRow
 import com.strmr.ai.ui.components.MediaRowConfig
 import com.strmr.ai.ui.components.DataSource
@@ -130,7 +131,7 @@ fun <T : Any> MediaPagingPage(
                         scaleX = 1.1f
                         scaleY = 1.1f
                     }
-                    .blur(radius = 8.dp),
+                    .blur(radius = StrmrConstants.Blur.RADIUS_STANDARD),
                 contentScale = ContentScale.Crop,
                 alpha = 1f
             )

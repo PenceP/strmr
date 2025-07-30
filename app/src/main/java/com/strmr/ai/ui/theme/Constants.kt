@@ -199,7 +199,7 @@ object StrmrConstants {
     }
     
     object Blur {
-        val RADIUS_STANDARD = 8.dp
+        val RADIUS_STANDARD = 6.dp  // Reduced blur for wallpaper and backdrop images
     }
     
     object Layout {

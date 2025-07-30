@@ -228,7 +228,7 @@ fun EpisodeView(
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
-                    .blur(radius = 32.dp),
+                    .blur(radius = StrmrConstants.Blur.RADIUS_STANDARD),
                 contentScale = ContentScale.Crop,
                 alpha = StrmrConstants.Colors.Alpha.LIGHT
             )

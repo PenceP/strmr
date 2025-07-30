@@ -58,6 +58,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 import coil.compose.AsyncImage
 import com.strmr.ai.data.SearchResultItem
+import com.strmr.ai.ui.theme.StrmrConstants
 import com.strmr.ai.ui.components.MediaCard
 import com.strmr.ai.ui.components.MediaRowSkeleton
 import com.strmr.ai.ui.components.SkeletonCardType
@@ -120,7 +121,7 @@ fun SearchPage(
             contentDescription = null,
             modifier = Modifier
                 .fillMaxSize()
-                .blur(radius = 8.dp),
+                .blur(radius = StrmrConstants.Blur.RADIUS_STANDARD),
             contentScale = ContentScale.Crop
         )
         

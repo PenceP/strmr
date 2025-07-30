@@ -511,7 +511,7 @@ fun HomePage(
             contentDescription = null,
             modifier = Modifier
                 .fillMaxSize()
-                .blur(radius = 8.dp),
+                .blur(radius = StrmrConstants.Blur.RADIUS_STANDARD),
             contentScale = ContentScale.Crop
         )
 
@@ -553,7 +553,7 @@ fun HomePage(
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
-                    .blur(radius = 8.dp),
+                    .blur(radius = StrmrConstants.Blur.RADIUS_STANDARD),
                 contentScale = ContentScale.Crop,
                 alpha = 1f
             )

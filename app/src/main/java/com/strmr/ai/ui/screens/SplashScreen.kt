@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -17,6 +18,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.strmr.ai.ui.theme.StrmrConstants
 import com.strmr.ai.R
 import com.strmr.ai.viewmodel.UpdateViewModel
 import kotlinx.coroutines.delay
@@ -108,12 +110,14 @@ fun SplashScreen(
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Wallpaper background
+        // Wallpaper background with blur
         Image(
             painter = painterResource(id = R.drawable.wallpaper),
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .blur(radius = StrmrConstants.Blur.RADIUS_STANDARD)
         )
         
         // Dark overlay for better text visibility

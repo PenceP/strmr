@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -20,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.strmr.ai.ui.theme.StrmrConstants
 import com.strmr.ai.R
 import com.strmr.ai.data.OnboardingState
 import com.strmr.ai.viewmodel.OnboardingViewModel
@@ -65,11 +67,13 @@ private fun OnboardingContent(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        // Wallpaper background
+        // Wallpaper background with blur
         Image(
             painter = painterResource(id = R.drawable.wallpaper),
             contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .blur(radius = StrmrConstants.Blur.RADIUS_STANDARD),
             contentScale = ContentScale.Crop
         )
         
