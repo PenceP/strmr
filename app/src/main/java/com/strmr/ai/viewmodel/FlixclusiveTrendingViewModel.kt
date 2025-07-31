@@ -96,12 +96,28 @@ class FlixclusiveTrendingViewModel @Inject constructor(
             return
         }
 
+        // Don't paginate if we can't or if we're already loading/error state
+        val currentState = _paginationState.value
+        if (!currentState.canPaginate && currentState.pagingState != PagingState.ERROR) {
+            Log.d(
+                "FlixclusiveTrendingViewModel",
+                "🚫 Pagination not allowed, current state: ${currentState.pagingState}"
+            )
+            return
+        }
+
+        // Don't paginate the same page twice unless it's a refresh (page 1) or error retry
+        if (page == currentState.currentPage && currentState.pagingState != PagingState.ERROR && page != 1) {
+            Log.d("FlixclusiveTrendingViewModel", "🔄 Page $page already loaded, skipping")
+            return
+        }
+
         Log.d("FlixclusiveTrendingViewModel", "🚀 Starting pagination for page $page")
         
         paginationJob = viewModelScope.launch {
             try {
                 _paginationState.value = _paginationState.value.copy(
-                    pagingState = PagingState.PAGINATING
+                    pagingState = if (page == 1) PagingState.LOADING else PagingState.PAGINATING
                 )
 
                 if (page == 1) {

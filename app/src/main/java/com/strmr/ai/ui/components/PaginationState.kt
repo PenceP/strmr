@@ -42,6 +42,16 @@ fun TvLazyListState.shouldPaginate(toDeduct: Int = 6): Boolean =
 /**
  * Mobile/Standard version - more aggressive with scroll forward check
  */
-fun LazyListState.shouldPaginate(toDeduct: Int = 6): Boolean = 
-    (layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -9) >= 
-    (layoutInfo.totalItemsCount - toDeduct) || !canScrollForward
+fun LazyListState.shouldPaginate(toDeduct: Int = 6): Boolean {
+    val layoutInfo = this.layoutInfo
+    val visibleItems = layoutInfo.visibleItemsInfo
+    val totalItems = layoutInfo.totalItemsCount
+
+    // Don't paginate if there are no items or if we're not at the end
+    if (totalItems == 0 || visibleItems.isEmpty()) return false
+
+    val lastVisibleIndex = visibleItems.lastOrNull()?.index ?: return false
+    val shouldPaginate = lastVisibleIndex >= (totalItems - toDeduct)
+
+    return shouldPaginate && canScrollForward
+}

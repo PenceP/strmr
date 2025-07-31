@@ -5,12 +5,11 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.gestures.FlingBehavior
+import androidx.compose.foundation.gestures.ScrollScope
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.tv.foundation.lazy.list.TvLazyListState
-import androidx.tv.foundation.lazy.list.rememberTvLazyListState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,11 +21,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
-import androidx.tv.foundation.lazy.list.TvLazyColumn
-import androidx.tv.foundation.lazy.list.TvLazyRow
-import androidx.tv.foundation.PivotOffsets
+
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.gestures.ScrollableDefaults
 import kotlinx.coroutines.launch
-import com.strmr.ai.data.SearchResultItem
 
 /**
  * Unified MediaRow component based on Flixclusive patterns
@@ -47,37 +45,55 @@ fun <T : Any> UnifiedMediaRow(
 ) {
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
-    
+
+    // Custom responsive FlingBehavior that stops immediately on button release (no momentum).
+    val responsiveFlingBehavior = remember {
+        object : FlingBehavior {
+            override suspend fun ScrollScope.performFling(initialVelocity: Float): Float {
+                // Immediately consume all velocity for DPAD responsiveness.
+                return 0f
+            }
+        }
+    }
+
     val itemCount = when (config.dataSource) {
         is DataSource.RegularList -> config.dataSource.items.size
         is DataSource.PagingList -> config.dataSource.pagingItems.itemCount
     }
-    
-    // ✅ NEW: Track scroll position and report to parent
+
+    // NEW: Track scroll position and report to parent - using LazyListState
     LaunchedEffect(listState.firstVisibleItemIndex, itemCount) {
         if (itemCount > 0) {
             onPositionChanged?.invoke(listState.firstVisibleItemIndex, itemCount)
         }
     }
-    
-    // ✅ FLIXCLUSIVE PATTERN: Buffer-based pagination trigger using shouldPaginate extension
+
+    // FLIXCLUSIVE PATTERN: Buffer-based pagination trigger using shouldPaginate extension
     val shouldStartPaginate by remember(listState) {
         derivedStateOf {
             listState.shouldPaginate(toDeduct = 6)
         }
     }
-    
-    // ✅ FLIXCLUSIVE PATTERN: Custom pagination logic
+
+    var lastPaginationPage by remember { mutableStateOf(-1) }
+
     if (config.dataSource is DataSource.RegularList) {
         val paginationState = config.dataSource.paginationState
-        
-        LaunchedEffect(shouldStartPaginate) {
+
+        LaunchedEffect(shouldStartPaginate, paginationState.currentPage) {
             if (shouldStartPaginate && 
                 paginationState.canPaginate &&
                 (paginationState.pagingState == PagingState.IDLE || 
                  paginationState.pagingState == PagingState.ERROR ||
-                 config.dataSource.items.isEmpty())) {
-                Log.d("UnifiedMediaRow", "🚀 Flixclusive pagination triggered for '${config.title}' page ${paginationState.currentPage}")
+                        config.dataSource.items.isEmpty()) &&
+                lastPaginationPage != paginationState.currentPage
+            ) {
+
+                Log.d(
+                    "UnifiedMediaRow",
+                    " Flixclusive pagination triggered for '${config.title}' page ${paginationState.currentPage}"
+                )
+                lastPaginationPage = paginationState.currentPage
                 config.onPaginate?.invoke(paginationState.currentPage)
             }
         }
@@ -87,8 +103,9 @@ fun <T : Any> UnifiedMediaRow(
             if (shouldStartPaginate && 
                 config.canLoadMore && 
                 !config.isLoading &&
-                config.onPaginate == null) { // Only if new pagination not used
-                Log.d("UnifiedMediaRow", "📄 Legacy pagination triggered for '${config.title}'")
+                config.onPaginate == null
+            ) {
+                Log.d("UnifiedMediaRow", " Legacy pagination triggered for '${config.title}'")
                 config.onLoadMore?.invoke()
             }
         }
@@ -103,12 +120,13 @@ fun <T : Any> UnifiedMediaRow(
                 modifier = Modifier.padding(start = 56.dp, bottom = 4.dp)
             )
         }
-        
-        // Use regular LazyRow with TvLazyRow-style focus handling
+
+        // Use regular LazyRow with an immediate-stop FlingBehavior for better DPAD/TV responsiveness
         LazyRow(
-            state = listState, // ✅ FIXED: Use the tracked listState for scroll position
+            state = listState,
             horizontalArrangement = Arrangement.spacedBy(config.itemSpacing),
             contentPadding = config.contentPadding,
+            flingBehavior = responsiveFlingBehavior,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(config.getRowHeight())
@@ -123,40 +141,51 @@ fun <T : Any> UnifiedMediaRow(
             when (config.dataSource) {
                 is DataSource.RegularList -> {
                     val paginationState = config.dataSource.paginationState
-                    
-                    if ((config.isLoading || paginationState.pagingState == PagingState.LOADING) && 
+
+                    if ((config.isLoading || paginationState.pagingState == PagingState.LOADING) &&
                         (config.dataSource.items.isEmpty() || config.dataSource.items.size < 20)) {
                         // Show skeleton loading state for initial load or when refreshing incomplete data
-                        items(config.skeletonCount) {
+                        items(count = config.skeletonCount) {
                             SkeletonCard(config)
                         }
                     } else {
                         // ✅ FIXED: Add stable keys to prevent jumping (Flixclusive pattern)
                         items(
-                            items = config.dataSource.items,
-                            key = { item -> getStableKey(item, config.keyExtractor) }
-                        ) { item ->
-                            val index = config.dataSource.items.indexOf(item)
+                            count = config.dataSource.items.size,
+                            key = { index ->
+                                getStableKey(
+                                    config.dataSource.items[index],
+                                    config.keyExtractor
+                                )
+                            }
+                        ) { index ->
+                            val item = config.dataSource.items[index]
                             MediaRowItem(
                                 item = item,
                                 config = config,
                                 index = index,
                                 onItemClick = { config.onItemClick?.invoke(item) },
-                                onItemLongPress = { 
-                                    Log.d("UnifiedMediaRow", "🔒 Long-press detected on item: ${getItemTitle(item)}")
+                                onItemLongPress = {
+                                    Log.d(
+                                        "UnifiedMediaRow",
+                                        " Long-press detected on item: ${getItemTitle(item)}"
+                                    )
                                     config.onItemLongPress?.invoke(item)
                                 },
                                 onItemFocused = { focusedIndex ->
-                                    Log.d("UnifiedMediaRow", "🎯 Item focused at index: $focusedIndex")
+                                    Log.d(
+                                        "UnifiedMediaRow",
+                                        " Item focused at index: $focusedIndex"
+                                    )
                                     config.onSelectionChanged(focusedIndex)
                                 }
                             )
                         }
-                        
-                        // ✅ FLIXCLUSIVE PATTERN: Handle pagination loading states
+
+                        // FLIXCLUSIVE PATTERN: Handle pagination loading states
                         when (paginationState.pagingState) {
                             PagingState.PAGINATING -> {
-                                items(3) {
+                                items(count = 3) {
                                     SkeletonCard(config)
                                 }
                             }
@@ -164,7 +193,7 @@ fun <T : Any> UnifiedMediaRow(
                                 item {
                                     ErrorCard(
                                         config = config,
-                                        onRetry = { 
+                                        onRetry = {
                                             config.onPaginate?.invoke(paginationState.currentPage)
                                         }
                                     )
@@ -173,7 +202,7 @@ fun <T : Any> UnifiedMediaRow(
                             else -> {
                                 // Fallback to legacy loading indicator
                                 if (config.isLoading && config.dataSource.items.isNotEmpty()) {
-                                    items(3) {
+                                    items(count = 3) {
                                         SkeletonCard(config)
                                     }
                                 }
@@ -181,12 +210,12 @@ fun <T : Any> UnifiedMediaRow(
                         }
                     }
                 }
-                
+
                 is DataSource.PagingList -> {
                     // ✅ FIXED: Add stable keys for paging items too
                     items(
                         count = config.dataSource.pagingItems.itemCount,
-                        key = { index -> 
+                        key = { index ->
                             config.dataSource.pagingItems[index]?.let { item ->
                                 getStableKey(item, config.keyExtractor)
                             } ?: "placeholder_$index"
@@ -199,12 +228,18 @@ fun <T : Any> UnifiedMediaRow(
                                 config = config,
                                 index = index,
                                 onItemClick = { config.onItemClick?.invoke(item) },
-                                onItemLongPress = { 
-                                    Log.d("UnifiedMediaRow", "🔒 Long-press detected on item: ${getItemTitle(item)}")
+                                onItemLongPress = {
+                                    Log.d(
+                                        "UnifiedMediaRow",
+                                        " Long-press detected on item: ${getItemTitle(item)}"
+                                    )
                                     config.onItemLongPress?.invoke(item)
                                 },
                                 onItemFocused = { focusedIndex ->
-                                    Log.d("UnifiedMediaRow", "🎯 Item focused at index: $focusedIndex")
+                                    Log.d(
+                                        "UnifiedMediaRow",
+                                        " Item focused at index: $focusedIndex"
+                                    )
                                     config.onSelectionChanged(focusedIndex)
                                 }
                             )
@@ -212,11 +247,11 @@ fun <T : Any> UnifiedMediaRow(
                             SkeletonCard(config)
                         }
                     }
-                    
+
                     // Handle paging load states (Flixclusive pattern)
                     when (val appendState = config.dataSource.pagingItems.loadState.append) {
                         is LoadState.Loading -> {
-                            items(3) {
+                            items(count = 3) {
                                 SkeletonCard(config)
                             }
                         }
@@ -229,7 +264,7 @@ fun <T : Any> UnifiedMediaRow(
                             }
                         }
                         is LoadState.NotLoading -> {
-                            // No extra spacers needed - TvLazyRow handles scrolling properly
+                            // No extra spacers needed
                         }
                     }
                 }
@@ -254,7 +289,7 @@ private fun <T : Any> MediaRowItem(
         modifier = Modifier
             .width(config.itemWidth)
             .fillMaxHeight()
-            .onFocusChanged { focusState -> 
+            .onFocusChanged { focusState ->
                 isFocused = focusState.isFocused
                 if (focusState.isFocused) {
                     onItemFocused(index)
