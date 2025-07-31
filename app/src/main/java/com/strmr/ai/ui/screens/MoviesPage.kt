@@ -8,7 +8,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.strmr.ai.viewmodel.GenericMoviesViewModel
 import com.strmr.ai.viewmodel.FlixclusiveTrendingViewModel
+import com.strmr.ai.viewmodel.FlixclusivePopularViewModel
+import com.strmr.ai.viewmodel.FlixclusiveTopMoviesViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import com.strmr.ai.data.database.MovieEntity
 import androidx.compose.ui.focus.FocusRequester
 import android.util.Log
@@ -45,6 +49,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.LazyPagingItems
+import com.strmr.ai.ui.components.PaginationStateInfo
+
+// Data class to hold row information
+data class MovieRowData(
+    val title: String,
+    val movies: List<MovieEntity>,
+    val paginationState: PaginationStateInfo,
+    val showHero: Boolean
+)
 
 @Composable
 fun MoviesPage(
@@ -56,115 +69,79 @@ fun MoviesPage(
     val context = LocalContext.current
     val viewModel: GenericMoviesViewModel = hiltViewModel()
     
-    // ✅ NEW: Flixclusive-style ViewModel for trending movies
-    val flixclusiveTrendingViewModel: FlixclusiveTrendingViewModel = hiltViewModel()
+    // ✅ NEW: Flixclusive-style ViewModels for all rows
+    val trendingViewModel: FlixclusiveTrendingViewModel = hiltViewModel()
+    val popularViewModel: FlixclusivePopularViewModel = hiltViewModel()
+    val topMoviesViewModel: FlixclusiveTopMoviesViewModel = hiltViewModel()
     
     // Load configuration
     var pageConfiguration by remember { mutableStateOf<PageConfiguration?>(null) }
     LaunchedEffect(Unit) {
         val configLoader = ConfigurationLoader(context)
         pageConfiguration = configLoader.loadPageConfiguration("MOVIES")
-        pageConfiguration?.let { config ->
-            viewModel.initializeWithConfiguration(config)
-        }
     }
     
-    val uiState by viewModel.uiState.collectAsState()
-    val pagingUiState by viewModel.pagingUiState.collectAsState()
     val logoUrls by viewModel.logoUrls.collectAsState()
     
-    // ✅ NEW: Flixclusive trending data
-    val flixclusiveTrendingMovies by flixclusiveTrendingViewModel.movies.collectAsStateWithLifecycle()
-    val flixclusivePaginationState by flixclusiveTrendingViewModel.paginationState.collectAsStateWithLifecycle()
+    // ✅ NEW: Flixclusive data for all rows
+    val trendingMovies by trendingViewModel.movies.collectAsStateWithLifecycle()
+    val trendingPaginationState by trendingViewModel.paginationState.collectAsStateWithLifecycle()
     
-    // Use the new SelectionManager
-    val selectionManager = rememberSelectionManager()
+    val popularMovies by popularViewModel.movies.collectAsStateWithLifecycle()
+    val popularPaginationState by popularViewModel.paginationState.collectAsStateWithLifecycle()
     
-    // For now, get row titles from regular uiState for navigation
-    // but we'll use paging data for actual display
-    val allRowTitles = uiState.mediaRows.keys.toList()
-    val rowCount = allRowTitles.size
-    val focusRequesters = remember(rowCount) { List(rowCount) { FocusRequester() } }
-
-    // Update local content focus when external focus changes
+    val topMovies by topMoviesViewModel.movies.collectAsStateWithLifecycle()
+    val topMoviesPaginationState by topMoviesViewModel.paginationState.collectAsStateWithLifecycle()
+    
+    // ✅ NEW: Multi-row management
+    val rowData = remember(trendingMovies, popularMovies, topMovies) {
+        listOf(
+            MovieRowData("Trending", trendingMovies, trendingPaginationState, true),
+            MovieRowData("Popular", popularMovies, popularPaginationState, true),
+            MovieRowData("Top Movies of the Week", topMovies, topMoviesPaginationState, true)
+        )
+    }
+    
+    // ✅ NEW: Row and item selection state
+    var selectedRowIndex by remember { mutableStateOf(0) }
+    var selectedItemIndex by remember { mutableStateOf(0) }
+    
+    // Update external focus when content focus changes
     LaunchedEffect(isContentFocused) {
         Log.d("MoviesPage", "🎯 External focus changed: isContentFocused=$isContentFocused")
-        selectionManager.updateContentFocus(isContentFocused)
     }
 
     val navBarWidth = 56.dp
     val navBarWidthPx = with(LocalDensity.current) { navBarWidth.toPx() }
 
-    // Get selected item for hero section
-    val validRowIndex = if (selectionManager.selectedRowIndex >= rowCount) 0 else selectionManager.selectedRowIndex
-    val currentRowTitle = allRowTitles.getOrNull(validRowIndex) ?: ""
+    // Get currently selected row and item
+    val currentRow = rowData.getOrNull(selectedRowIndex)
+    val selectedItem = currentRow?.movies?.getOrNull(selectedItemIndex)
     
-    // Get the paging flow for the current row
-    val currentPagingFlow = pagingUiState.mediaRows[currentRowTitle]
-    
-    // Collect paging items for the current row
-    val pagingItems = currentPagingFlow?.collectAsLazyPagingItems()
-    
-    // ✅ NEW: Use Flixclusive data for trending row
-    // Create a state that explicitly tracks selection changes
-    val selectedItem by remember(
-        currentRowTitle, 
-        selectionManager.selectedItemIndex, 
-        flixclusiveTrendingMovies.size,
-        pagingItems?.itemCount
-    ) {
-        derivedStateOf {
-            if (currentRowTitle == "Trending") {
-                // Use Flixclusive trending data
-                val item = flixclusiveTrendingMovies.getOrNull(selectionManager.selectedItemIndex)
-                Log.d("MoviesPage", "🎬 Selected item from Flixclusive trending: ${item?.title} at index ${selectionManager.selectedItemIndex}, total items: ${flixclusiveTrendingMovies.size}")
-                item
-            } else {
-                // Get selected item from paging data if available, otherwise from regular data
-                val selectedRow = uiState.mediaRows[currentRowTitle] ?: emptyList()
-                if (pagingItems != null && selectionManager.selectedItemIndex < pagingItems.itemCount) {
-                    // Ensure we get the correct item from paging data
-                    val item = pagingItems[selectionManager.selectedItemIndex]
-                    Log.d("MoviesPage", "🎬 Selected item from paging: ${item?.title} at index ${selectionManager.selectedItemIndex}")
-                    item
-                } else {
-                    // Fallback to regular data
-                    val item = selectedRow.getOrNull(selectionManager.selectedItemIndex)
-                    Log.d("MoviesPage", "🎬 Selected item from regular: ${item?.title} at index ${selectionManager.selectedItemIndex}")
-                    item
-                }
-            }
-        }
-    }
+    Log.d("MoviesPage", "🎬 Current selection: row=${currentRow?.title} (${selectedRowIndex}) item=${selectedItem?.title} (${selectedItemIndex})")
     
     // Update focused row in ViewModel when it changes
-    LaunchedEffect(currentRowTitle) {
-        if (currentRowTitle.isNotEmpty()) {
-            viewModel.updateFocusedRow(currentRowTitle)
+    LaunchedEffect(currentRow?.title) {
+        currentRow?.title?.let { title ->
+            viewModel.updateFocusedRow(title)
         }
     }
 
     // Check if current row should show hero based on configuration
-    val shouldShowHero = pageConfiguration?.let { config ->
-        currentRowTitle.let { title ->
-            val rowConfig = config.rows.find { it.title == title }
-            rowConfig?.showHero == true
-        }
-    } ?: false
+    val shouldShowHero = currentRow?.showHero == true
 
     // Get backdrop URL for background
     val backdropUrl = if (shouldShowHero) {
-        (selectedItem as? MovieEntity)?.backdropUrl.also {
-            Log.d("MoviesPage", "🎨 Hero backdrop URL: $it for ${(selectedItem as? MovieEntity)?.title}")
+        selectedItem?.backdropUrl.also {
+            Log.d("MoviesPage", "🎨 Hero backdrop URL: $it for ${selectedItem?.title}")
         }
     } else null
 
     // OMDb ratings for hero section
-    var omdbRatings by remember(selectedItem, selectionManager.selectedItemIndex) { mutableStateOf<OmdbResponse?>(null) }
-    LaunchedEffect(selectedItem, selectionManager.selectedItemIndex) {
-        val movie = selectedItem as? MovieEntity
-        if (shouldShowHero && movie != null) {
-            val imdbId = movie.imdbId
+    var omdbRatings by remember(selectedItem, selectedRowIndex, selectedItemIndex) { mutableStateOf<OmdbResponse?>(null) }
+    LaunchedEffect(selectedItem, selectedRowIndex, selectedItemIndex) {
+        if (shouldShowHero && selectedItem != null) {
+            val imdbId = selectedItem.imdbId
             if (!imdbId.isNullOrBlank()) {
                 omdbRatings = withContext(Dispatchers.IO) {
                     viewModel.fetchOmdbRatings(imdbId)
@@ -231,15 +208,14 @@ fun MoviesPage(
                 )
         )
 
-        // Main content
+        // ✅ NEW: Main content with vertical column for all rows
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(start = 1.dp)
         ) {
             // Hero section (based on configuration)
-            val selectedMovie = selectedItem as? MovieEntity
-            if (shouldShowHero && selectedMovie != null) {
+            if (shouldShowHero && selectedItem != null) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -249,18 +225,18 @@ fun MoviesPage(
                     MediaHero(
                         mediaDetails = {
                             MediaDetails(
-                                title = selectedMovie.title,
-                                logoUrl = logoUrls[selectedMovie.tmdbId] ?: selectedMovie.logoUrl,
-                                year = selectedMovie.year,
-                                formattedDate = selectedMovie.releaseDate,
-                                runtime = selectedMovie.runtime,
-                                genres = selectedMovie.genres,
-                                rating = selectedMovie.rating,
-                                overview = selectedMovie.overview,
-                                cast = selectedMovie.cast.map { it.name ?: "" },
+                                title = selectedItem.title,
+                                logoUrl = logoUrls[selectedItem.tmdbId] ?: selectedItem.logoUrl,
+                                year = selectedItem.year,
+                                formattedDate = selectedItem.releaseDate,
+                                runtime = selectedItem.runtime,
+                                genres = selectedItem.genres,
+                                rating = selectedItem.rating,
+                                overview = selectedItem.overview,
+                                cast = selectedItem.cast.map { it.name ?: "" },
                                 omdbRatings = omdbRatings,
                                 onFetchLogo = {
-                                    viewModel.fetchAndUpdateLogo(selectedMovie)
+                                    viewModel.fetchAndUpdateLogo(selectedItem)
                                 }
                             )
                         }
@@ -268,190 +244,69 @@ fun MoviesPage(
                 }
             }
 
-            // Active row section
+            // ✅ NEW: All rows section with vertical scrolling
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(if (shouldShowHero) 0.51f else 1f)
             ) {
-                // ✅ NEW: Use Flixclusive system for trending row
-                if (currentRowTitle == "Trending") {
-                    // Use Flixclusive-style pagination for trending movies
-                    UnifiedMediaRow(
-                        config = MediaRowConfig(
-                            title = currentRowTitle,
-                            dataSource = DataSource.RegularList(
-                                items = flixclusiveTrendingMovies,
-                                paginationState = flixclusivePaginationState
-                            ),
-                            selectedIndex = selectionManager.selectedItemIndex,
-                            isRowSelected = true,
-                            onSelectionChanged = { newIndex ->
-                                selectionManager.updateSelection(validRowIndex, newIndex)
-                            },
-                            onUpDown = { direction ->
-                                val newRowIndex = validRowIndex + direction
-                                if (newRowIndex >= 0 && newRowIndex < rowCount) {
-                                    Log.d("MoviesPage", "🎯 Row navigation: $validRowIndex -> $newRowIndex, maintaining focus")
-                                    selectionManager.updateSelection(newRowIndex, 0)
-                                    selectionManager.updateContentFocus(true)
-                                }
-                            },
-                            onLeftBoundary = onLeftBoundary,
-                            onContentFocusChanged = { focused ->
-                                selectionManager.updateContentFocus(focused)
-                                onContentFocusChanged?.invoke(focused)
-                            },
-                            focusRequester = if (selectionManager.isContentFocused) focusRequesters.getOrNull(validRowIndex) else null,
-                            cardType = CardType.PORTRAIT,
-                            itemWidth = 120.dp,
-                            itemSpacing = 12.dp,
-                            isContentFocused = selectionManager.isContentFocused,
-                            onItemClick = { movie ->
-                                if (movie is MovieEntity) {
-                                    onNavigateToDetails?.invoke(movie.tmdbId)
-                                }
-                            },
-                            onPaginate = { page ->
-                                Log.d("MoviesPage", "🚀 Flixclusive pagination triggered for page $page")
-                                flixclusiveTrendingViewModel.paginateMovies(page)
-                            },
-                            itemContent = { movie, isSelected ->
-                                if (movie is MovieEntity) {
-                                    MediaCard(
-                                        title = movie.title,
-                                        posterUrl = movie.posterUrl,
-                                        isSelected = isSelected,
-                                        onClick = {
-                                            onNavigateToDetails?.invoke(movie.tmdbId)
-                                        }
-                                    )
-                                }
-                            }
-                        ),
-                        modifier = Modifier.fillMaxWidth(),
-                        onPositionChanged = { firstVisibleIndex, totalItems ->
-                            Log.d("MoviesPage", "📍 Flixclusive trending position: $firstVisibleIndex/$totalItems")
-                        }
-                    )
-                } else if (currentPagingFlow != null && pagingItems != null) {
-                    // Use UnifiedMediaRow with paging data source
-                    UnifiedMediaRow(
-                        config = MediaRowConfig(
-                            title = currentRowTitle,
-                            dataSource = DataSource.PagingList(pagingItems),
-                            selectedIndex = selectionManager.selectedItemIndex,
-                            isRowSelected = true,
-                            onSelectionChanged = { newIndex ->
-                                selectionManager.updateSelection(validRowIndex, newIndex)
-                                // Position tracking now handled by onPositionChanged callback
-                            },
-                            onUpDown = { direction ->
-                                val newRowIndex = validRowIndex + direction
-                                if (newRowIndex >= 0 && newRowIndex < rowCount) {
-                                    Log.d("MoviesPage", "🎯 Row navigation: $validRowIndex -> $newRowIndex, maintaining focus")
-                                    selectionManager.updateSelection(newRowIndex, 0)
-                                    selectionManager.updateContentFocus(true)
-                                }
-                            },
-                            onLeftBoundary = onLeftBoundary,
-                            onContentFocusChanged = { focused ->
-                                selectionManager.updateContentFocus(focused)
-                                onContentFocusChanged?.invoke(focused)
-                            },
-                            focusRequester = if (selectionManager.isContentFocused) focusRequesters.getOrNull(validRowIndex) else null,
-                            cardType = CardType.PORTRAIT,
-                            itemWidth = 120.dp,
-                            itemSpacing = 12.dp,
-                            isContentFocused = selectionManager.isContentFocused,
-                            //contentPadding = PaddingValues(horizontal = 48.dp),
-                            onItemClick = { movie ->
-                                if (movie is MovieEntity) {
-                                    onNavigateToDetails?.invoke(movie.tmdbId)
-                                }
-                            },
-                            itemContent = { movie, isSelected ->
-                                if (movie is MovieEntity) {
-                                    MediaCard(
-                                        title = movie.title,
-                                        posterUrl = movie.posterUrl,
-                                        isSelected = isSelected,
-                                        onClick = {
-                                            onNavigateToDetails?.invoke(movie.tmdbId)
-                                        }
-                                    )
-                                }
-                            }
-                        ),
-                        modifier = Modifier.fillMaxWidth(),
-                        onPositionChanged = { firstVisibleIndex, totalItems ->
-                            viewModel.updateRowPosition(currentRowTitle, firstVisibleIndex, totalItems)
-                            viewModel.updateFocusedRow(currentRowTitle)
-                        }
-                    )
-                } else {
-                    // Fallback to regular row if no paging data
-                    val rowItems = uiState.mediaRows[currentRowTitle] ?: emptyList()
-                    
-                    if (rowItems.isNotEmpty()) {
+                val columnState = rememberLazyListState()
+                
+                LazyColumn(
+                    state = columnState,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(vertical = 16.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(
+                        count = rowData.size,
+                        key = { index -> rowData[index].title }
+                    ) { rowIndex ->
+                        val row = rowData[rowIndex]
+                        val isRowSelected = selectedRowIndex == rowIndex
+                        
                         UnifiedMediaRow(
                             config = MediaRowConfig(
-                                title = currentRowTitle,
-                                dataSource = DataSource.RegularList(rowItems),
-                                selectedIndex = selectionManager.selectedItemIndex,
-                                isRowSelected = true,
-                                onSelectionChanged = { newIndex ->
-                                    selectionManager.updateSelection(validRowIndex, newIndex)
-                                },
-                                onUpDown = { direction ->
-                                    val newRowIndex = validRowIndex + direction
-                                    if (newRowIndex >= 0 && newRowIndex < rowCount) {
-                                        Log.d("MoviesPage", "🎯 Row navigation: $validRowIndex -> $newRowIndex, maintaining focus")
-                                        selectionManager.updateSelection(newRowIndex, 0)
-                                        selectionManager.updateContentFocus(true)
-                                    }
-                                },
-                                onLeftBoundary = onLeftBoundary,
-                                onContentFocusChanged = { focused ->
-                                    selectionManager.updateContentFocus(focused)
-                                    onContentFocusChanged?.invoke(focused)
-                                },
-                                focusRequester = if (selectionManager.isContentFocused) focusRequesters.getOrNull(validRowIndex) else null,
-                                cardType = CardType.PORTRAIT,
-                                itemWidth = 120.dp,
-                                itemSpacing = 12.dp,
-                                isContentFocused = selectionManager.isContentFocused,
-                                //contentPadding = PaddingValues(horizontal = 48.dp),
+                                title = row.title,
+                                dataSource = DataSource.RegularList(
+                                    items = row.movies,
+                                    paginationState = row.paginationState
+                                ),
                                 onItemClick = { movie ->
                                     if (movie is MovieEntity) {
                                         onNavigateToDetails?.invoke(movie.tmdbId)
                                     }
                                 },
-                                itemContent = { movie, isSelected ->
-                                    if (movie is MovieEntity) {
-                                        MediaCard(
-                                            title = movie.title,
-                                            posterUrl = movie.posterUrl,
-                                            isSelected = isSelected,
-                                            onClick = {
+                                onPaginate = { page ->
+                                    Log.d("MoviesPage", "🚀 Pagination triggered for ${row.title} page $page")
+                                    when (row.title) {
+                                        "Trending" -> trendingViewModel.paginateMovies(page)
+                                        "Popular" -> popularViewModel.paginateMovies(page)
+                                        "Top Movies of the Week" -> topMoviesViewModel.loadMovies()
+                                    }
+                                },
+                                cardType = CardType.PORTRAIT,
+                                itemWidth = 120.dp,
+                                itemSpacing = 12.dp,
+                                itemContent = { movie, isFocused ->
+                                    MediaCard(
+                                        title = movie.title,
+                                        posterUrl = movie.posterUrl,
+                                        isSelected = isFocused,
+                                        onClick = {
+                                            if (movie is MovieEntity) {
                                                 onNavigateToDetails?.invoke(movie.tmdbId)
                                             }
-                                        )
-                                    }
+                                        }
+                                    )
+                                },
+                                // ✅ NEW: Handle row and item selection
+                                onSelectionChanged = { itemIndex ->
+                                    selectedRowIndex = rowIndex
+                                    selectedItemIndex = itemIndex
+                                    Log.d("MoviesPage", "🎯 Selection changed: row=$rowIndex, item=$itemIndex")
                                 }
                             ),
-                            modifier = Modifier.fillMaxWidth(),
-                            onPositionChanged = { firstVisibleIndex, totalItems ->
-                                viewModel.updateRowPosition(currentRowTitle, firstVisibleIndex, totalItems)
-                                viewModel.updateFocusedRow(currentRowTitle)
-                            }
-                        )
-                    } else {
-                        // Show skeleton when no items loaded yet
-                        MediaRowSkeleton(
-                            title = currentRowTitle,
-                            cardCount = 8,
-                            cardType = SkeletonCardType.PORTRAIT,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -459,8 +314,8 @@ fun MoviesPage(
             }
         }
 
-        // Up arrow (shown when there are rows above current row)
-        if (validRowIndex > 0) {
+        // Navigation arrows for vertical row navigation
+        if (selectedRowIndex > 0) {
             Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -475,8 +330,8 @@ fun MoviesPage(
             }
         }
 
-        // Down arrow (shown when there are rows below current row)
-        if (validRowIndex < rowCount - 1) {
+        // Down arrow (shown when there are more rows below)
+        if (selectedRowIndex < rowData.size - 1) {
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
