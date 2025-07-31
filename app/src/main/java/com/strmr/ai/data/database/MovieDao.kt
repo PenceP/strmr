@@ -71,6 +71,13 @@ interface MovieDao {
     @Query("SELECT * FROM movies WHERE popularOrder IS NOT NULL ORDER BY popularOrder ASC")
     fun getPopularMoviesPagingSource(): PagingSource<Int, MovieEntity>
     
+    // ✅ NEW: Paged methods for MediaPagingSource
+    @Query("SELECT * FROM movies WHERE trendingOrder IS NOT NULL ORDER BY trendingOrder ASC LIMIT :limit OFFSET :offset")
+    suspend fun getTrendingMoviesPaged(limit: Int, offset: Int): List<MovieEntity>
+    
+    @Query("SELECT * FROM movies WHERE popularOrder IS NOT NULL ORDER BY popularOrder ASC LIMIT :limit OFFSET :offset")
+    suspend fun getPopularMoviesPaged(limit: Int, offset: Int): List<MovieEntity>
+    
     // === GENERIC DATA SOURCE METHODS ===
     
     /**

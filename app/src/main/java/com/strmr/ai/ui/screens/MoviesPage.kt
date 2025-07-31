@@ -6,6 +6,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.strmr.ai.viewmodel.GenericMoviesViewModel
+import com.strmr.ai.viewmodel.FlixclusiveTrendingViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.strmr.ai.data.database.MovieEntity
 import androidx.compose.ui.focus.FocusRequester
 import android.util.Log
@@ -53,6 +55,9 @@ fun MoviesPage(
     val context = LocalContext.current
     val viewModel: GenericMoviesViewModel = hiltViewModel()
     
+    // ✅ NEW: Flixclusive-style ViewModel for trending movies
+    val flixclusiveTrendingViewModel: FlixclusiveTrendingViewModel = hiltViewModel()
+    
     // Load configuration
     var pageConfiguration by remember { mutableStateOf<PageConfiguration?>(null) }
     LaunchedEffect(Unit) {
@@ -66,6 +71,10 @@ fun MoviesPage(
     val uiState by viewModel.uiState.collectAsState()
     val pagingUiState by viewModel.pagingUiState.collectAsState()
     val logoUrls by viewModel.logoUrls.collectAsState()
+    
+    // ✅ NEW: Flixclusive trending data
+    val flixclusiveTrendingMovies by flixclusiveTrendingViewModel.movies.collectAsStateWithLifecycle()
+    val flixclusivePaginationState by flixclusiveTrendingViewModel.paginationState.collectAsStateWithLifecycle()
     
     // Use the new SelectionManager
     val selectionManager = rememberSelectionManager()
@@ -95,18 +104,26 @@ fun MoviesPage(
     // Collect paging items for the current row
     val pagingItems = currentPagingFlow?.collectAsLazyPagingItems()
     
-    // Get selected item from paging data if available, otherwise from regular data
-    val selectedRow = uiState.mediaRows[currentRowTitle] ?: emptyList()
-    val selectedItem = if (pagingItems != null && selectionManager.selectedItemIndex < pagingItems.itemCount) {
-        // Ensure we get the correct item from paging data
-        val item = pagingItems[selectionManager.selectedItemIndex]
-        Log.d("MoviesPage", "🎬 Selected item from paging: ${item?.title} at index ${selectionManager.selectedItemIndex}")
+    // ✅ NEW: Use Flixclusive data for trending row
+    val selectedItem = if (currentRowTitle == "Trending") {
+        // Use Flixclusive trending data
+        val item = flixclusiveTrendingMovies.getOrNull(selectionManager.selectedItemIndex)
+        Log.d("MoviesPage", "🎬 Selected item from Flixclusive trending: ${item?.title} at index ${selectionManager.selectedItemIndex}")
         item
     } else {
-        // Fallback to regular data
-        val item = selectedRow.getOrNull(selectionManager.selectedItemIndex)
-        Log.d("MoviesPage", "🎬 Selected item from regular: ${item?.title} at index ${selectionManager.selectedItemIndex}")
-        item
+        // Get selected item from paging data if available, otherwise from regular data
+        val selectedRow = uiState.mediaRows[currentRowTitle] ?: emptyList()
+        if (pagingItems != null && selectionManager.selectedItemIndex < pagingItems.itemCount) {
+            // Ensure we get the correct item from paging data
+            val item = pagingItems[selectionManager.selectedItemIndex]
+            Log.d("MoviesPage", "🎬 Selected item from paging: ${item?.title} at index ${selectionManager.selectedItemIndex}")
+            item
+        } else {
+            // Fallback to regular data
+            val item = selectedRow.getOrNull(selectionManager.selectedItemIndex)
+            Log.d("MoviesPage", "🎬 Selected item from regular: ${item?.title} at index ${selectionManager.selectedItemIndex}")
+            item
+        }
     }
     
     // Update focused row in ViewModel when it changes
@@ -242,8 +259,67 @@ fun MoviesPage(
                     .fillMaxWidth()
                     .weight(if (shouldShowHero) 0.51f else 1f)
             ) {
-                // Check if we have paging data for this row
-                if (currentPagingFlow != null && pagingItems != null) {
+                // ✅ NEW: Use Flixclusive system for trending row
+                if (currentRowTitle == "Trending") {
+                    // Use Flixclusive-style pagination for trending movies
+                    UnifiedMediaRow(
+                        config = MediaRowConfig(
+                            title = currentRowTitle,
+                            dataSource = DataSource.RegularList(
+                                items = flixclusiveTrendingMovies,
+                                paginationState = flixclusivePaginationState
+                            ),
+                            selectedIndex = selectionManager.selectedItemIndex,
+                            isRowSelected = true,
+                            onSelectionChanged = { newIndex ->
+                                selectionManager.updateSelection(validRowIndex, newIndex)
+                            },
+                            onUpDown = { direction ->
+                                val newRowIndex = validRowIndex + direction
+                                if (newRowIndex >= 0 && newRowIndex < rowCount) {
+                                    Log.d("MoviesPage", "🎯 Row navigation: $validRowIndex -> $newRowIndex, maintaining focus")
+                                    selectionManager.updateSelection(newRowIndex, 0)
+                                    selectionManager.updateContentFocus(true)
+                                }
+                            },
+                            onLeftBoundary = onLeftBoundary,
+                            onContentFocusChanged = { focused ->
+                                selectionManager.updateContentFocus(focused)
+                                onContentFocusChanged?.invoke(focused)
+                            },
+                            focusRequester = if (selectionManager.isContentFocused) focusRequesters.getOrNull(validRowIndex) else null,
+                            cardType = CardType.PORTRAIT,
+                            itemWidth = 120.dp,
+                            itemSpacing = 12.dp,
+                            isContentFocused = selectionManager.isContentFocused,
+                            onItemClick = { movie ->
+                                if (movie is MovieEntity) {
+                                    onNavigateToDetails?.invoke(movie.tmdbId)
+                                }
+                            },
+                            onPaginate = { page ->
+                                Log.d("MoviesPage", "🚀 Flixclusive pagination triggered for page $page")
+                                flixclusiveTrendingViewModel.paginateMovies(page)
+                            },
+                            itemContent = { movie, isSelected ->
+                                if (movie is MovieEntity) {
+                                    MediaCard(
+                                        title = movie.title,
+                                        posterUrl = movie.posterUrl,
+                                        isSelected = isSelected,
+                                        onClick = {
+                                            onNavigateToDetails?.invoke(movie.tmdbId)
+                                        }
+                                    )
+                                }
+                            }
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                        onPositionChanged = { firstVisibleIndex, totalItems ->
+                            Log.d("MoviesPage", "📍 Flixclusive trending position: $firstVisibleIndex/$totalItems")
+                        }
+                    )
+                } else if (currentPagingFlow != null && pagingItems != null) {
                     // Use UnifiedMediaRow with paging data source
                     UnifiedMediaRow(
                         config = MediaRowConfig(
@@ -253,10 +329,7 @@ fun MoviesPage(
                             isRowSelected = true,
                             onSelectionChanged = { newIndex ->
                                 selectionManager.updateSelection(validRowIndex, newIndex)
-                                // Update row position in view model
-                                if (pagingItems.itemCount > 0) {
-                                    viewModel.updateRowPosition(currentRowTitle, newIndex, pagingItems.itemCount)
-                                }
+                                // Position tracking now handled by onPositionChanged callback
                             },
                             onUpDown = { direction ->
                                 val newRowIndex = validRowIndex + direction
@@ -295,11 +368,15 @@ fun MoviesPage(
                                 }
                             }
                         ),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        onPositionChanged = { firstVisibleIndex, totalItems ->
+                            viewModel.updateRowPosition(currentRowTitle, firstVisibleIndex, totalItems)
+                            viewModel.updateFocusedRow(currentRowTitle)
+                        }
                     )
                 } else {
                     // Fallback to regular row if no paging data
-                    val rowItems = selectedRow
+                    val rowItems = uiState.mediaRows[currentRowTitle] ?: emptyList()
                     
                     if (rowItems.isNotEmpty()) {
                         UnifiedMediaRow(
@@ -348,7 +425,11 @@ fun MoviesPage(
                                     }
                                 }
                             ),
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            onPositionChanged = { firstVisibleIndex, totalItems ->
+                                viewModel.updateRowPosition(currentRowTitle, firstVisibleIndex, totalItems)
+                                viewModel.updateFocusedRow(currentRowTitle)
+                            }
                         )
                     } else {
                         // Show skeleton when no items loaded yet

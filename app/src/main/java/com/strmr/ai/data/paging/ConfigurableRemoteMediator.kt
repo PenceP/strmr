@@ -77,11 +77,14 @@ class ConfigurableRemoteMediator<T : Any>(
                     MediatorResult.Success(endOfPaginationReached = true)
                 }
                 LoadType.APPEND -> {
-                    // Check if row is focused
-                    if (!isRowFocused()) {
-                        Log.d("ConfigurableRemoteMediator", "⏸️ Skip append - ${config.title} is not focused")
-                        return MediatorResult.Success(endOfPaginationReached = false)
-                    }
+                    // Check if row is focused (temporarily disabled for testing)
+                    val rowFocused = isRowFocused()
+                    Log.d("ConfigurableRemoteMediator", "🎯 Row focus status for ${config.title}: $rowFocused")
+                    // TODO: Re-enable focus check after testing
+                    // if (!isRowFocused()) {
+                    //     Log.d("ConfigurableRemoteMediator", "⏸️ Skip append - ${config.title} is not focused")
+                    //     return MediatorResult.Success(endOfPaginationReached = false)
+                    // }
                     
                     // Get actual database count
                     val dbCount = if (isMovie) {
@@ -96,13 +99,17 @@ class ConfigurableRemoteMediator<T : Any>(
                     
                     // Log current position for debugging
                     val currentPosition = getCurrentPosition()
-                    Log.d("ConfigurableRemoteMediator", "📥 Loading page $nextPage for ${config.title} (position ${currentPosition + 1}/$dbCount)")
+                    val totalItems = getTotalItems()
+                    Log.d("ConfigurableRemoteMediator", "📥 Loading page $nextPage for ${config.title}")
+                    Log.d("ConfigurableRemoteMediator", "🔍 Position check: getCurrentPosition()=$currentPosition")
+                    Log.d("ConfigurableRemoteMediator", "🔍 Total items: getTotalItems()=$totalItems, dbCount=$dbCount")
+                    Log.d("ConfigurableRemoteMediator", "📊 Position summary: ${currentPosition + 1}/$dbCount from callbacks vs $totalItems total")
                     
-                    // Check if we should actually load more data - load when within 8 items of end
-                    // (slightly higher threshold to account for proactive loading from UI)
+                    // Check if we should actually load more data - load when within 6 items of end
+                    // (aligned with Flixclusive buffer pattern)
                     val itemsRemaining = dbCount - currentPosition - 1
-                    if (itemsRemaining > 8) {
-                        Log.d("ConfigurableRemoteMediator", "⏸️ Skip append - still ${itemsRemaining} items remaining (threshold: 8)")
+                    if (itemsRemaining > 6) {
+                        Log.d("ConfigurableRemoteMediator", "⏸️ Skip append - still ${itemsRemaining} items remaining (threshold: 6)")
                         return MediatorResult.Success(endOfPaginationReached = false)
                     }
                     

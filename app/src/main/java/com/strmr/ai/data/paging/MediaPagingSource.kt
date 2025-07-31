@@ -61,10 +61,20 @@ class MediaPagingSource(
     }
 
     private suspend fun loadMovies(page: Int, pageSize: Int): List<MovieEntity> {
-        return movieDao?.getTrendingMovies()?.firstOrNull() ?: emptyList()
+        Log.d("MediaPagingSource", "🎬 Loading movies: page=$page, pageSize=$pageSize")
+        
+        // Calculate offset for pagination
+        val offset = (page - 1) * pageSize
+        
+        return movieDao?.getTrendingMoviesPaged(limit = pageSize, offset = offset) ?: emptyList()
     }
 
     private suspend fun loadTvShows(page: Int, pageSize: Int): List<TvShowEntity> {
-        return tvShowDao?.getTrendingTvShows()?.firstOrNull() ?: emptyList()
+        Log.d("MediaPagingSource", "📺 Loading TV shows: page=$page, pageSize=$pageSize")
+        
+        // Calculate offset for pagination
+        val offset = (page - 1) * pageSize
+        
+        return tvShowDao?.getTrendingTvShowsPaged(limit = pageSize, offset = offset) ?: emptyList()
     }
 } 

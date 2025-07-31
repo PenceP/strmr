@@ -70,6 +70,13 @@ interface TvShowDao {
     @Query("SELECT * FROM tv_shows WHERE popularOrder IS NOT NULL ORDER BY popularOrder ASC")
     fun getPopularTvShowsPagingSource(): PagingSource<Int, TvShowEntity>
     
+    // ✅ NEW: Paged methods for MediaPagingSource
+    @Query("SELECT * FROM tv_shows WHERE trendingOrder IS NOT NULL ORDER BY trendingOrder ASC LIMIT :limit OFFSET :offset")
+    suspend fun getTrendingTvShowsPaged(limit: Int, offset: Int): List<TvShowEntity>
+    
+    @Query("SELECT * FROM tv_shows WHERE popularOrder IS NOT NULL ORDER BY popularOrder ASC LIMIT :limit OFFSET :offset")
+    suspend fun getPopularTvShowsPaged(limit: Int, offset: Int): List<TvShowEntity>
+    
     // === GENERIC DATA SOURCE METHODS ===
     
     /**

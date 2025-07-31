@@ -99,49 +99,48 @@ private data class HeroData(
 fun HomeMediaRow(
     title: String,
     mediaItems: List<Any>,
-    selectedIndex: Int,
-    isRowSelected: Boolean = true,
-    onSelectionChanged: (Int) -> Unit,
+    selectedIndex: Int = 0, // Not used anymore with TvLazyRow
+    isRowSelected: Boolean = true, // Not used anymore  
+    onSelectionChanged: (Int) -> Unit = {}, // Not used anymore
     modifier: Modifier = Modifier,
     focusRequester: FocusRequester? = null,
-    onUpDown: ((Int) -> Unit)? = null,
-    isContentFocused: Boolean = false,
-    onContentFocusChanged: ((Boolean) -> Unit)? = null,
-    onLeftBoundary: (() -> Unit)? = null,
+    onUpDown: ((Int) -> Unit)? = null, // Not used anymore
+    isContentFocused: Boolean = false, // Not used anymore
+    onContentFocusChanged: ((Boolean) -> Unit)? = null, // Not used anymore
+    onLeftBoundary: (() -> Unit)? = null, // Not used anymore
     showOverlays: Boolean = false,
     rowHeight: Dp = 120.dp,
     onItemClick: ((Any) -> Unit)? = null,
     cardType: String = "portrait"
 ) {
-    // Use UnifiedMediaRow with EpisodeView-style left-aligned navigation and memory optimization
+    // ✅ UPDATED: Use simplified UnifiedMediaRow with TvLazyRow focus handling
     UnifiedMediaRow(
         config = MediaRowConfig(
             title = title,
             dataSource = DataSource.RegularList(mediaItems),
-            selectedIndex = selectedIndex,
-            isRowSelected = isRowSelected,
-            onSelectionChanged = onSelectionChanged,
-            onUpDown = onUpDown,
-            onLeftBoundary = onLeftBoundary,
             onItemClick = onItemClick,
-            onContentFocusChanged = onContentFocusChanged,
+            onItemLongPress = { item ->
+                Log.d("HomeMediaRow", "🔒 Long-press detected on: ${when(item) {
+                    is HomeMediaItem.Movie -> item.movie.title
+                    is HomeMediaItem.TvShow -> item.show.title
+                    else -> "Unknown item"
+                }}")
+            },
             focusRequester = focusRequester,
             cardType = if (cardType == "landscape") CardType.LANDSCAPE else CardType.PORTRAIT,
             itemWidth = if (cardType == "landscape") 200.dp else 120.dp,
-            itemSpacing = 12.dp, // Use EpisodeView spacing
-            isContentFocused = isContentFocused,
-            //contentPadding = PaddingValues(horizontal = 56.dp), // Align with hero text
-            itemContent = { mediaItem, isSelected ->
+            itemSpacing = 12.dp,
+            itemContent = { mediaItem, isFocused ->
                 when (mediaItem) {
                     is HomeMediaItem.Movie -> LandscapeMediaCard(
                         title = mediaItem.movie.title,
                         landscapeUrl = mediaItem.movie.backdropUrl,
                         logoUrl = mediaItem.movie.logoUrl,
                         progress = mediaItem.progress ?: 0f,
-                        isSelected = isSelected,
+                        isSelected = isFocused, // ✅ FIXED: Use isFocused instead of isSelected
                         onClick = {
                             Log.d("HomeMediaRow", "🎯 Movie item clicked")
-                            onSelectionChanged(selectedIndex)
+                            // Click is now handled by UnifiedMediaRow's onItemClick
                         }
                     )
                     is HomeMediaItem.TvShow -> LandscapeMediaCard(
@@ -149,10 +148,10 @@ fun HomeMediaRow(
                         landscapeUrl = mediaItem.episodeImageUrl ?: mediaItem.show.backdropUrl,
                         logoUrl = mediaItem.show.logoUrl,
                         progress = mediaItem.progress ?: 0f,
-                        isSelected = isSelected,
+                        isSelected = isFocused, // ✅ FIXED: Use isFocused instead of isSelected
                         onClick = {
                             Log.d("HomeMediaRow", "🎯 TvShow item clicked")
-                            onSelectionChanged(selectedIndex)
+                            // Click is now handled by UnifiedMediaRow's onItemClick
                         },
                         bottomRightLabel = if (mediaItem.season != null && mediaItem.episode != null) {
                             if (mediaItem.isNextEpisode) "Next: S${mediaItem.season}: E${mediaItem.episode}" 
@@ -163,10 +162,10 @@ fun HomeMediaRow(
                         title = mediaItem.name,
                         landscapeUrl = mediaItem.posterUrl,
                         logoUrl = null,
-                        isSelected = isSelected,
+                        isSelected = isFocused, // ✅ FIXED: Use isFocused instead of isSelected
                         onClick = {
                             Log.d("HomeMediaRow", "🎯 Network item clicked")
-                            onSelectionChanged(selectedIndex)
+                            // Click is now handled by UnifiedMediaRow's onItemClick
                         }
                     )
                     is HomeMediaItem.Collection -> {
@@ -175,10 +174,10 @@ fun HomeMediaRow(
                                 title = if (mediaItem.nameDisplayMode != "Hidden") mediaItem.name else "",
                                 landscapeUrl = mediaItem.backgroundImageUrl,
                                 logoUrl = null,
-                                isSelected = isSelected,
+                                isSelected = isFocused, // ✅ FIXED: Use isFocused instead of isSelected
                                 onClick = {
                                     Log.d("HomeMediaRow", "🎯 Collection item clicked")
-                                    onSelectionChanged(selectedIndex)
+                                    // Click is now handled by UnifiedMediaRow's onItemClick
                                 }
                             )
                         } else {
@@ -186,10 +185,10 @@ fun HomeMediaRow(
                             MediaCard(
                                 title = if (mediaItem.nameDisplayMode != "Hidden") mediaItem.name else "",
                                 posterUrl = mediaItem.backgroundImageUrl,
-                                isSelected = isSelected,
+                                isSelected = isFocused, // ✅ FIXED: Use isFocused instead of isSelected
                                 onClick = {
                                     Log.d("HomeMediaRow", "🎯 Collection poster item clicked")
-                                    onSelectionChanged(selectedIndex)
+                                    // Click is now handled by UnifiedMediaRow's onItemClick
                                 }
                             )
                         }
@@ -200,10 +199,10 @@ fun HomeMediaRow(
                         MediaCard(
                             title = "Unknown Item",
                             posterUrl = null,
-                            isSelected = isSelected,
+                            isSelected = isFocused, // ✅ FIXED: Use isFocused instead of isSelected
                             onClick = {
                                 Log.d("HomeMediaRow", "🎯 Unknown item clicked")
-                                onSelectionChanged(selectedIndex)
+                                // Click is now handled by UnifiedMediaRow's onItemClick
                             }
                         )
                     }
