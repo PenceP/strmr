@@ -62,8 +62,8 @@ class FlixclusiveTrendingViewModel @Inject constructor(
                     _movies.value = cachedMovies
                     
                     // If we have less than a full page (50), we should refresh to get latest data
-                    if (cachedMovies.size < 50) {
-                        Log.d("FlixclusiveTrendingViewModel", "🔄 Cached data incomplete (${cachedMovies.size} < 50), refreshing...")
+                    if (cachedMovies.size <= 50) {
+                        Log.d("FlixclusiveTrendingViewModel", "🔄 Cached data incomplete (${cachedMovies.size} <= 50), refreshing...")
                         _paginationState.value = _paginationState.value.copy(
                             pagingState = PagingState.LOADING,
                             canPaginate = true,

@@ -136,13 +136,19 @@ fun <T : Any> UnifiedMediaRow(
                             items = config.dataSource.items,
                             key = { item -> getStableKey(item, config.keyExtractor) }
                         ) { item ->
+                            val index = config.dataSource.items.indexOf(item)
                             MediaRowItem(
                                 item = item,
                                 config = config,
+                                index = index,
                                 onItemClick = { config.onItemClick?.invoke(item) },
                                 onItemLongPress = { 
                                     Log.d("UnifiedMediaRow", "🔒 Long-press detected on item: ${getItemTitle(item)}")
                                     config.onItemLongPress?.invoke(item)
+                                },
+                                onItemFocused = { focusedIndex ->
+                                    Log.d("UnifiedMediaRow", "🎯 Item focused at index: $focusedIndex")
+                                    config.onSelectionChanged(focusedIndex)
                                 }
                             )
                         }
@@ -191,10 +197,15 @@ fun <T : Any> UnifiedMediaRow(
                             MediaRowItem(
                                 item = item,
                                 config = config,
+                                index = index,
                                 onItemClick = { config.onItemClick?.invoke(item) },
                                 onItemLongPress = { 
                                     Log.d("UnifiedMediaRow", "🔒 Long-press detected on item: ${getItemTitle(item)}")
                                     config.onItemLongPress?.invoke(item)
+                                },
+                                onItemFocused = { focusedIndex ->
+                                    Log.d("UnifiedMediaRow", "🎯 Item focused at index: $focusedIndex")
+                                    config.onSelectionChanged(focusedIndex)
                                 }
                             )
                         } else {
@@ -232,8 +243,10 @@ fun <T : Any> UnifiedMediaRow(
 private fun <T : Any> MediaRowItem(
     item: T,
     config: MediaRowConfig<T>,
+    index: Int,
     onItemClick: () -> Unit,
-    onItemLongPress: () -> Unit
+    onItemLongPress: () -> Unit,
+    onItemFocused: (Int) -> Unit
 ) {
     var isFocused by remember { mutableStateOf(false) }
     
@@ -243,6 +256,9 @@ private fun <T : Any> MediaRowItem(
             .fillMaxHeight()
             .onFocusChanged { focusState -> 
                 isFocused = focusState.isFocused
+                if (focusState.isFocused) {
+                    onItemFocused(index)
+                }
             }
             .focusable()
             .combinedClickable(

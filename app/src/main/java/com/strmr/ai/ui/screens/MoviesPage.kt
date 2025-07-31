@@ -2,6 +2,7 @@ package com.strmr.ai.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -105,24 +106,34 @@ fun MoviesPage(
     val pagingItems = currentPagingFlow?.collectAsLazyPagingItems()
     
     // ✅ NEW: Use Flixclusive data for trending row
-    val selectedItem = if (currentRowTitle == "Trending") {
-        // Use Flixclusive trending data
-        val item = flixclusiveTrendingMovies.getOrNull(selectionManager.selectedItemIndex)
-        Log.d("MoviesPage", "🎬 Selected item from Flixclusive trending: ${item?.title} at index ${selectionManager.selectedItemIndex}")
-        item
-    } else {
-        // Get selected item from paging data if available, otherwise from regular data
-        val selectedRow = uiState.mediaRows[currentRowTitle] ?: emptyList()
-        if (pagingItems != null && selectionManager.selectedItemIndex < pagingItems.itemCount) {
-            // Ensure we get the correct item from paging data
-            val item = pagingItems[selectionManager.selectedItemIndex]
-            Log.d("MoviesPage", "🎬 Selected item from paging: ${item?.title} at index ${selectionManager.selectedItemIndex}")
-            item
-        } else {
-            // Fallback to regular data
-            val item = selectedRow.getOrNull(selectionManager.selectedItemIndex)
-            Log.d("MoviesPage", "🎬 Selected item from regular: ${item?.title} at index ${selectionManager.selectedItemIndex}")
-            item
+    // Create a state that explicitly tracks selection changes
+    val selectedItem by remember(
+        currentRowTitle, 
+        selectionManager.selectedItemIndex, 
+        flixclusiveTrendingMovies.size,
+        pagingItems?.itemCount
+    ) {
+        derivedStateOf {
+            if (currentRowTitle == "Trending") {
+                // Use Flixclusive trending data
+                val item = flixclusiveTrendingMovies.getOrNull(selectionManager.selectedItemIndex)
+                Log.d("MoviesPage", "🎬 Selected item from Flixclusive trending: ${item?.title} at index ${selectionManager.selectedItemIndex}, total items: ${flixclusiveTrendingMovies.size}")
+                item
+            } else {
+                // Get selected item from paging data if available, otherwise from regular data
+                val selectedRow = uiState.mediaRows[currentRowTitle] ?: emptyList()
+                if (pagingItems != null && selectionManager.selectedItemIndex < pagingItems.itemCount) {
+                    // Ensure we get the correct item from paging data
+                    val item = pagingItems[selectionManager.selectedItemIndex]
+                    Log.d("MoviesPage", "🎬 Selected item from paging: ${item?.title} at index ${selectionManager.selectedItemIndex}")
+                    item
+                } else {
+                    // Fallback to regular data
+                    val item = selectedRow.getOrNull(selectionManager.selectedItemIndex)
+                    Log.d("MoviesPage", "🎬 Selected item from regular: ${item?.title} at index ${selectionManager.selectedItemIndex}")
+                    item
+                }
+            }
         }
     }
     
@@ -143,14 +154,17 @@ fun MoviesPage(
 
     // Get backdrop URL for background
     val backdropUrl = if (shouldShowHero) {
-        (selectedItem as? MovieEntity)?.backdropUrl
+        (selectedItem as? MovieEntity)?.backdropUrl.also {
+            Log.d("MoviesPage", "🎨 Hero backdrop URL: $it for ${(selectedItem as? MovieEntity)?.title}")
+        }
     } else null
 
     // OMDb ratings for hero section
-    var omdbRatings by remember(selectedItem) { mutableStateOf<OmdbResponse?>(null) }
-    LaunchedEffect(selectedItem) {
-        if (shouldShowHero && selectedItem is MovieEntity) {
-            val imdbId = selectedItem.imdbId
+    var omdbRatings by remember(selectedItem, selectionManager.selectedItemIndex) { mutableStateOf<OmdbResponse?>(null) }
+    LaunchedEffect(selectedItem, selectionManager.selectedItemIndex) {
+        val movie = selectedItem as? MovieEntity
+        if (shouldShowHero && movie != null) {
+            val imdbId = movie.imdbId
             if (!imdbId.isNullOrBlank()) {
                 omdbRatings = withContext(Dispatchers.IO) {
                     viewModel.fetchOmdbRatings(imdbId)
@@ -224,7 +238,8 @@ fun MoviesPage(
                 .padding(start = 1.dp)
         ) {
             // Hero section (based on configuration)
-            if (shouldShowHero && selectedItem is MovieEntity) {
+            val selectedMovie = selectedItem as? MovieEntity
+            if (shouldShowHero && selectedMovie != null) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -234,18 +249,18 @@ fun MoviesPage(
                     MediaHero(
                         mediaDetails = {
                             MediaDetails(
-                                title = selectedItem.title,
-                                logoUrl = logoUrls[selectedItem.tmdbId] ?: selectedItem.logoUrl,
-                                year = selectedItem.year,
-                                formattedDate = selectedItem.releaseDate,
-                                runtime = selectedItem.runtime,
-                                genres = selectedItem.genres,
-                                rating = selectedItem.rating,
-                                overview = selectedItem.overview,
-                                cast = selectedItem.cast.map { it.name ?: "" },
+                                title = selectedMovie.title,
+                                logoUrl = logoUrls[selectedMovie.tmdbId] ?: selectedMovie.logoUrl,
+                                year = selectedMovie.year,
+                                formattedDate = selectedMovie.releaseDate,
+                                runtime = selectedMovie.runtime,
+                                genres = selectedMovie.genres,
+                                rating = selectedMovie.rating,
+                                overview = selectedMovie.overview,
+                                cast = selectedMovie.cast.map { it.name ?: "" },
                                 omdbRatings = omdbRatings,
                                 onFetchLogo = {
-                                    viewModel.fetchAndUpdateLogo(selectedItem)
+                                    viewModel.fetchAndUpdateLogo(selectedMovie)
                                 }
                             )
                         }
