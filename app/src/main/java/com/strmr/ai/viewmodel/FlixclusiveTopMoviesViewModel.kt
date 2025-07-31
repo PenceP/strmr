@@ -84,6 +84,16 @@ class FlixclusiveTopMoviesViewModel @Inject constructor(
             return
         }
 
+        // Don't reload if we're already loading/error state (unless it's an error retry)
+        val currentState = _paginationState.value
+        if (currentState.pagingState == PagingState.LOADING) {
+            Log.d(
+                "FlixclusiveTopMoviesViewModel",
+                "🚫 Load not allowed, current state: ${currentState.pagingState}"
+            )
+            return
+        }
+
         Log.d("FlixclusiveTopMoviesViewModel", "🚀 Loading top movies list")
         
         loadJob = viewModelScope.launch {
