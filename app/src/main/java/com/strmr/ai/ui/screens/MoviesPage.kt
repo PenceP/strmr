@@ -118,11 +118,19 @@ fun MoviesPage(
             )
         }
 
-    // Initialize all data sources
+    // Initialize all data sources and wait for them to be populated
+    var isInitialized by remember { mutableStateOf(false) }
+    
     LaunchedEffect(Unit) {
+        Log.d("MoviesPage", "🚀 Starting initialization of ${dataSourceConfigs.size} data sources")
         dataSourceConfigs.forEach { config ->
+            Log.d("MoviesPage", "🔄 Initializing ${config.id}...")
             moviesViewModel.initializeDataSource(config)
         }
+        // Small delay to ensure async flows are populated
+        kotlinx.coroutines.delay(100)
+        isInitialized = true
+        Log.d("MoviesPage", "✅ All data sources initialized")
     }
 
     // Collect data from generic ViewModel for each row
@@ -214,6 +222,19 @@ fun MoviesPage(
     Box(
         modifier = Modifier.fillMaxSize(),
     ) {
+        // Only render content after initialization is complete
+        if (!isInitialized) {
+            // Show loading state while initializing
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = androidx.compose.ui.Alignment.Center
+            ) {
+                androidx.compose.material3.CircularProgressIndicator(
+                    color = androidx.compose.ui.graphics.Color.White
+                )
+            }
+            return@Box
+        }
         // Backdrop image as the main background
         if (shouldShowHero && !backdropUrl.isNullOrBlank()) {
             AsyncImage(

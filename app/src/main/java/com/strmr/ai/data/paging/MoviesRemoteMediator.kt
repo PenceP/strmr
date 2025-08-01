@@ -11,6 +11,7 @@ import com.strmr.ai.data.TmdbApiService
 import com.strmr.ai.data.TraktApiService
 import com.strmr.ai.data.database.MovieEntity
 import com.strmr.ai.data.database.StrmrDatabase
+import com.strmr.ai.ui.theme.StrmrConstants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -52,7 +53,7 @@ class MoviesRemoteMediator(
                                     ContentType.TRENDING -> database.movieDao().getTrendingMoviesCount()
                                     ContentType.POPULAR -> database.movieDao().getPopularMoviesCount()
                                 }
-                            (currentSize / 20) + 1
+                            (currentSize / StrmrConstants.Paging.PAGE_SIZE) + 1
                         }
                     }
                 }
@@ -89,7 +90,7 @@ class MoviesRemoteMediator(
         return withContext(Dispatchers.IO) {
             when (contentType) {
                 ContentType.TRENDING -> {
-                    val trending = traktApi.getTrendingMovies(page = page, limit = 20)
+                    val trending = traktApi.getTrendingMovies(page = page, limit = StrmrConstants.Paging.PAGE_SIZE)
                     trending.mapIndexedNotNull { index, trendingMovie ->
                         movieRepository.mapTraktMovieToEntity(
                             trendingMovie.movie,
@@ -98,7 +99,7 @@ class MoviesRemoteMediator(
                     }
                 }
                 ContentType.POPULAR -> {
-                    val popular = traktApi.getPopularMovies(page = page, limit = 20)
+                    val popular = traktApi.getPopularMovies(page = page, limit = StrmrConstants.Paging.PAGE_SIZE)
                     popular.mapIndexedNotNull { index, movie ->
                         movieRepository.mapTraktMovieToEntity(
                             movie,

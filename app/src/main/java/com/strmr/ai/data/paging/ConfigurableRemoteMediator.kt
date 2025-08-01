@@ -93,7 +93,7 @@ class ConfigurableRemoteMediator<T : Any>(
                         }
 
                     // Calculate next page based on actual page size from config
-                    val pageSize = StrmrConstants.Paging.PAGE_SIZE_STANDARD // Should match PagingConfig pageSize
+                    val pageSize = StrmrConstants.Paging.PAGE_SIZE // Should match PagingConfig pageSize
                     val nextPage = (dbCount / pageSize) + 1
 
                     // Log current position for debugging
@@ -153,7 +153,7 @@ class ConfigurableRemoteMediator<T : Any>(
             Log.d("ConfigurableRemoteMediator", "✅ Loaded page $page for ${config.title}, items: $itemsLoaded")
 
             // Check if this was a partial page (end of pagination)
-            val isEndOfPagination = itemsLoaded < 50 // Page size
+            val isEndOfPagination = itemsLoaded < StrmrConstants.Paging.PAGE_SIZE
             MediatorResult.Success(endOfPaginationReached = isEndOfPagination)
         } catch (e: Exception) {
             Log.e("ConfigurableRemoteMediator", "❌ Error loading page $page", e)

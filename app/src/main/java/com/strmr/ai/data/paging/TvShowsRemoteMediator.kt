@@ -11,6 +11,7 @@ import com.strmr.ai.data.TraktApiService
 import com.strmr.ai.data.TvShowRepository
 import com.strmr.ai.data.database.StrmrDatabase
 import com.strmr.ai.data.database.TvShowEntity
+import com.strmr.ai.ui.theme.StrmrConstants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -50,7 +51,7 @@ class TvShowsRemoteMediator(
                                     ContentType.TRENDING -> database.tvShowDao().getTrendingTvShowsCount()
                                     ContentType.POPULAR -> database.tvShowDao().getPopularTvShowsCount()
                                 }
-                            (currentSize / 20) + 1
+                            (currentSize / StrmrConstants.Paging.PAGE_SIZE) + 1
                         }
                     }
                 }
@@ -85,7 +86,7 @@ class TvShowsRemoteMediator(
         return withContext(Dispatchers.IO) {
             when (contentType) {
                 ContentType.TRENDING -> {
-                    val trending = traktApi.getTrendingTvShows(page = page, limit = 20)
+                    val trending = traktApi.getTrendingTvShows(page = page, limit = StrmrConstants.Paging.PAGE_SIZE)
                     trending.mapIndexedNotNull { index, trendingShow ->
                         tvShowRepository.mapTraktShowToEntity(
                             trendingShow.show,
@@ -94,7 +95,7 @@ class TvShowsRemoteMediator(
                     }
                 }
                 ContentType.POPULAR -> {
-                    val popular = traktApi.getPopularTvShows(page = page, limit = 20)
+                    val popular = traktApi.getPopularTvShows(page = page, limit = StrmrConstants.Paging.PAGE_SIZE)
                     popular.mapIndexedNotNull { index, show ->
                         tvShowRepository.mapTraktShowToEntity(
                             show,

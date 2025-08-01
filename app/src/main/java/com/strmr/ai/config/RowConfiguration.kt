@@ -3,6 +3,7 @@ package com.strmr.ai.config
 import com.google.gson.annotations.SerializedName
 import com.strmr.ai.data.DataSourceConfig
 import com.strmr.ai.data.MediaType
+import com.strmr.ai.ui.theme.StrmrConstants
 
 /**
  * Configuration for page rows loaded from JSON files
@@ -247,7 +248,7 @@ data class GenericRowConfiguration(
     val displayOptions: DisplayOptions,
     // Enhanced pagination settings
     val isPaginated: Boolean = true,
-    val pageSize: Int = 50,
+    val pageSize: Int = StrmrConstants.Paging.PAGE_SIZE,
     val maxPages: Int = 10,
     val bufferThreshold: Int = 6,
     // Cache configuration
@@ -282,7 +283,7 @@ fun RowConfig.toGenericRowConfiguration(): GenericRowConfiguration? {
         cacheKey = cacheKey,
         displayOptions = displayOptions,
         isPaginated = type == "paging",
-        pageSize = 50, // Default, could be configurable in JSON
+        pageSize = StrmrConstants.Paging.PAGE_SIZE, // Default, could be configurable in JSON
         maxPages = 10, // Default, could be configurable in JSON
         bufferThreshold = 6, // Default buffer for pagination trigger
     )

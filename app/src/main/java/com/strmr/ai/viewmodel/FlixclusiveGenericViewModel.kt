@@ -56,6 +56,7 @@ class FlixclusiveGenericViewModel
 
         /**
          * Initialize a data source - call this when you need a specific row
+         * This version immediately populates UI flows with cached data if available
          */
         fun initializeDataSource(config: DataSourceConfig) {
             val isInitialized = when (config.mediaType.toString().lowercase()) {
@@ -78,47 +79,59 @@ class FlixclusiveGenericViewModel
             }
             getPaginationFlow(config.id)
 
-            // Load initial data if we have cached data
+            // IMMEDIATE: Try to populate with cached data first (synchronous for instant UI)
             viewModelScope.launch {
                 try {
                     when (config.mediaType.toString().lowercase()) {
                         "movie" -> {
+                            // Try to get cached data immediately
                             val cachedMovies = genericRepository.getMoviesFromDataSource(config).first()
                             if (cachedMovies.isNotEmpty()) {
-                                Log.d("FlixclusiveGenericViewModel", "✅ ${config.id}: Loaded ${cachedMovies.size} cached movies")
+                                Log.d("FlixclusiveGenericViewModel", "✅ ${config.id}: Loaded ${cachedMovies.size} cached movies instantly")
                                 _movieStates[config.id]?.value = cachedMovies
-                                _paginationStates[config.id]?.value = _paginationStates[config.id]?.value?.copy(
-                                    pagingState = PagingState.IDLE,
+                                _paginationStates[config.id]?.value = PaginationStateInfo(
                                     canPaginate = when (config.id) {
                                         "trending", "popular" -> true
                                         else -> false
                                     },
-                                ) ?: PaginationStateInfo(
-                                    canPaginate = false,
                                     pagingState = PagingState.IDLE,
                                     currentPage = 1,
                                 )
                             } else {
+                                Log.d("FlixclusiveGenericViewModel", "🔄 ${config.id}: No cache found, loading from API...")
+                                // Show loading state immediately
+                                _paginationStates[config.id]?.value = PaginationStateInfo(
+                                    canPaginate = true,
+                                    pagingState = PagingState.LOADING,
+                                    currentPage = 1,
+                                )
+                                // Load data from API and populate UI flows
                                 loadMovies(config)
                             }
                         }
                         "tvshow" -> {
+                            // Try to get cached data immediately
                             val cachedTvShows = genericRepository.getTvShowsFromDataSource(config).first()
                             if (cachedTvShows.isNotEmpty()) {
-                                Log.d("FlixclusiveGenericViewModel", "✅ ${config.id}: Loaded ${cachedTvShows.size} cached TV shows")
+                                Log.d("FlixclusiveGenericViewModel", "✅ ${config.id}: Loaded ${cachedTvShows.size} cached TV shows instantly")
                                 _tvShowStates[config.id]?.value = cachedTvShows
-                                _paginationStates[config.id]?.value = _paginationStates[config.id]?.value?.copy(
-                                    pagingState = PagingState.IDLE,
+                                _paginationStates[config.id]?.value = PaginationStateInfo(
                                     canPaginate = when (config.id) {
                                         "trending", "popular" -> true
                                         else -> false
                                     },
-                                ) ?: PaginationStateInfo(
-                                    canPaginate = false,
                                     pagingState = PagingState.IDLE,
                                     currentPage = 1,
                                 )
                             } else {
+                                Log.d("FlixclusiveGenericViewModel", "🔄 ${config.id}: No cache found, loading from API...")
+                                // Show loading state immediately
+                                _paginationStates[config.id]?.value = PaginationStateInfo(
+                                    canPaginate = true,
+                                    pagingState = PagingState.LOADING,
+                                    currentPage = 1,
+                                )
+                                // Load data from API and populate UI flows
                                 loadTvShows(config)
                             }
                         }

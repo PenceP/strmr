@@ -104,7 +104,7 @@ class GenericTraktRepository
                 if (response.isEmpty()) return 0
 
                 // Step 2: Calculate order values
-                val pageSize = StrmrConstants.Api.LARGE_PAGE_SIZE
+                val pageSize = StrmrConstants.Paging.PAGE_SIZE
                 val baseOrder = (page - 1) * pageSize
 
                 // Step 3: Enrich data with TMDB details
@@ -138,7 +138,7 @@ class GenericTraktRepository
                 if (response.isEmpty()) return 0
 
                 // Step 2: Calculate order values
-                val pageSize = StrmrConstants.Api.LARGE_PAGE_SIZE
+                val pageSize = StrmrConstants.Paging.PAGE_SIZE
                 val baseOrder = (page - 1) * pageSize
 
                 // Step 3: Enrich data with TMDB details
@@ -184,7 +184,7 @@ class GenericTraktRepository
                 val limitedResponse = response.take(limit)
 
                 // Step 3: Calculate order values
-                val pageSize = StrmrConstants.Api.LARGE_PAGE_SIZE
+                val pageSize = StrmrConstants.Paging.PAGE_SIZE
                 val baseOrder = (page - 1) * pageSize
 
                 // Step 4: Enrich limited data with TMDB details
@@ -230,7 +230,7 @@ class GenericTraktRepository
                 val limitedResponse = response.take(limit)
 
                 // Step 3: Calculate order values
-                val pageSize = StrmrConstants.Api.LARGE_PAGE_SIZE
+                val pageSize = StrmrConstants.Paging.PAGE_SIZE
                 val baseOrder = (page - 1) * pageSize
 
                 // Step 4: Enrich limited data with TMDB details

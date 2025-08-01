@@ -161,7 +161,7 @@ object StrmrConstants {
 
         // Pagination
         const val DEFAULT_PAGE_SIZE = 20
-        const val LARGE_PAGE_SIZE = 50
+        const val LARGE_PAGE_SIZE = 10 // Updated to match PAGE_SIZE
         const val SEARCH_LIMIT = 10
 
         // HTTP Headers
@@ -223,9 +223,12 @@ object StrmrConstants {
     }
 
     object Paging {
-        // Page sizes
+        // Primary page size used throughout the app
+        const val PAGE_SIZE = 10 // Default page size for all pagination
+
+        // Legacy page sizes (for backward compatibility)
         const val PAGE_SIZE_SMALL = 20
-        const val PAGE_SIZE_STANDARD = 50 // Used for TV apps
+        const val PAGE_SIZE_STANDARD = 10 // Updated to match new PAGE_SIZE
 
         // Prefetch distances
         const val PREFETCH_DISTANCE_SMALL = 3

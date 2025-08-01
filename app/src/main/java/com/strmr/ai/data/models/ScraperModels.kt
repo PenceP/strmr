@@ -1,6 +1,7 @@
 package com.strmr.ai.data.models
 
 import com.google.gson.annotations.SerializedName
+import com.strmr.ai.ui.theme.StrmrConstants
 
 // Scraper Configuration Models
 data class ScraperManifest(
@@ -190,7 +191,7 @@ data class CometConfig(
     val debridService: String,
     val debridApiKey: String,
     val indexers: List<String> = listOf("bitsearch", "eztv", "thepiratebay", "therarbg", "yts"),
-    val maxResults: Int = 50,
+    val maxResults: Int = StrmrConstants.Paging.PAGE_SIZE,
     val resultFormat: String = "simple",
     val torrentAddedDate: Boolean = true,
     val torrentSortBySeeders: Boolean = true,

@@ -190,7 +190,7 @@ interface TraktAuthenticatedApiService {
     )
     @GET("sync/history")
     suspend fun getHistory(
-        @Query("limit") limit: Int = 50,
+        @Query("limit") limit: Int = StrmrConstants.Paging.PAGE_SIZE,
     ): List<WatchedHistoryItem>
 
     @Headers(
