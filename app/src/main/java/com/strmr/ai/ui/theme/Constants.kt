@@ -128,6 +128,9 @@ object StrmrConstants {
         const val DELAY_SHORT = 50
         const val DELAY_MEDIUM = 100
         const val DELAY_LONG = 300
+
+        // Scroll throttling
+        const val SCROLL_THROTTLE_MS = 140L
     }
 
     object Shapes {

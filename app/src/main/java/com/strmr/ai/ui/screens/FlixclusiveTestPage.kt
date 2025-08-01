@@ -6,11 +6,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.strmr.ai.data.DataSourceConfig
+import com.strmr.ai.data.MediaType
 import com.strmr.ai.ui.components.*
 import com.strmr.ai.ui.components.MediaCard
 import com.strmr.ai.viewmodel.FlixclusiveGenericViewModel
-import com.strmr.ai.data.DataSourceConfig
-import com.strmr.ai.data.MediaType
 
 /**
  * Test page demonstrating Flixclusive-style pagination
@@ -22,21 +22,22 @@ fun FlixclusiveTestPage(
     viewModel: FlixclusiveGenericViewModel = hiltViewModel(),
 ) {
     // Configure trending movies data source
-    val trendingConfig = remember {
-        DataSourceConfig(
-            id = "trending",
-            title = "Trending",
-            endpoint = "movies/trending",
-            mediaType = MediaType.MOVIE,
-            cacheKey = "trending"
-        )
-    }
-    
+    val trendingConfig =
+        remember {
+            DataSourceConfig(
+                id = "trending",
+                title = "Trending",
+                endpoint = "movies/trending",
+                mediaType = MediaType.MOVIE,
+                cacheKey = "trending",
+            )
+        }
+
     // Initialize data source
     LaunchedEffect(Unit) {
         viewModel.initializeDataSource(trendingConfig)
     }
-    
+
     val movies by viewModel.getMoviesFlow("trending").collectAsStateWithLifecycle()
     val paginationState by viewModel.getPaginationFlow("trending").collectAsStateWithLifecycle()
 

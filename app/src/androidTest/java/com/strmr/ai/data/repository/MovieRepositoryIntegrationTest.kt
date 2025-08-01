@@ -8,7 +8,8 @@ import com.strmr.ai.data.database.StrmrDatabase
 import com.strmr.ai.data.mapper.MovieMapper
 import kotlinx.coroutines.test.runTest
 import org.junit.After
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -32,9 +33,12 @@ class MovieRepositoryIntegrationTest {
         dataRepository =
             DataMovieRepository(
                 movieDao = database.movieDao(),
-                tmdbApiService = null, // Not needed for this integration test
-                omdbRepository = null, // Not needed for this integration test
-                traktApiService = null, // Not needed for this integration test
+                // Not needed for this integration test
+                tmdbApiService = null,
+                // Not needed for this integration test
+                omdbRepository = null,
+                // Not needed for this integration test
+                traktApiService = null,
             )
 
         movieMapper = MovieMapper()

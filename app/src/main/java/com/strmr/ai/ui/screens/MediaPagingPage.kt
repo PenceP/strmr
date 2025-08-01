@@ -1,18 +1,12 @@
 package com.strmr.ai.ui.screens
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -47,7 +41,7 @@ fun <T : Any> MediaPagingPage(
     onFetchLogo: ((T) -> Unit)? = null,
 ) {
     val rowTitles = pagingUiState.mediaRows.keys.toList()
-    
+
     // Simple state for selected item (for hero display)
     var selectedRowIndex by remember { mutableStateOf(0) }
     var selectedItemIndex by remember { mutableStateOf(0) }
@@ -161,15 +155,17 @@ fun <T : Any> MediaPagingPage(
 
         // Simplified layout with hero and LazyColumn
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(start = navBarWidth)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(start = navBarWidth),
         ) {
             // Hero section (fixed height at top)
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(300.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(300.dp),
             ) {
                 if (selectedItem != null) {
                     MediaHero(
@@ -199,44 +195,45 @@ fun <T : Any> MediaPagingPage(
                 }
             }
 
-            // Rows section with LazyColumn  
+            // Rows section with LazyColumn
             LazyColumn(
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 rowTitles.forEachIndexed { rowIndex, rowTitle ->
                     val pagingFlow = pagingUiState.mediaRows[rowTitle]
-                    
+
                     if (pagingFlow != null) {
                         item(key = rowTitle) {
                             val lazyPagingItems = pagingFlow.collectAsLazyPagingItems()
 
                             if (lazyPagingItems.itemCount > 0) {
                                 UnifiedMediaRow(
-                                    config = MediaRowConfig(
-                                        title = rowTitle,
-                                        dataSource = DataSource.PagingList(lazyPagingItems),
-                                        cardType = CardType.PORTRAIT,
-                                        itemWidth = 120.dp,
-                                        itemSpacing = 12.dp,
-                                        contentPadding = PaddingValues(horizontal = 48.dp),
-                                        onItemClick = onItemClick,
-                                        itemContent = { item, isSelected ->
-                                            MediaCard(
-                                                title = item.getTitle(),
-                                                posterUrl = item.getPosterUrl(),
-                                                isSelected = isSelected,
-                                                onClick = { onItemClick?.invoke(item) },
-                                            )
-                                        },
-                                    )
+                                    config =
+                                        MediaRowConfig(
+                                            title = rowTitle,
+                                            dataSource = DataSource.PagingList(lazyPagingItems),
+                                            cardType = CardType.PORTRAIT,
+                                            itemWidth = 120.dp,
+                                            itemSpacing = 12.dp,
+                                            contentPadding = PaddingValues(horizontal = 48.dp),
+                                            onItemClick = onItemClick,
+                                            itemContent = { item, isSelected ->
+                                                MediaCard(
+                                                    title = item.getTitle(),
+                                                    posterUrl = item.getPosterUrl(),
+                                                    isSelected = isSelected,
+                                                    onClick = { onItemClick?.invoke(item) },
+                                                )
+                                            },
+                                        ),
                                 )
                             } else {
                                 MediaRowSkeleton(
                                     title = rowTitle,
                                     cardCount = 8,
-                                    cardType = SkeletonCardType.PORTRAIT
+                                    cardType = SkeletonCardType.PORTRAIT,
                                 )
                             }
                         }

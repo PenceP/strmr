@@ -50,12 +50,12 @@ class OmdbRepository(
             return response
         } catch (e: Exception) {
             Log.e("OmdbRepository", "❌ Error fetching OMDb ratings for $imdbId (Ask Gemini)", e)
-            
+
             // Check if it's an authentication error
             if (e is retrofit2.HttpException && e.code() == 401) {
                 Log.w("OmdbRepository", "⚠️ OMDb API authentication failed - invalid or expired API key")
             }
-            
+
             // Fallback to cache if available
             Log.d("OmdbRepository", "🔄 Attempting fallback to cached data")
             val cached = omdbRatingsDao.getOmdbRatings(imdbId)

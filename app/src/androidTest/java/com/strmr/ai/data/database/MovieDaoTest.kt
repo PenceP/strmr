@@ -8,7 +8,9 @@ import com.strmr.ai.data.BelongsToCollection
 import com.strmr.ai.data.SimilarContent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith

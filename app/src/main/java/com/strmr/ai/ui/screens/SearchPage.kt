@@ -23,7 +23,6 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -161,21 +160,23 @@ fun SearchPage(
                 modifier = Modifier.padding(16.dp),
             )
 
-            // Single LazyColumn for all content 
+            // Single LazyColumn for all content
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
                 contentPadding = PaddingValues(horizontal = 0.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 // Error message
                 errorMessage?.let { error ->
                     item {
                         Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
                             colors = CardDefaults.cardColors(containerColor = Color.Red.copy(alpha = 0.1f)),
                         ) {
                             Text(
@@ -202,63 +203,65 @@ fun SearchPage(
                                 "SearchPage",
                                 "📊 Search results received: movies=${results.movies.size}, shows=${results.tvShows.size}, people=${results.people.size}",
                             )
-                            
+
                             // Add sections directly as LazyColumn items
-                            val sections = buildList {
-                                if (results.movies.isNotEmpty()) {
-                                    add("Movies" to results.movies)
+                            val sections =
+                                buildList {
+                                    if (results.movies.isNotEmpty()) {
+                                        add("Movies" to results.movies)
+                                    }
+                                    if (results.tvShows.isNotEmpty()) {
+                                        add("TV Shows" to results.tvShows)
+                                    }
+                                    if (results.people.isNotEmpty()) {
+                                        add("People" to results.people)
+                                    }
                                 }
-                                if (results.tvShows.isNotEmpty()) {
-                                    add("TV Shows" to results.tvShows)
-                                }
-                                if (results.people.isNotEmpty()) {
-                                    add("People" to results.people)
-                                }
-                            }
-                            
+
                             sections.forEach { (title, items) ->
                                 item(key = title) {
                                     UnifiedMediaRow(
-                                        config = MediaRowConfig(
-                                            title = title,
-                                            dataSource = DataSource.RegularList(items),
-                                            cardType = CardType.PORTRAIT,
-                                            itemWidth = 120.dp,
-                                            itemSpacing = 12.dp,
-                                            contentPadding = PaddingValues(horizontal = 48.dp),
-                                            onItemClick = { item ->
-                                                when (item) {
-                                                    is SearchResultItem.Movie -> {
-                                                        onNavigateToDetails?.invoke("movie", item.tmdbId ?: item.id)
-                                                    }
-                                                    is SearchResultItem.TvShow -> {
-                                                        onNavigateToDetails?.invoke("tvshow", item.tmdbId ?: item.id)
-                                                    }
-                                                    is SearchResultItem.Person -> {
-                                                        Log.d("SearchPage", "Person clicked: ${item.name}")
-                                                    }
-                                                }
-                                            },
-                                            itemContent = { item, isSelected ->
-                                                SearchResultCard(
-                                                    item = item,
-                                                    isSelected = isSelected,
-                                                    onClick = {
-                                                        when (item) {
-                                                            is SearchResultItem.Movie -> {
-                                                                onNavigateToDetails?.invoke("movie", item.tmdbId ?: item.id)
-                                                            }
-                                                            is SearchResultItem.TvShow -> {
-                                                                onNavigateToDetails?.invoke("tvshow", item.tmdbId ?: item.id)
-                                                            }
-                                                            is SearchResultItem.Person -> {
-                                                                Log.d("SearchPage", "Person clicked: ${item.name}")
-                                                            }
+                                        config =
+                                            MediaRowConfig(
+                                                title = title,
+                                                dataSource = DataSource.RegularList(items),
+                                                cardType = CardType.PORTRAIT,
+                                                itemWidth = 120.dp,
+                                                itemSpacing = 12.dp,
+                                                contentPadding = PaddingValues(horizontal = 48.dp),
+                                                onItemClick = { item ->
+                                                    when (item) {
+                                                        is SearchResultItem.Movie -> {
+                                                            onNavigateToDetails?.invoke("movie", item.tmdbId ?: item.id)
                                                         }
-                                                    },
-                                                )
-                                            },
-                                        )
+                                                        is SearchResultItem.TvShow -> {
+                                                            onNavigateToDetails?.invoke("tvshow", item.tmdbId ?: item.id)
+                                                        }
+                                                        is SearchResultItem.Person -> {
+                                                            Log.d("SearchPage", "Person clicked: ${item.name}")
+                                                        }
+                                                    }
+                                                },
+                                                itemContent = { item, isSelected ->
+                                                    SearchResultCard(
+                                                        item = item,
+                                                        isSelected = isSelected,
+                                                        onClick = {
+                                                            when (item) {
+                                                                is SearchResultItem.Movie -> {
+                                                                    onNavigateToDetails?.invoke("movie", item.tmdbId ?: item.id)
+                                                                }
+                                                                is SearchResultItem.TvShow -> {
+                                                                    onNavigateToDetails?.invoke("tvshow", item.tmdbId ?: item.id)
+                                                                }
+                                                                is SearchResultItem.Person -> {
+                                                                    Log.d("SearchPage", "Person clicked: ${item.name}")
+                                                                }
+                                                            }
+                                                        },
+                                                    )
+                                                },
+                                            ),
                                     )
                                 }
                             }
@@ -268,9 +271,10 @@ fun SearchPage(
                         // Show empty state
                         item {
                             Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(32.dp),
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(32.dp),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text(

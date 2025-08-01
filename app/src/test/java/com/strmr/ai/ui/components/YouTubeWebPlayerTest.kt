@@ -1,6 +1,7 @@
 package com.strmr.ai.ui.components
 
-import org.junit.Assert.*
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**

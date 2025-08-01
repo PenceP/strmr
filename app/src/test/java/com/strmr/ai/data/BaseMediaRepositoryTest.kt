@@ -5,7 +5,7 @@ import com.strmr.ai.data.database.StrmrDatabase
 import com.strmr.ai.data.database.TraktRatingsDao
 import com.strmr.ai.data.database.TraktRatingsEntity
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.mock
@@ -38,7 +38,8 @@ class BaseMediaRepositoryTest {
                     traktId = traktId,
                     rating = 8.5f,
                     votes = 1000,
-                    updatedAt = System.currentTimeMillis() - 1000, // 1 second ago
+                    // 1 second ago
+                    updatedAt = System.currentTimeMillis() - 1000,
                 )
             whenever(traktRatingsDao.getRatings(traktId)).thenReturn(cachedRating)
 
@@ -67,7 +68,8 @@ class BaseMediaRepositoryTest {
             val result = repository.getTraktRatings(traktId)
 
             // Then
-            assertEquals(expiredRating, result) // Should return stale cache
+            // Should return stale cache
+            assertEquals(expiredRating, result)
         }
 
     // Test implementation of BaseMediaRepository

@@ -25,7 +25,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.strmr.ai.config.ConfigurationLoader
 import com.strmr.ai.config.PageConfiguration
-import com.strmr.ai.config.toGenericRowConfiguration
 import com.strmr.ai.data.DataSourceConfig
 import com.strmr.ai.data.MediaType
 import com.strmr.ai.data.OmdbResponse
@@ -73,7 +72,7 @@ fun TvShowsPage(
 
     // ✅ NEW: Use single generic ViewModel for all rows
     val tvShowsViewModel: FlixclusiveGenericViewModel = hiltViewModel()
-    
+
     // Data source configurations
     val dataSourceConfigs =
         remember {
@@ -94,10 +93,10 @@ fun TvShowsPage(
                 ),
             )
         }
-    
+
     // Initialize all data sources and wait for them to be populated
     var isInitialized by remember { mutableStateOf(false) }
-    
+
     LaunchedEffect(Unit) {
         Log.d("TvShowsPage", "🚀 Starting initialization of ${dataSourceConfigs.size} data sources")
         dataSourceConfigs.forEach { config ->
@@ -109,7 +108,7 @@ fun TvShowsPage(
         isInitialized = true
         Log.d("TvShowsPage", "✅ All data sources initialized")
     }
-    
+
     // Collect data from generic ViewModel for each row
     val trendingTvShows by tvShowsViewModel.getTvShowsFlow("trending").collectAsStateWithLifecycle()
     val trendingPaginationState by tvShowsViewModel.getPaginationFlow("trending").collectAsStateWithLifecycle()
@@ -196,10 +195,10 @@ fun TvShowsPage(
             // Show loading state while initializing
             Box(
                 modifier = Modifier.fillMaxSize(),
-                contentAlignment = androidx.compose.ui.Alignment.Center
+                contentAlignment = androidx.compose.ui.Alignment.Center,
             ) {
                 androidx.compose.material3.CircularProgressIndicator(
-                    color = androidx.compose.ui.graphics.Color.White
+                    color = androidx.compose.ui.graphics.Color.White,
                 )
             }
             return@Box
@@ -311,6 +310,7 @@ fun TvShowsPage(
                     state = columnState,
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     contentPadding = PaddingValues(vertical = 16.dp),
+                    flingBehavior = com.strmr.ai.ui.components.rememberThrottledFlingBehavior(),
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     items(

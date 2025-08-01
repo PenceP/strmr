@@ -6,7 +6,10 @@ import com.strmr.ai.data.SimilarContent
 import com.strmr.ai.data.database.MovieEntity
 import com.strmr.ai.domain.model.MovieId
 import com.strmr.ai.domain.model.TmdbId
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 

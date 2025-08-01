@@ -29,9 +29,21 @@ android {
         versionCode = 1
         versionName = rootProject.file("version.txt").readText().trim()
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "TRAKT_API_KEY", "\"${secrets.getProperty("TRAKT_API_KEY", "")}\"")
-        buildConfigField("String", "OMDB_API_KEY", "\"${secrets.getProperty("OMDB_API_KEY", "")}\"")
-        buildConfigField("String", "TMDB_READ_KEY", "\"${secrets.getProperty("TMDB_READ_KEY", "")}\"")
+        buildConfigField(
+            "String",
+            "TRAKT_API_KEY",
+            "\"${secrets.getProperty("TRAKT_API_KEY", "")}\"",
+        )
+        buildConfigField(
+            "String",
+            "OMDB_API_KEY",
+            "\"${secrets.getProperty("OMDB_API_KEY", "")}\"",
+        )
+        buildConfigField(
+            "String",
+            "TMDB_READ_KEY",
+            "\"${secrets.getProperty("TMDB_READ_KEY", "")}\"",
+        )
 
         // Target specific resources for Android TV
         androidResources {
@@ -69,7 +81,8 @@ android {
             excludes +=
                 listOf(
                     "**/x86/**",
-                    "**/x86_64/**", // Exclude x86 architectures if not needed
+                    // Exclude x86 architectures if not needed
+                    "**/x86_64/**",
                 )
         }
         resources {
@@ -94,9 +107,11 @@ android {
         freeCompilerArgs +=
             listOf(
                 "-P",
-                "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=${layout.buildDirectory.get().asFile.absolutePath}/compose_compiler",
+                "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=" +
+                    "${layout.buildDirectory.get().asFile.absolutePath}/compose_compiler",
                 "-P",
-                "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=${layout.buildDirectory.get().asFile.absolutePath}/compose_compiler",
+                "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=" +
+                    "${layout.buildDirectory.get().asFile.absolutePath}/compose_compiler",
             )
     }
     buildFeatures {

@@ -48,22 +48,23 @@ fun <T : Any> DetailsContentRow(
 
     // Simplified DetailsContentRow using new UnifiedMediaRow pattern
     UnifiedMediaRow(
-        config = MediaRowConfig(
-            title = title,
-            dataSource = DataSource.RegularList(items.take(10)),
-            cardType = CardType.PORTRAIT,
-            itemWidth = 120.dp,
-            itemSpacing = 12.dp,
-            contentPadding = PaddingValues(horizontal = 48.dp),
-            onItemClick = onItemClick,
-            itemContent = { item, isSelected ->
-                DetailsContentCard(
-                    content = contentMapper(item),
-                    onClick = { onItemClick(item) },
-                    isSelected = isSelected,
-                )
-            },
-        ),
+        config =
+            MediaRowConfig(
+                title = title,
+                dataSource = DataSource.RegularList(items.take(10)),
+                cardType = CardType.PORTRAIT,
+                itemWidth = 120.dp,
+                itemSpacing = 12.dp,
+                contentPadding = PaddingValues(horizontal = 48.dp),
+                onItemClick = onItemClick,
+                itemContent = { item, isSelected ->
+                    DetailsContentCard(
+                        content = contentMapper(item),
+                        onClick = { onItemClick(item) },
+                        isSelected = isSelected,
+                    )
+                },
+            ),
         modifier = modifier,
     )
 }

@@ -4,7 +4,8 @@ import com.strmr.ai.data.TmdbApiService
 import com.strmr.ai.data.TmdbImagesResponse
 import com.strmr.ai.data.TmdbLogo
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.mock

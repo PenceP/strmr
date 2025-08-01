@@ -2,7 +2,9 @@ package com.strmr.ai.viewmodel
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import app.cash.turbine.test
-import com.strmr.ai.data.*
+import com.strmr.ai.data.MovieRepository
+import com.strmr.ai.data.OmdbRepository
+import com.strmr.ai.data.TraktRepository
 import com.strmr.ai.domain.repository.ContinueWatchingItem
 import com.strmr.ai.domain.usecase.CheckTraktAuthorizationUseCase
 import com.strmr.ai.domain.usecase.ConvertContinueWatchingToHomeMediaItemsUseCase
@@ -12,9 +14,15 @@ import com.strmr.ai.presentation.state.ContinueWatchingState
 import com.strmr.ai.presentation.state.TraktAuthState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.*
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import org.junit.After
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test

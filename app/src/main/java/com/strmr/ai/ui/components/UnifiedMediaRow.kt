@@ -4,8 +4,6 @@ import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.gestures.FlingBehavior
-import androidx.compose.foundation.gestures.ScrollScope
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -17,8 +15,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.EaseInOut
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 
@@ -42,16 +48,8 @@ fun <T : Any> UnifiedMediaRow(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
-    // Custom responsive FlingBehavior that stops immediately on button release (no momentum).
-    val responsiveFlingBehavior =
-        remember {
-            object : FlingBehavior {
-                override suspend fun ScrollScope.performFling(initialVelocity: Float): Float {
-                    // Immediately consume all velocity for DPAD responsiveness.
-                    return 0f
-                }
-            }
-        }
+    // Use throttled scroll behavior for better TV remote control (80ms intervals)
+    val throttledFlingBehavior = rememberThrottledFlingBehavior()
 
     val itemCount =
         when (config.dataSource) {
@@ -113,13 +111,50 @@ fun <T : Any> UnifiedMediaRow(
     }
 
     Column(modifier = modifier.padding(vertical = 8.dp)) {
-        // Row title
+        // Row title with optional loading indicator
         if (config.title.isNotBlank()) {
-            Text(
-                text = config.title,
-                color = Color.White,
+            val isPaginating =
+                when (config.dataSource) {
+                    is DataSource.RegularList -> config.dataSource.paginationState.pagingState == PagingState.PAGINATING
+                    is DataSource.PagingList -> config.dataSource.pagingItems.loadState.append is LoadState.Loading
+                }
+
+            Row(
                 modifier = Modifier.padding(start = 56.dp, bottom = 4.dp),
-            )
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = config.title,
+                    color = Color.White,
+                )
+
+                // Show loading indicator when paginating
+                if (isPaginating) {
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    // Subtle loading dots animation
+                    val infiniteTransition =
+                        rememberInfiniteTransition(
+                            label = "loading_dots",
+                        )
+                    val alpha by infiniteTransition.animateFloat(
+                        initialValue = 0.3f,
+                        targetValue = 1.0f,
+                        animationSpec =
+                            infiniteRepeatable(
+                                animation = tween(800),
+                                repeatMode = RepeatMode.Reverse,
+                            ),
+                        label = "loading_alpha",
+                    )
+
+                    Text(
+                        text = "⋯",
+                        color = Color.White.copy(alpha = alpha),
+                        fontSize = 12.sp,
+                    )
+                }
+            }
         }
 
         // Use regular LazyRow with an immediate-stop FlingBehavior for better DPAD/TV responsiveness
@@ -127,7 +162,7 @@ fun <T : Any> UnifiedMediaRow(
             state = listState,
             horizontalArrangement = Arrangement.spacedBy(config.itemSpacing),
             contentPadding = config.contentPadding,
-            flingBehavior = responsiveFlingBehavior,
+            flingBehavior = throttledFlingBehavior,
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -188,8 +223,9 @@ fun <T : Any> UnifiedMediaRow(
                         // FLIXCLUSIVE PATTERN: Handle pagination loading states
                         when (paginationState.pagingState) {
                             PagingState.PAGINATING -> {
-                                items(count = 3) {
-                                    SkeletonCard(config)
+                                // Show more skeleton cards during pagination for better UX
+                                items(count = 6) { index ->
+                                    PaginationSkeletonCard(config, index)
                                 }
                             }
                             PagingState.ERROR -> {
@@ -203,10 +239,10 @@ fun <T : Any> UnifiedMediaRow(
                                 }
                             }
                             else -> {
-                                // Fallback to legacy loading indicator
+                                // Enhanced fallback loading indicator
                                 if (config.isLoading && config.dataSource.items.isNotEmpty()) {
-                                    items(count = 3) {
-                                        SkeletonCard(config)
+                                    items(count = 6) { index ->
+                                        PaginationSkeletonCard(config, index)
                                     }
                                 }
                             }
@@ -254,8 +290,9 @@ fun <T : Any> UnifiedMediaRow(
                     // Handle paging load states (Flixclusive pattern)
                     when (val appendState = config.dataSource.pagingItems.loadState.append) {
                         is LoadState.Loading -> {
-                            items(count = 3) {
-                                SkeletonCard(config)
+                            // Enhanced loading indicators for Paging3
+                            items(count = 6) { index ->
+                                PaginationSkeletonCard(config, index)
                             }
                         }
                         is LoadState.Error -> {
@@ -323,6 +360,67 @@ private fun <T : Any> SkeletonCard(config: MediaRowConfig<T>) {
         when (config.cardType) {
             CardType.PORTRAIT -> MediaCardSkeleton()
             CardType.LANDSCAPE -> LandscapeMediaCardSkeleton()
+        }
+    }
+}
+
+@Composable
+private fun <T : Any> PaginationSkeletonCard(
+    config: MediaRowConfig<T>,
+    index: Int,
+) {
+    // Add staggered animation delay for more dynamic loading appearance
+    val animationDelay = (index * 100L).coerceAtMost(500L)
+
+    Box(
+        modifier =
+            Modifier
+                .width(config.itemWidth)
+                .height(config.getCardHeight()),
+        contentAlignment = Alignment.Center,
+    ) {
+        when (config.cardType) {
+            CardType.PORTRAIT -> {
+                // Enhanced skeleton with subtle pulsing animation
+                MediaCardSkeleton(
+                    isSelected = false,
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            // Add a subtle scale animation for pagination loading
+                            .let { modifier ->
+                                val infiniteTransition =
+                                    rememberInfiniteTransition(
+                                        label = "pagination_pulse",
+                                    )
+                                val scale by infiniteTransition.animateFloat(
+                                    initialValue = 0.95f,
+                                    targetValue = 1.0f,
+                                    animationSpec =
+                                        infiniteRepeatable(
+                                            animation =
+                                                tween(
+                                                    durationMillis = 1000,
+                                                    delayMillis = animationDelay.toInt(),
+                                                    easing = EaseInOut,
+                                                ),
+                                            repeatMode = RepeatMode.Reverse,
+                                        ),
+                                    label = "skeleton_scale",
+                                )
+                                modifier.graphicsLayer {
+                                    scaleX = scale
+                                    scaleY = scale
+                                }
+                            },
+                )
+            }
+            CardType.LANDSCAPE -> {
+                LandscapeMediaCardSkeleton(
+                    isSelected = false,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
         }
     }
 }

@@ -1338,17 +1338,18 @@ fun ActorsRow(
 
     // Simplified ActorsRow using new UnifiedMediaRow pattern
     UnifiedMediaRow(
-        config = MediaRowConfig(
-            title = "Actors",
-            dataSource = DataSource.RegularList(actors.take(StrmrConstants.UI.MAX_CAST_ITEMS)),
-            cardType = CardType.PORTRAIT,
-            itemWidth = 90.dp, // Keep as 90.dp since it's specific for actors
-            itemSpacing = StrmrConstants.Dimensions.SPACING_MEDIUM,
-            contentPadding = PaddingValues(horizontal = 48.dp),
-            itemContent = { actor, isSelected ->
-                ActorCard(actor = actor, isSelected = isSelected)
-            },
-        ),
+        config =
+            MediaRowConfig(
+                title = "Actors",
+                dataSource = DataSource.RegularList(actors.take(StrmrConstants.UI.MAX_CAST_ITEMS)),
+                cardType = CardType.PORTRAIT,
+                itemWidth = 90.dp, // Keep as 90.dp since it's specific for actors
+                itemSpacing = StrmrConstants.Dimensions.SPACING_MEDIUM,
+                contentPadding = PaddingValues(horizontal = 48.dp),
+                itemContent = { actor, isSelected ->
+                    ActorCard(actor = actor, isSelected = isSelected)
+                },
+            ),
         modifier = modifier,
     )
 }

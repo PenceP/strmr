@@ -1,30 +1,15 @@
 package com.strmr.ai.ui.screens
 
-import android.util.Log
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -58,11 +43,11 @@ fun <T> MediaPage(
 ) where T : Any {
     val rowTitles = uiState.mediaRows.keys.toList()
     val rows = uiState.mediaRows.values.toList()
-    
+
     // Simple state for selected item (for hero display)
     var selectedRowIndex by remember { mutableStateOf(0) }
     var selectedItemIndex by remember { mutableStateOf(0) }
-    
+
     val selectedRow = rows.getOrNull(selectedRowIndex) ?: emptyList<T>()
     val selectedItem = selectedRow.getOrNull(selectedItemIndex)
 
@@ -70,13 +55,14 @@ fun <T> MediaPage(
     val coroutineScope = rememberCoroutineScope()
     LaunchedEffect(rows) {
         rows.flatten().forEach { item ->
-            val imdbId = when (item) {
-                is com.strmr.ai.data.database.MovieEntity -> item.imdbId
-                is com.strmr.ai.data.database.TvShowEntity -> item.imdbId
-                is com.strmr.ai.viewmodel.HomeMediaItem.Movie -> item.movie.imdbId
-                is com.strmr.ai.viewmodel.HomeMediaItem.TvShow -> item.show.imdbId
-                else -> null
-            }
+            val imdbId =
+                when (item) {
+                    is com.strmr.ai.data.database.MovieEntity -> item.imdbId
+                    is com.strmr.ai.data.database.TvShowEntity -> item.imdbId
+                    is com.strmr.ai.viewmodel.HomeMediaItem.Movie -> item.movie.imdbId
+                    is com.strmr.ai.viewmodel.HomeMediaItem.TvShow -> item.show.imdbId
+                    else -> null
+                }
             if (!imdbId.isNullOrBlank()) {
                 coroutineScope.launch {
                     getOmdbRatings(imdbId)
@@ -206,30 +192,34 @@ fun <T> MediaPage(
                 // )
                 // Simplified layout with hero and LazyColumn
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(start = navBarWidth)
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(start = navBarWidth),
                 ) {
                     // Hero section (fixed at top)
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(300.dp)
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(300.dp),
                     ) {
-                        val selectedImdbId = when (selectedItem) {
-                            is com.strmr.ai.data.database.MovieEntity -> selectedItem.imdbId
-                            is com.strmr.ai.data.database.TvShowEntity -> selectedItem.imdbId
-                            is com.strmr.ai.viewmodel.HomeMediaItem.Movie -> selectedItem.movie.imdbId
-                            is com.strmr.ai.viewmodel.HomeMediaItem.TvShow -> selectedItem.show.imdbId
-                            else -> null
-                        }
+                        val selectedImdbId =
+                            when (selectedItem) {
+                                is com.strmr.ai.data.database.MovieEntity -> selectedItem.imdbId
+                                is com.strmr.ai.data.database.TvShowEntity -> selectedItem.imdbId
+                                is com.strmr.ai.viewmodel.HomeMediaItem.Movie -> selectedItem.movie.imdbId
+                                is com.strmr.ai.viewmodel.HomeMediaItem.TvShow -> selectedItem.show.imdbId
+                                else -> null
+                            }
                         var omdbRatings by remember(selectedImdbId) { mutableStateOf<OmdbResponse?>(null) }
                         LaunchedEffect(selectedImdbId) {
                             if (!selectedImdbId.isNullOrBlank()) {
                                 try {
-                                    omdbRatings = withContext(Dispatchers.IO) {
-                                        getOmdbRatings(selectedImdbId)
-                                    }
+                                    omdbRatings =
+                                        withContext(Dispatchers.IO) {
+                                            getOmdbRatings(selectedImdbId)
+                                        }
                                 } catch (_: Exception) {
                                     omdbRatings = null
                                 }
@@ -257,35 +247,36 @@ fun <T> MediaPage(
                             },
                         )
                     }
-                    
+
                     // Rows section with LazyColumn
                     LazyColumn(
                         modifier = Modifier.fillMaxWidth(),
                         contentPadding = PaddingValues(vertical = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         rowTitles.forEachIndexed { rowIndex, rowTitle ->
                             val rowItems = rows.getOrNull(rowIndex) as? List<T> ?: emptyList()
                             if (rowItems.isNotEmpty()) {
                                 item(key = rowTitle) {
                                     UnifiedMediaRow(
-                                        config = MediaRowConfig(
-                                            title = rowTitle,
-                                            dataSource = DataSource.RegularList(rowItems),
-                                            cardType = CardType.PORTRAIT,
-                                            itemWidth = 120.dp,
-                                            itemSpacing = 12.dp,
-                                            contentPadding = PaddingValues(horizontal = 48.dp),
-                                            onItemClick = onItemClick,
-                                            itemContent = { item, isSelected ->
-                                                MediaCard(
-                                                    title = item.getTitle(),
-                                                    posterUrl = item.getPosterUrl(),
-                                                    isSelected = isSelected,
-                                                    onClick = { onItemClick?.invoke(item) },
-                                                )
-                                            },
-                                        )
+                                        config =
+                                            MediaRowConfig(
+                                                title = rowTitle,
+                                                dataSource = DataSource.RegularList(rowItems),
+                                                cardType = CardType.PORTRAIT,
+                                                itemWidth = 120.dp,
+                                                itemSpacing = 12.dp,
+                                                contentPadding = PaddingValues(horizontal = 48.dp),
+                                                onItemClick = onItemClick,
+                                                itemContent = { item, isSelected ->
+                                                    MediaCard(
+                                                        title = item.getTitle(),
+                                                        posterUrl = item.getPosterUrl(),
+                                                        isSelected = isSelected,
+                                                        onClick = { onItemClick?.invoke(item) },
+                                                    )
+                                                },
+                                            ),
                                     )
                                 }
                             }

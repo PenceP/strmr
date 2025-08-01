@@ -2,10 +2,19 @@ package com.strmr.ai.data.repository
 
 import com.strmr.ai.data.database.MovieEntity
 import com.strmr.ai.data.mapper.MovieMapper
-import com.strmr.ai.domain.model.*
+import com.strmr.ai.domain.model.Genre
+import com.strmr.ai.domain.model.ImdbId
+import com.strmr.ai.domain.model.MediaImages
+import com.strmr.ai.domain.model.Movie
+import com.strmr.ai.domain.model.MovieId
+import com.strmr.ai.domain.model.Rating
+import com.strmr.ai.domain.model.Runtime
+import com.strmr.ai.domain.model.TmdbId
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.mock

@@ -120,7 +120,7 @@ fun MoviesPage(
 
     // Initialize all data sources and wait for them to be populated
     var isInitialized by remember { mutableStateOf(false) }
-    
+
     LaunchedEffect(Unit) {
         Log.d("MoviesPage", "🚀 Starting initialization of ${dataSourceConfigs.size} data sources")
         dataSourceConfigs.forEach { config ->
@@ -227,10 +227,10 @@ fun MoviesPage(
             // Show loading state while initializing
             Box(
                 modifier = Modifier.fillMaxSize(),
-                contentAlignment = androidx.compose.ui.Alignment.Center
+                contentAlignment = androidx.compose.ui.Alignment.Center,
             ) {
                 androidx.compose.material3.CircularProgressIndicator(
-                    color = androidx.compose.ui.graphics.Color.White
+                    color = androidx.compose.ui.graphics.Color.White,
                 )
             }
             return@Box
@@ -342,6 +342,7 @@ fun MoviesPage(
                     state = columnState,
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     contentPadding = PaddingValues(vertical = 16.dp),
+                    flingBehavior = com.strmr.ai.ui.components.rememberThrottledFlingBehavior(),
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     items(

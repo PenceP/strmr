@@ -6,7 +6,9 @@ import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -255,7 +257,8 @@ class TraktApiServiceIntegrationTest {
                 MockResponse()
                     .setResponseCode(200)
                     .setBody("{}")
-                    .setBodyDelay(30, java.util.concurrent.TimeUnit.SECONDS), // Simulate timeout
+                    // Simulate timeout
+                    .setBodyDelay(30, java.util.concurrent.TimeUnit.SECONDS),
             )
 
             // When & Then - Should handle timeout gracefully
