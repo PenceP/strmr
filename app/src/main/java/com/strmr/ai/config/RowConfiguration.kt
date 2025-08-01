@@ -221,3 +221,66 @@ enum class CardType {
         }
     }
 }
+
+/**
+ * Enhanced configuration for generic row ViewModels
+ * Extends existing RowConfig with additional pagination and cache settings
+ */
+data class GenericRowConfiguration(
+    // Base configuration from RowConfig
+    val id: String,
+    val title: String,
+    val type: RowType,
+    val cardType: CardType,
+    val cardHeight: Int,
+    val showHero: Boolean,
+    val showLoading: Boolean,
+    val order: Int,
+    val enabled: Boolean,
+    val endpoint: String,
+    val mediaType: MediaType,
+    val cacheKey: String,
+    val displayOptions: DisplayOptions,
+    
+    // Enhanced pagination settings
+    val isPaginated: Boolean = true,
+    val pageSize: Int = 50,
+    val maxPages: Int = 10,
+    val bufferThreshold: Int = 6,
+    
+    // Cache configuration
+    val cacheExpirationMinutes: Int = 60,
+    val refreshOnStartup: Boolean = false,
+    val forceCacheUpdate: Boolean = false
+)
+
+/**
+ * Extension to convert RowConfig to GenericRowConfiguration
+ */
+fun RowConfig.toGenericRowConfiguration(): GenericRowConfiguration? {
+    if (endpoint == null || mediaType == null || cacheKey == null) return null
+    
+    return GenericRowConfiguration(
+        id = id,
+        title = title,
+        type = RowType.fromString(type),
+        cardType = CardType.fromString(cardType),
+        cardHeight = cardHeight,
+        showHero = showHero,
+        showLoading = showLoading,
+        order = order,
+        enabled = enabled,
+        endpoint = endpoint,
+        mediaType = when (mediaType.lowercase()) {
+            "movie" -> MediaType.MOVIE
+            "tvshow", "tv_show" -> MediaType.TV_SHOW
+            else -> MediaType.MOVIE
+        },
+        cacheKey = cacheKey,
+        displayOptions = displayOptions,
+        isPaginated = type == "paging",
+        pageSize = 50, // Default, could be configurable in JSON
+        maxPages = 10, // Default, could be configurable in JSON
+        bufferThreshold = 6 // Default buffer for pagination trigger
+    )
+}
