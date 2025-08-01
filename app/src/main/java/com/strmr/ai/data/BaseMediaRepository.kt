@@ -12,6 +12,7 @@ import com.strmr.ai.data.database.TraktRatingsEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
+import com.strmr.ai.ui.theme.StrmrConstants
 
 /**
  * Base repository class that provides common functionality for media repositories
@@ -29,7 +30,7 @@ abstract class BaseMediaRepository<EntityType : Any, TraktType : Any, TrendingTy
     protected val ratingsExpiryMs = 7 * 24 * 60 * 60 * 1000L // 7 days
     protected var currentTrendingPage = 0
     protected var currentPopularPage = 0
-    protected val pageSize = 20
+    protected val pageSize = StrmrConstants.Paging.PAGE_SIZE
 
     /**
      * Generic content refresh method that handles pagination and caching

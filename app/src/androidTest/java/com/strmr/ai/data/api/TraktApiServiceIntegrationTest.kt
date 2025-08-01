@@ -14,6 +14,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import com.strmr.ai.ui.theme.StrmrConstants
 
 @RunWith(AndroidJUnit4::class)
 class TraktApiServiceIntegrationTest {
@@ -84,7 +85,7 @@ class TraktApiServiceIntegrationTest {
             )
 
             // When
-            val result = traktApiService.getTrendingMovies(page = 1, limit = 10)
+            val result = traktApiService.getTrendingMovies(page = 1, limit = StrmrConstants.Paging.PAGE_SIZE)
 
             // Then
             assertNotNull(result)
@@ -95,7 +96,7 @@ class TraktApiServiceIntegrationTest {
 
             // Verify request details
             val request = mockWebServer.takeRequest()
-            assertEquals("/movies/trending?page=1&limit=10", request.path)
+            assertEquals("/movies/trending?page=1&limit=${StrmrConstants.Paging.PAGE_SIZE}", request.path)
             assertEquals("GET", request.method)
         }
 
@@ -151,7 +152,7 @@ class TraktApiServiceIntegrationTest {
             )
 
             // When
-            val result = traktApiService.getTrendingTvShows(page = 1, limit = 10)
+            val result = traktApiService.getTrendingTvShows(page = 1, limit = StrmrConstants.Paging.PAGE_SIZE)
 
             // Then
             assertNotNull(result)
@@ -162,7 +163,7 @@ class TraktApiServiceIntegrationTest {
 
             // Verify request details
             val request = mockWebServer.takeRequest()
-            assertEquals("/shows/trending?page=1&limit=10", request.path)
+            assertEquals("/shows/trending?page=1&limit=${StrmrConstants.Paging.PAGE_SIZE}", request.path)
             assertEquals("GET", request.method)
         }
 
