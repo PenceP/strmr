@@ -8,12 +8,20 @@ import androidx.activity.compose.setContent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -60,8 +68,6 @@ import com.strmr.ai.ui.screens.VideoPlayerScreen
 import com.strmr.ai.ui.theme.StrmrTheme
 import com.strmr.ai.viewmodel.HomeViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -147,9 +153,6 @@ class MainActivity : ComponentActivity() {
 
         android.util.Log.d("FontLoading", "🚀 MainActivity onCreate started")
 
-        // Clear null logos on app start to allow retries
-        clearNullLogos()
-
         setContent {
             android.util.Log.d("FontLoading", "🎨 Setting content with StrmrTheme")
             StrmrTheme {
@@ -161,10 +164,25 @@ class MainActivity : ComponentActivity() {
                     var showSplash by remember { mutableStateOf(true) }
                     var showOnboarding by remember { mutableStateOf(false) }
 
+                    // Move heavy initialization to background after UI is set up
+                    LaunchedEffect(Unit) {
+                        try {
+                            // Clear null logos on background thread
+                            clearNullLogos()
+                        } catch (e: Exception) {
+                            Log.e("MainActivity", "❌ Error during background initialization", e)
+                        }
+                    }
+
                     // Check onboarding status after splash completes
                     LaunchedEffect(showSplash) {
                         if (!showSplash) {
-                            showOnboarding = !onboardingService.isOnboardingCompleted()
+                            try {
+                                showOnboarding = !onboardingService.isOnboardingCompleted()
+                            } catch (e: Exception) {
+                                Log.e("MainActivity", "❌ Error checking onboarding status", e)
+                                showOnboarding = false // Default to false on error
+                            }
                         }
                     }
 
@@ -193,9 +211,9 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun clearNullLogos() {
+    private suspend fun clearNullLogos() {
         // Use clean architecture use case to clear null logos
-        CoroutineScope(Dispatchers.IO).launch {
+        try {
             Log.d("MainActivity", "🏗️ Clearing obsolete data with clean architecture")
 
             clearObsoleteDataUseCase()
@@ -205,6 +223,8 @@ class MainActivity : ComponentActivity() {
                 .onFailure { exception ->
                     Log.e("MainActivity", "❌ Error clearing obsolete data", exception)
                 }
+        } catch (e: Exception) {
+            Log.e("MainActivity", "❌ Exception in clearNullLogos", e)
         }
     }
 
@@ -223,7 +243,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@UnstableApi
+@OptIn(UnstableApi::class)
 @Composable
 fun MainScreen(
     youtubeExtractor: YouTubeExtractor,
