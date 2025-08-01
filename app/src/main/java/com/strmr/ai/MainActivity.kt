@@ -375,6 +375,7 @@ fun MainScreen(
                         onNavigateToTraktSettings = { navController.navigate("trakt_settings") },
                         onNavigateToPremiumizeSettings = { navController.navigate("premiumize_settings") },
                         onNavigateToRealDebridSettings = { navController.navigate("realdebrid_settings") },
+                        onLeftBoundary = handleReturnToNavigation,
                     )
                 }
                 composable("trakt_settings") {
