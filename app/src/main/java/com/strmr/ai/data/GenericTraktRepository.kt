@@ -259,6 +259,14 @@ class GenericTraktRepository
         }
 
         /**
+         * Refresh a TV show data source (load first page)
+         */
+        suspend fun refreshTvShowDataSource(config: DataSourceConfig) {
+            Log.d(TAG, "🔄 Refreshing TV show data source: ${config.title}")
+            loadTvDataSourcePage(config, page = 1)
+        }
+
+        /**
          * Update TV show logo - delegates to services
          */
         suspend fun updateTvShowLogo(
