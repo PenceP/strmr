@@ -15,27 +15,28 @@ fun StrmrTheme(
     content: @Composable () -> Unit,
 ) {
     Log.d("FontLoading", "🎨 StrmrTheme composable called, isInDarkTheme: $isInDarkTheme")
-    
-    val colorScheme = if (isInDarkTheme) {
-        darkColorScheme(
-            primary = Purple80,
-            secondary = PurpleGrey80,
-            tertiary = Pink80
-        )
-    } else {
-        lightColorScheme(
-            primary = Purple40,
-            secondary = PurpleGrey40,
-            tertiary = Pink40
-        )
-    }
-    
+
+    val colorScheme =
+        if (isInDarkTheme) {
+            darkColorScheme(
+                primary = Purple80,
+                secondary = PurpleGrey80,
+                tertiary = Pink80,
+            )
+        } else {
+            lightColorScheme(
+                primary = Purple40,
+                secondary = PurpleGrey40,
+                tertiary = Pink40,
+            )
+        }
+
     Log.d("FontLoading", "📝 Applying MaterialTheme with Typography: ${Typography.displayLarge.fontFamily}")
-    
+
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
-        content = content
+        content = content,
     ).also {
         Log.d("FontLoading", "✅ MaterialTheme applied successfully with Figtree typography")
     }

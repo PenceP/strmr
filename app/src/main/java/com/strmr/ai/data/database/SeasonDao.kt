@@ -19,4 +19,4 @@ interface SeasonDao {
 
     @Update
     suspend fun updateSeason(season: SeasonEntity)
-} 
+}

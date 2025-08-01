@@ -3,19 +3,16 @@ package com.strmr.ai.data
 import android.util.Log
 import com.strmr.ai.data.database.AccountDao
 import com.strmr.ai.data.database.AccountEntity
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.firstOrNull
-import java.util.*
-import com.strmr.ai.data.RetrofitInstance
 import com.strmr.ai.ui.theme.StrmrConstants
-import okhttp3.logging.HttpLoggingInterceptor
+import kotlinx.coroutines.flow.Flow
+import java.util.*
 
 class AccountRepository(
     private val accountDao: AccountDao,
-    private val traktApiService: TraktApiService
+    private val traktApiService: TraktApiService,
 ) {
     fun getAccountFlow(accountType: String): Flow<AccountEntity?> = accountDao.getAccountFlow(accountType)
-    
+
     fun getAllAccounts(): Flow<List<AccountEntity>> = accountDao.getAllAccounts()
 
     suspend fun saveAccount(
@@ -24,17 +21,18 @@ class AccountRepository(
         refreshToken: String,
         expiresIn: Int,
         createdAt: Long, // <-- add this param
-        username: String? = null
+        username: String? = null,
     ) {
         try {
             val expiresAt = (createdAt * 1000L) + (expiresIn * 1000L)
-            val account = AccountEntity(
-                accountType = accountType,
-                accessToken = accessToken,
-                refreshToken = refreshToken,
-                expiresAt = expiresAt,
-                username = username
-            )
+            val account =
+                AccountEntity(
+                    accountType = accountType,
+                    accessToken = accessToken,
+                    refreshToken = refreshToken,
+                    expiresAt = expiresAt,
+                    username = username,
+                )
             accountDao.insertAccount(account)
             Log.d("AccountRepository", "✅ Saved $accountType account credentials")
         } catch (e: Exception) {
@@ -59,12 +57,18 @@ class AccountRepository(
 
     suspend fun refreshTokenIfNeeded(accountType: String): String? {
         val account = getAccount(accountType) ?: return null
-        Log.d("AccountRepository", "🔑 Current $accountType token: "+
-            "${account.accessToken.take(8)}... expiresAt=${account.expiresAt}, now=${System.currentTimeMillis()}")
+        Log.d(
+            "AccountRepository",
+            "🔑 Current $accountType token: " +
+                "${account.accessToken.take(8)}... expiresAt=${account.expiresAt}, now=${System.currentTimeMillis()}",
+        )
         // Check if token expires within the next 5 minutes
         val fiveMinutesFromNow = System.currentTimeMillis() + (5 * 60 * 1000L)
         if (account.expiresAt <= fiveMinutesFromNow) {
-            Log.d("AccountRepository", "🔄 Token for $accountType expires soon, refreshing... (refreshToken=${account.refreshToken.take(8)}...)")
+            Log.d(
+                "AccountRepository",
+                "🔄 Token for $accountType expires soon, refreshing... (refreshToken=${account.refreshToken.take(8)}...)",
+            )
             val response = RetrofitInstance.traktAuthManager.refreshAccessToken(account.refreshToken)
             if (response != null) {
                 saveAccount(
@@ -73,7 +77,7 @@ class AccountRepository(
                     response.refresh_token,
                     response.expires_in,
                     response.created_at, // <-- use created_at from response
-                    account.username
+                    account.username,
                 )
                 Log.d("AccountRepository", "✅ Token refreshed for $accountType: ${response.access_token.take(8)}...")
                 return response.access_token
@@ -121,7 +125,8 @@ class AccountRepository(
                 try {
                     val errorBody = e.response()?.errorBody()?.string()
                     Log.e("AccountRepository", "❌ Error body: $errorBody")
-                } catch (_: Exception) {}
+                } catch (_: Exception) {
+                }
             } catch (e: Exception) {
                 Log.e("AccountRepository", "Error fetching continue watching", e)
             }
@@ -131,17 +136,23 @@ class AccountRepository(
         return emptyList()
     }
 
-    suspend fun saveTraktTokens(accessToken: String, refreshToken: String, expiresIn: Int, createdAt: Long) {
-        val accountEntity = AccountEntity(
-            accountType = StrmrConstants.Preferences.ACCOUNT_TYPE_TRAKT,
-            accessToken = accessToken,
-            refreshToken = refreshToken,
-            expiresAt = (createdAt * 1000L) + (expiresIn * 1000L)
-        )
+    suspend fun saveTraktTokens(
+        accessToken: String,
+        refreshToken: String,
+        expiresIn: Int,
+        createdAt: Long,
+    ) {
+        val accountEntity =
+            AccountEntity(
+                accountType = StrmrConstants.Preferences.ACCOUNT_TYPE_TRAKT,
+                accessToken = accessToken,
+                refreshToken = refreshToken,
+                expiresAt = (createdAt * 1000L) + (expiresIn * 1000L),
+            )
         accountDao.insertAccount(accountEntity)
     }
 
     suspend fun clearTraktTokens() {
         accountDao.deleteAccount(StrmrConstants.Preferences.ACCOUNT_TYPE_TRAKT)
     }
-} 
+}

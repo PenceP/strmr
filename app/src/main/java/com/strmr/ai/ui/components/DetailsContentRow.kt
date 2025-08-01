@@ -1,6 +1,9 @@
 package com.strmr.ai.ui.components
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -16,21 +20,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.border
 import com.strmr.ai.utils.resolveImageSource
-import com.strmr.ai.ui.components.UnifiedMediaRow
-import com.strmr.ai.ui.components.MediaRowConfig
-import com.strmr.ai.ui.components.DataSource
-import com.strmr.ai.ui.components.CardType
 
 data class DetailsContentData(
     val title: String,
     val posterUrl: String?,
     val subtitle: String? = null,
-    val rating: String? = null
+    val rating: String? = null,
 )
 
 @Composable
@@ -46,34 +42,35 @@ fun <T : Any> DetailsContentRow(
     onUpDown: ((Int) -> Unit)? = null,
     focusRequester: FocusRequester? = null,
     isContentFocused: Boolean = false,
-    onContentFocusChanged: ((Boolean) -> Unit)? = null
+    onContentFocusChanged: ((Boolean) -> Unit)? = null,
 ) {
     if (items.isEmpty()) return
-    
+
     UnifiedMediaRow(
-        config = MediaRowConfig(
-            title = title,
-            dataSource = DataSource.RegularList(items.take(10)),
-            selectedIndex = selectedIndex,
-            isRowSelected = isRowSelected,
-            onSelectionChanged = onSelectionChanged,
-            onUpDown = onUpDown,
-            onItemClick = onItemClick,
-            focusRequester = focusRequester,
-            onContentFocusChanged = onContentFocusChanged,
-            cardType = CardType.PORTRAIT,
-            itemWidth = 120.dp,
-            itemSpacing = 12.dp,
-            contentPadding = PaddingValues(horizontal = 48.dp),
-            itemContent = { item, isSelected ->
-                DetailsContentCard(
-                    content = contentMapper(item),
-                    onClick = { onItemClick(item) },
-                    isSelected = isSelected
-                )
-            }
-        ),
-        modifier = modifier
+        config =
+            MediaRowConfig(
+                title = title,
+                dataSource = DataSource.RegularList(items.take(10)),
+                selectedIndex = selectedIndex,
+                isRowSelected = isRowSelected,
+                onSelectionChanged = onSelectionChanged,
+                onUpDown = onUpDown,
+                onItemClick = onItemClick,
+                focusRequester = focusRequester,
+                onContentFocusChanged = onContentFocusChanged,
+                cardType = CardType.PORTRAIT,
+                itemWidth = 120.dp,
+                itemSpacing = 12.dp,
+                contentPadding = PaddingValues(horizontal = 48.dp),
+                itemContent = { item, isSelected ->
+                    DetailsContentCard(
+                        content = contentMapper(item),
+                        onClick = { onItemClick(item) },
+                        isSelected = isSelected,
+                    )
+                },
+            ),
+        modifier = modifier,
     )
 }
 
@@ -82,7 +79,7 @@ fun DetailsContentCard(
     content: DetailsContentData,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    isSelected: Boolean = false
+    isSelected: Boolean = false,
 ) {
     val baseWidth = 120.dp
     val baseHeight = 180.dp
@@ -92,25 +89,27 @@ fun DetailsContentCard(
     val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = tween(durationMillis = 10))
 
     Column(
-        modifier = modifier
-            .width(animatedWidth)
-            .height(animatedHeight)
-            .border(
-                width = if (isSelected) 2.dp else 0.dp,
-                color = if (isSelected) Color.Transparent else Color.Transparent,
-                shape = RoundedCornerShape(8.dp)
-            )
-            .clickable { onClick() },
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier =
+            modifier
+                .width(animatedWidth)
+                .height(animatedHeight)
+                .border(
+                    width = if (isSelected) 2.dp else 0.dp,
+                    color = if (isSelected) Color.Transparent else Color.Transparent,
+                    shape = RoundedCornerShape(8.dp),
+                )
+                .clickable { onClick() },
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // Poster image
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color.Gray),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color.Gray),
+            contentAlignment = Alignment.Center,
         ) {
             val resolvedPosterSource = resolveImageSource(content.posterUrl)
             if (resolvedPosterSource != null) {
@@ -118,19 +117,19 @@ fun DetailsContentCard(
                     model = resolvedPosterSource,
                     contentDescription = content.title,
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
                 )
             } else {
                 Text(
                     text = content.title.firstOrNull()?.uppercase() ?: "?",
                     color = Color.White,
-                    fontSize = 24.sp
+                    fontSize = 24.sp,
                 )
             }
         }
-        
+
         Spacer(modifier = Modifier.height(8.dp))
-        
+
         // Title
         Text(
             text = content.title,
@@ -139,27 +138,27 @@ fun DetailsContentCard(
             fontWeight = FontWeight.Medium,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
         )
-        
+
         // Subtitle and rating
         if (content.subtitle != null || content.rating != null) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 content.subtitle?.let { subtitle ->
                     Text(
                         text = subtitle,
                         color = Color.Gray,
-                        fontSize = 10.sp
+                        fontSize = 10.sp,
                     )
                 }
                 content.rating?.let { rating ->
                     Text(
                         text = rating,
                         color = Color.Gray,
-                        fontSize = 10.sp
+                        fontSize = 10.sp,
                     )
                 }
             }

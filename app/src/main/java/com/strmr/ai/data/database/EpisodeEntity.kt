@@ -15,5 +15,5 @@ data class EpisodeEntity(
     val airDate: String?,
     val runtime: Int?,
     val rating: Float?,
-    val lastUpdated: Long = 0L // for cache expiry
+    val lastUpdated: Long = 0L, // for cache expiry
 )

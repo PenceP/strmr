@@ -3,10 +3,10 @@ package com.strmr.ai.data.database
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
-import com.strmr.ai.data.database.converters.ListConverter
 import com.strmr.ai.data.Actor
-import com.strmr.ai.data.SimilarContent
 import com.strmr.ai.data.BelongsToCollection
+import com.strmr.ai.data.SimilarContent
+import com.strmr.ai.data.database.converters.ListConverter
 import com.strmr.ai.ui.components.MediaItem
 
 @Entity(tableName = "movies")
@@ -35,6 +35,7 @@ data class MovieEntity(
     val upcomingOrder: Int? = null,
     val topRatedOrder: Int? = null,
     val topMoviesWeekOrder: Int? = null,
+    val recommendedMoviesOrder: Int? = null,
     val dataSourceOrders: Map<String, Int?> = emptyMap(), // Generic data source ordering (future use)
-    val lastUpdated: Long = 0L // for cache expiry
-) : MediaItem 
+    val lastUpdated: Long = 0L, // for cache expiry
+) : MediaItem

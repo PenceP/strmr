@@ -11,7 +11,7 @@ enum class OnboardingState {
     LOADING_LISTS,
     FINALIZING,
     COMPLETED,
-    ERROR
+    ERROR,
 }
 
 /**
@@ -24,50 +24,52 @@ data class OnboardingProgress(
     val completedTasks: Int = 0,
     val totalTasks: Int = 0,
     val currentTask: String? = null,
-    val error: String? = null
+    val error: String? = null,
 )
 
 /**
  * Fun loading messages similar to Discord's approach
  */
 object OnboardingMessages {
-    val loadingMessages = listOf(
-        "Hacking the mainframe...",
-        "Populating the database...",
-        "Downloading movie posters...",
-        "Connecting to the Trakt API...",
-        "Enriching with TMDB data...",
-        "Loading trending content...",
-        "Fetching popular movies...",
-        "Synchronizing user lists...",
-        "Optimizing for Android TV...",
-        "Preparing your experience...",
-        "Loading cast information...",
-        "Generating recommendations...",
-        "Caching poster images...",
-        "Building media index...",
-        "Establishing secure connections...",
-        "Calibrating flux capacitor...",
-        "Reticulating splines...",
-        "Loading awesome content...",
-        "Brewing fresh coffee...",
-        "Consulting the movie gods...",
-        "Summoning the perfect UI...",
-        "Training recommendation AI...",
-        "Polishing the interface...",
-        "Adding final touches..."
-    )
-    
+    val loadingMessages =
+        listOf(
+            "Hacking the mainframe...",
+            "Populating the database...",
+            "Downloading movie posters...",
+            "Connecting to the Trakt API...",
+            "Enriching with TMDB data...",
+            "Loading trending content...",
+            "Fetching popular movies...",
+            "Synchronizing user lists...",
+            "Optimizing for Android TV...",
+            "Preparing your experience...",
+            "Loading cast information...",
+            "Generating recommendations...",
+            "Caching poster images...",
+            "Building media index...",
+            "Establishing secure connections...",
+            "Calibrating flux capacitor...",
+            "Reticulating splines...",
+            "Loading awesome content...",
+            "Brewing fresh coffee...",
+            "Consulting the movie gods...",
+            "Summoning the perfect UI...",
+            "Training recommendation AI...",
+            "Polishing the interface...",
+            "Adding final touches...",
+        )
+
     fun getRandomMessage(): String = loadingMessages.random()
-    
-    fun getMessageForState(state: OnboardingState): String = when (state) {
-        OnboardingState.NOT_STARTED -> "Welcome to Strmr!"
-        OnboardingState.INITIALIZING -> "Initializing application..."
-        OnboardingState.LOADING_MOVIES -> "Loading trending movies..."
-        OnboardingState.LOADING_TV_SHOWS -> "Loading popular TV shows..."
-        OnboardingState.LOADING_LISTS -> "Loading curated lists..."
-        OnboardingState.FINALIZING -> "Adding final touches..."
-        OnboardingState.COMPLETED -> "Ready to stream!"
-        OnboardingState.ERROR -> "Something went wrong..."
-    }
+
+    fun getMessageForState(state: OnboardingState): String =
+        when (state) {
+            OnboardingState.NOT_STARTED -> "Welcome to Strmr!"
+            OnboardingState.INITIALIZING -> "Initializing application..."
+            OnboardingState.LOADING_MOVIES -> "Loading trending movies..."
+            OnboardingState.LOADING_TV_SHOWS -> "Loading popular TV shows..."
+            OnboardingState.LOADING_LISTS -> "Loading curated lists..."
+            OnboardingState.FINALIZING -> "Adding final touches..."
+            OnboardingState.COMPLETED -> "Ready to stream!"
+            OnboardingState.ERROR -> "Something went wrong..."
+        }
 }

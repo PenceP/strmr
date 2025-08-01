@@ -10,9 +10,10 @@ data class DataSourceConfig(
     val mediaType: MediaType,
     val cacheKey: String,
     val enabled: Boolean = true,
-    val order: Int = 0
+    val order: Int = 0,
 )
 
 enum class MediaType {
-    MOVIE, TV_SHOW
+    MOVIE,
+    TV_SHOW,
 }

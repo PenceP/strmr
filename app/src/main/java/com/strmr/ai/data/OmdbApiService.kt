@@ -9,7 +9,7 @@ interface OmdbApiService {
         @Query("apikey") apiKey: String,
         @Query("i") imdbId: String? = null,
         @Query("t") title: String? = null,
-        @Query("y") year: String? = null
+        @Query("y") year: String? = null,
     ): OmdbResponse
 }
 
@@ -38,10 +38,10 @@ data class OmdbResponse(
     val BoxOffice: String?,
     val Production: String?,
     val Website: String?,
-    val Response: String?
+    val Response: String?,
 )
 
 data class OmdbRating(
     val Source: String?,
-    val Value: String?
-) 
+    val Value: String?,
+)

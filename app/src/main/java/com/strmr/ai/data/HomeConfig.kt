@@ -3,17 +3,17 @@ package com.strmr.ai.data
 import com.google.gson.annotations.SerializedName
 
 data class HomeConfig(
-    val homePage: HomePageConfig
+    val homePage: HomePageConfig,
 )
 
 data class HomePageConfig(
-    val rows: List<HomeSection>
+    val rows: List<HomeSection>,
 )
 
 data class HomeSection(
     val id: String,
     val title: String,
-    val networks: List<NetworkInfo>?
+    val networks: List<NetworkInfo>?,
 )
 
 data class NetworkInfo(
@@ -22,5 +22,5 @@ data class NetworkInfo(
     @SerializedName("backgroundImageURL")
     val posterUrl: String,
     @SerializedName("dataURL")
-    val dataUrl: String?
-) 
+    val dataUrl: String?,
+)

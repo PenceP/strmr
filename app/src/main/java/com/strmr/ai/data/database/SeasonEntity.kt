@@ -13,5 +13,5 @@ data class SeasonEntity(
     val posterUrl: String?,
     val episodeCount: Int,
     val airDate: String?,
-    val lastUpdated: Long = 0L // for cache expiry
-) 
+    val lastUpdated: Long = 0L, // for cache expiry
+)

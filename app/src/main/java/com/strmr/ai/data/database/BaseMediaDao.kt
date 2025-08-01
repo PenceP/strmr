@@ -6,9 +6,17 @@ package com.strmr.ai.data.database
  */
 interface BaseMediaDao<T : Any> {
     suspend fun insertItems(items: List<T>)
+
     suspend fun updateTrendingItems(items: List<T>)
+
     suspend fun updatePopularItems(items: List<T>)
+
     suspend fun getItemByTmdbId(tmdbId: Int): T?
-    suspend fun updateItemLogo(tmdbId: Int, logoUrl: String?)
+
+    suspend fun updateItemLogo(
+        tmdbId: Int,
+        logoUrl: String?,
+    )
+
     suspend fun clearNullLogos()
 }

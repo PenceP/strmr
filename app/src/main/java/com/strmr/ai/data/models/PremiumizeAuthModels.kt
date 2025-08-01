@@ -9,13 +9,13 @@ data class PremiumizeTokenResponse(
     @SerializedName("token_type")
     val tokenType: String?,
     @SerializedName("expires_in")
-    val expiresIn: Int?
+    val expiresIn: Int?,
 )
 
 data class PremiumizeAuthError(
     val error: String,
     @SerializedName("error_description")
-    val errorDescription: String?
+    val errorDescription: String?,
 )
 
 // Device code flow models
@@ -28,7 +28,7 @@ data class PremiumizeDeviceCodeResponse(
     val verificationUrl: String = "https://premiumize.me/device",
     @SerializedName("expires_in")
     val expiresIn: Int,
-    val interval: Int
+    val interval: Int,
 )
 
 // User account models
@@ -44,15 +44,15 @@ data class PremiumizeAccount(
     @SerializedName("limit_used")
     val limitUsed: Double,
     @SerializedName("space_limit")
-    val spaceLimit: Double? = 1024.0 // 1TB default in GB
+    val spaceLimit: Double? = 1024.0, // 1TB default in GB
 ) {
     // Helper properties to convert GB to bytes for UI consistency
     val spaceUsedBytes: Long
         get() = (spaceUsed * 1073741824).toLong() // Convert GB to bytes
-    
+
     val limitUsedBytes: Long
         get() = (limitUsed * 1073741824).toLong() // Convert GB to bytes
-    
+
     val spaceLimitBytes: Long
         get() = ((spaceLimit ?: 1024.0) * 1073741824).toLong() // Convert GB to bytes
 }

@@ -17,7 +17,7 @@ data class PageConfiguration(
     @SerializedName("networks")
     val networks: List<NetworkConfig>? = null,
     @SerializedName("directors")
-    val directors: List<DirectorConfig>? = null
+    val directors: List<DirectorConfig>? = null,
 )
 
 /**
@@ -55,26 +55,27 @@ data class RowConfig(
     @SerializedName("nestedRows")
     val nestedRows: List<RowConfig>? = null,
     @SerializedName("nestedItems")
-    val nestedItems: List<NestedItemConfig>? = null
+    val nestedItems: List<NestedItemConfig>? = null,
 ) {
     /**
      * Convert RowConfig to DataSourceConfig for generic repository usage
      */
     fun toDataSourceConfig(): DataSourceConfig? {
         if (endpoint == null || mediaType == null || cacheKey == null) return null
-        
+
         return DataSourceConfig(
             id = id,
             title = title,
             endpoint = endpoint,
-            mediaType = when (mediaType.lowercase()) {
-                "movie" -> MediaType.MOVIE
-                "tvshow", "tv_show" -> MediaType.TV_SHOW
-                else -> MediaType.MOVIE
-            },
+            mediaType =
+                when (mediaType.lowercase()) {
+                    "movie" -> MediaType.MOVIE
+                    "tvshow", "tv_show" -> MediaType.TV_SHOW
+                    else -> MediaType.MOVIE
+                },
             cacheKey = cacheKey,
             enabled = enabled,
-            order = order
+            order = order,
         )
     }
 }
@@ -92,7 +93,7 @@ data class DisplayOptions(
     @SerializedName("clickable")
     val clickable: Boolean,
     @SerializedName("supportedTypes")
-    val supportedTypes: List<String>
+    val supportedTypes: List<String>,
 )
 
 /**
@@ -108,7 +109,7 @@ data class CollectionConfig(
     @SerializedName("nameDisplayMode")
     val nameDisplayMode: String,
     @SerializedName("dataUrl")
-    val dataUrl: String? = null
+    val dataUrl: String? = null,
 )
 
 /**
@@ -124,7 +125,7 @@ data class TraktConfig(
     @SerializedName("sortOrder")
     val sortOrder: String,
     @SerializedName("apiEndpoint")
-    val apiEndpoint: String
+    val apiEndpoint: String,
 )
 
 /**
@@ -140,7 +141,7 @@ data class NetworkConfig(
     @SerializedName("nameDisplayMode")
     val nameDisplayMode: String,
     @SerializedName("dataUrl")
-    val dataUrl: String?
+    val dataUrl: String?,
 )
 
 /**
@@ -156,7 +157,7 @@ data class DirectorConfig(
     @SerializedName("nameDisplayMode")
     val nameDisplayMode: String,
     @SerializedName("dataUrl")
-    val dataUrl: String?
+    val dataUrl: String?,
 )
 
 /**
@@ -174,9 +175,8 @@ data class NestedItemConfig(
     @SerializedName("dataUrl")
     val dataUrl: String,
     @SerializedName("type")
-    val type: String // movies/shows
+    val type: String, // movies/shows
 )
-
 
 /**
  * Enum for row types
@@ -187,8 +187,10 @@ enum class RowType {
     COLLECTIONS,
     DIRECTORS,
     PAGING,
-    TRAKT_LIST;
-    
+    LIST,
+    TRAKT_LIST,
+    ;
+
     companion object {
         fun fromString(type: String): RowType {
             return when (type.lowercase()) {
@@ -197,6 +199,7 @@ enum class RowType {
                 "collections" -> COLLECTIONS
                 "directors" -> DIRECTORS
                 "paging" -> PAGING
+                "list" -> LIST
                 "trakt_list" -> TRAKT_LIST
                 else -> throw IllegalArgumentException("Unknown row type: $type")
             }
@@ -209,8 +212,9 @@ enum class RowType {
  */
 enum class CardType {
     PORTRAIT,
-    LANDSCAPE;
-    
+    LANDSCAPE,
+    ;
+
     companion object {
         fun fromString(type: String): CardType {
             return when (type.lowercase()) {
@@ -241,17 +245,15 @@ data class GenericRowConfiguration(
     val mediaType: MediaType,
     val cacheKey: String,
     val displayOptions: DisplayOptions,
-    
     // Enhanced pagination settings
     val isPaginated: Boolean = true,
     val pageSize: Int = 50,
     val maxPages: Int = 10,
     val bufferThreshold: Int = 6,
-    
     // Cache configuration
     val cacheExpirationMinutes: Int = 60,
     val refreshOnStartup: Boolean = false,
-    val forceCacheUpdate: Boolean = false
+    val forceCacheUpdate: Boolean = false,
 )
 
 /**
@@ -259,7 +261,7 @@ data class GenericRowConfiguration(
  */
 fun RowConfig.toGenericRowConfiguration(): GenericRowConfiguration? {
     if (endpoint == null || mediaType == null || cacheKey == null) return null
-    
+
     return GenericRowConfiguration(
         id = id,
         title = title,
@@ -271,16 +273,17 @@ fun RowConfig.toGenericRowConfiguration(): GenericRowConfiguration? {
         order = order,
         enabled = enabled,
         endpoint = endpoint,
-        mediaType = when (mediaType.lowercase()) {
-            "movie" -> MediaType.MOVIE
-            "tvshow", "tv_show" -> MediaType.TV_SHOW
-            else -> MediaType.MOVIE
-        },
+        mediaType =
+            when (mediaType.lowercase()) {
+                "movie" -> MediaType.MOVIE
+                "tvshow", "tv_show" -> MediaType.TV_SHOW
+                else -> MediaType.MOVIE
+            },
         cacheKey = cacheKey,
         displayOptions = displayOptions,
         isPaginated = type == "paging",
         pageSize = 50, // Default, could be configurable in JSON
         maxPages = 10, // Default, could be configurable in JSON
-        bufferThreshold = 6 // Default buffer for pagination trigger
+        bufferThreshold = 6, // Default buffer for pagination trigger
     )
 }

@@ -12,11 +12,11 @@ import androidx.tv.foundation.lazy.list.TvLazyListState
  * Custom pagination states matching Flixclusive's approach
  */
 enum class PagingState {
-    LOADING,           // Initial load
-    ERROR,            // Failed to load
-    PAGINATING,       // Loading more items
+    LOADING, // Initial load
+    ERROR, // Failed to load
+    PAGINATING, // Loading more items
     PAGINATING_EXHAUST, // No more items to load
-    IDLE;             // Ready to paginate
+    IDLE, // Ready to paginate
 }
 
 /**
@@ -35,9 +35,9 @@ data class PaginationStateInfo(
 /**
  * TV version - triggers pagination when within buffer distance of end
  */
-fun TvLazyListState.shouldPaginate(toDeduct: Int = 6): Boolean = 
-    (layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -9) >= 
-    (layoutInfo.totalItemsCount - toDeduct)
+fun TvLazyListState.shouldPaginate(toDeduct: Int = 6): Boolean =
+    (layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -9) >=
+        (layoutInfo.totalItemsCount - toDeduct)
 
 /**
  * Mobile/Standard version - more aggressive with scroll forward check

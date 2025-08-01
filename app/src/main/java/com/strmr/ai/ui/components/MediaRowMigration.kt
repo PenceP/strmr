@@ -30,25 +30,26 @@ fun <T> MigratedMediaRow(
     modifier: Modifier = Modifier,
     itemWidth: Dp = 120.dp,
     itemSpacing: Dp = 18.dp,
-    itemContent: @Composable (item: T, isSelected: Boolean) -> Unit
+    itemContent: @Composable (item: T, isSelected: Boolean) -> Unit,
 ) where T : Any {
     UnifiedMediaRow(
-        config = MediaRowConfig(
-            title = title,
-            dataSource = DataSource.RegularList(mediaItems),
-            selectedIndex = selectedIndex,
-            isRowSelected = isRowSelected,
-            onSelectionChanged = onSelectionChanged,
-            onUpDown = onUpDown,
-            onLoadMore = onLoadMore,
-            onItemClick = onItemClick,
-            itemWidth = itemWidth,
-            itemSpacing = itemSpacing,
-            contentPadding = PaddingValues(horizontal = 8.dp),
-            cardType = CardType.PORTRAIT,
-            itemContent = itemContent
-        ),
-        modifier = modifier
+        config =
+            MediaRowConfig(
+                title = title,
+                dataSource = DataSource.RegularList(mediaItems),
+                selectedIndex = selectedIndex,
+                isRowSelected = isRowSelected,
+                onSelectionChanged = onSelectionChanged,
+                onUpDown = onUpDown,
+                onLoadMore = onLoadMore,
+                onItemClick = onItemClick,
+                itemWidth = itemWidth,
+                itemSpacing = itemSpacing,
+                contentPadding = PaddingValues(horizontal = 8.dp),
+                cardType = CardType.PORTRAIT,
+                itemContent = itemContent,
+            ),
+        modifier = modifier,
     )
 }
 
@@ -71,7 +72,7 @@ fun <T> MigratedEnhancedMediaRow(
     isLoading: Boolean = false,
     loadingCardCount: Int = 8,
     skeletonCardType: SkeletonCardType = SkeletonCardType.PORTRAIT,
-    itemContent: @Composable (item: T, isSelected: Boolean) -> Unit
+    itemContent: @Composable (item: T, isSelected: Boolean) -> Unit,
 ) where T : Any {
     if (isLoading && mediaItems.isEmpty()) {
         MediaRowSkeleton(
@@ -80,28 +81,29 @@ fun <T> MigratedEnhancedMediaRow(
             itemWidth = itemWidth,
             itemSpacing = itemSpacing,
             cardType = skeletonCardType,
-            modifier = modifier
+            modifier = modifier,
         )
     } else {
         UnifiedMediaRow(
-            config = MediaRowConfig(
-                title = title,
-                dataSource = DataSource.RegularList(mediaItems),
-                selectedIndex = selectedIndex,
-                isRowSelected = isRowSelected,
-                onSelectionChanged = onSelectionChanged,
-                onUpDown = onUpDown,
-                onLoadMore = onLoadMore,
-                onItemClick = onItemClick,
-                itemWidth = itemWidth,
-                itemSpacing = itemSpacing,
-                contentPadding = PaddingValues(horizontal = 8.dp),
-                cardType = CardType.PORTRAIT,
-                isLoading = isLoading,
-                skeletonCount = loadingCardCount,
-                itemContent = itemContent
-            ),
-            modifier = modifier
+            config =
+                MediaRowConfig(
+                    title = title,
+                    dataSource = DataSource.RegularList(mediaItems),
+                    selectedIndex = selectedIndex,
+                    isRowSelected = isRowSelected,
+                    onSelectionChanged = onSelectionChanged,
+                    onUpDown = onUpDown,
+                    onLoadMore = onLoadMore,
+                    onItemClick = onItemClick,
+                    itemWidth = itemWidth,
+                    itemSpacing = itemSpacing,
+                    contentPadding = PaddingValues(horizontal = 8.dp),
+                    cardType = CardType.PORTRAIT,
+                    isLoading = isLoading,
+                    skeletonCount = loadingCardCount,
+                    itemContent = itemContent,
+                ),
+            modifier = modifier,
         )
     }
 }
@@ -127,50 +129,51 @@ fun <T : Any> MigratedPagingMediaRow(
     totalRowCount: Int = 1,
     onItemClick: ((T) -> Unit)? = null,
     onPositionChanged: ((Int, Int) -> Unit)? = null,
-    logTag: String = "PagingMediaRow"
+    logTag: String = "PagingMediaRow",
 ) {
     // Handle both pagingFlow and pagingItems for compatibility
     val items = pagingItems ?: throw IllegalArgumentException("pagingItems must be provided - pagingFlow support requires collectAsLazyPagingItems() at call site")
-    
+
     UnifiedMediaRow(
-        config = MediaRowConfig(
-            title = title,
-            dataSource = DataSource.PagingList(items),
-            selectedIndex = selectedIndex,
-            isRowSelected = isRowSelected,
-            onSelectionChanged = onSelectionChanged,
-            onUpDown = onUpDown,
-            onLeftBoundary = onLeftBoundary,
-            onItemClick = onItemClick,
-            onContentFocusChanged = onContentFocusChanged,
-            focusRequester = focusRequester,
-            contentPadding = PaddingValues(horizontal = 60.dp),
-            cardType = CardType.PORTRAIT,
-            keyExtractor = { item -> 
-                // Try to extract a unique key from common properties
-                when {
-                    item is Any && item::class.java.getDeclaredField("tmdbId") != null -> {
-                        try {
-                            val field = item::class.java.getDeclaredField("tmdbId")
-                            field.isAccessible = true
-                            field.get(item)
-                        } catch (e: Exception) {
-                            item.hashCode()
+        config =
+            MediaRowConfig(
+                title = title,
+                dataSource = DataSource.PagingList(items),
+                selectedIndex = selectedIndex,
+                isRowSelected = isRowSelected,
+                onSelectionChanged = onSelectionChanged,
+                onUpDown = onUpDown,
+                onLeftBoundary = onLeftBoundary,
+                onItemClick = onItemClick,
+                onContentFocusChanged = onContentFocusChanged,
+                focusRequester = focusRequester,
+                contentPadding = PaddingValues(horizontal = 60.dp),
+                cardType = CardType.PORTRAIT,
+                keyExtractor = { item ->
+                    // Try to extract a unique key from common properties
+                    when {
+                        item is Any && item::class.java.getDeclaredField("tmdbId") != null -> {
+                            try {
+                                val field = item::class.java.getDeclaredField("tmdbId")
+                                field.isAccessible = true
+                                field.get(item)
+                            } catch (e: Exception) {
+                                item.hashCode()
+                            }
                         }
+                        else -> item.hashCode()
                     }
-                    else -> item.hashCode()
-                }
-            },
-            itemContent = { item, isSelected ->
-                MediaCard(
-                    title = item.getTitle(),
-                    posterUrl = item.getPosterUrl(),
-                    isSelected = isSelected,
-                    onClick = { onItemClick?.invoke(item) }
-                )
-            }
-        ),
-        modifier = modifier
+                },
+                itemContent = { item, isSelected ->
+                    MediaCard(
+                        title = item.getTitle(),
+                        posterUrl = item.getPosterUrl(),
+                        isSelected = isSelected,
+                        onClick = { onItemClick?.invoke(item) },
+                    )
+                },
+            ),
+        modifier = modifier,
     )
 }
 
@@ -191,34 +194,35 @@ fun MigratedPagingTvShowRow(
     onContentFocusChanged: ((Boolean) -> Unit)? = null,
     currentRowIndex: Int = 0,
     totalRowCount: Int = 1,
-    onItemClick: ((com.strmr.ai.data.database.TvShowEntity) -> Unit)? = null
+    onItemClick: ((com.strmr.ai.data.database.TvShowEntity) -> Unit)? = null,
 ) {
     val lazyPagingItems = pagingFlow.collectAsLazyPagingItems()
-    
+
     UnifiedMediaRow(
-        config = MediaRowConfig(
-            title = title,
-            dataSource = DataSource.PagingList(lazyPagingItems),
-            selectedIndex = selectedIndex,
-            isRowSelected = isRowSelected,
-            onSelectionChanged = onSelectionChanged,
-            onUpDown = onUpDown,
-            onItemClick = onItemClick,
-            onContentFocusChanged = onContentFocusChanged,
-            focusRequester = focusRequester,
-            contentPadding = PaddingValues(horizontal = 60.dp),
-            cardType = CardType.PORTRAIT,
-            keyExtractor = { show -> show.tmdbId },
-            itemContent = { show, isSelected ->
-                MediaCard(
-                    title = show.title,
-                    posterUrl = show.posterUrl,
-                    isSelected = isSelected,
-                    onClick = { onItemClick?.invoke(show) }
-                )
-            }
-        ),
-        modifier = modifier
+        config =
+            MediaRowConfig(
+                title = title,
+                dataSource = DataSource.PagingList(lazyPagingItems),
+                selectedIndex = selectedIndex,
+                isRowSelected = isRowSelected,
+                onSelectionChanged = onSelectionChanged,
+                onUpDown = onUpDown,
+                onItemClick = onItemClick,
+                onContentFocusChanged = onContentFocusChanged,
+                focusRequester = focusRequester,
+                contentPadding = PaddingValues(horizontal = 60.dp),
+                cardType = CardType.PORTRAIT,
+                keyExtractor = { show -> show.tmdbId },
+                itemContent = { show, isSelected ->
+                    MediaCard(
+                        title = show.title,
+                        posterUrl = show.posterUrl,
+                        isSelected = isSelected,
+                        onClick = { onItemClick?.invoke(show) },
+                    )
+                },
+            ),
+        modifier = modifier,
     )
 }
 
@@ -238,26 +242,27 @@ fun <T : Any> EpisodeStyleRow(
     isContentFocused: Boolean = false,
     onContentFocusChanged: ((Boolean) -> Unit)? = null,
     modifier: Modifier = Modifier,
-    itemContent: @Composable (item: T, isSelected: Boolean) -> Unit
+    itemContent: @Composable (item: T, isSelected: Boolean) -> Unit,
 ) {
     UnifiedMediaRow(
-        config = MediaRowConfig(
-            title = title,
-            dataSource = DataSource.RegularList(items),
-            selectedIndex = selectedIndex,
-            isRowSelected = isRowSelected,
-            onSelectionChanged = onSelectionChanged,
-            onUpDown = onUpDown,
-            onItemClick = onItemClick,
-            onContentFocusChanged = onContentFocusChanged,
-            focusRequester = focusRequester,
-            cardType = CardType.LANDSCAPE,
-            itemWidth = 200.dp,
-            itemSpacing = 12.dp,
-            contentPadding = PaddingValues(horizontal = 48.dp),
-            itemContent = itemContent
-        ),
-        modifier = modifier
+        config =
+            MediaRowConfig(
+                title = title,
+                dataSource = DataSource.RegularList(items),
+                selectedIndex = selectedIndex,
+                isRowSelected = isRowSelected,
+                onSelectionChanged = onSelectionChanged,
+                onUpDown = onUpDown,
+                onItemClick = onItemClick,
+                onContentFocusChanged = onContentFocusChanged,
+                focusRequester = focusRequester,
+                cardType = CardType.LANDSCAPE,
+                itemWidth = 200.dp,
+                itemSpacing = 12.dp,
+                contentPadding = PaddingValues(horizontal = 48.dp),
+                itemContent = itemContent,
+            ),
+        modifier = modifier,
     )
 }
 
@@ -275,34 +280,35 @@ fun MigratedCollectionRow(
     onUpDown: ((Int) -> Unit)? = null,
     focusRequester: FocusRequester? = null,
     isContentFocused: Boolean = false,
-    onContentFocusChanged: ((Boolean) -> Unit)? = null
+    onContentFocusChanged: ((Boolean) -> Unit)? = null,
 ) {
     if (collectionMovies.isEmpty()) return
-    
+
     UnifiedMediaRow(
-        config = MediaRowConfig(
-            title = "Part of Collection",
-            dataSource = DataSource.RegularList(collectionMovies.take(10)),
-            selectedIndex = selectedIndex,
-            isRowSelected = isRowSelected,
-            onSelectionChanged = onSelectionChanged,
-            onUpDown = onUpDown,
-            onItemClick = onItemClick,
-            onContentFocusChanged = onContentFocusChanged,
-            focusRequester = focusRequester,
-            cardType = CardType.PORTRAIT,
-            itemWidth = 90.dp,
-            itemSpacing = 12.dp,
-            contentPadding = PaddingValues(horizontal = 48.dp),
-            itemContent = { movie, isSelected ->
-                CollectionMovieCard(
-                    movie = movie,
-                    onClick = { onItemClick(movie) },
-                    isSelected = isSelected
-                )
-            }
-        ),
-        modifier = modifier
+        config =
+            MediaRowConfig(
+                title = "Part of Collection",
+                dataSource = DataSource.RegularList(collectionMovies.take(10)),
+                selectedIndex = selectedIndex,
+                isRowSelected = isRowSelected,
+                onSelectionChanged = onSelectionChanged,
+                onUpDown = onUpDown,
+                onItemClick = onItemClick,
+                onContentFocusChanged = onContentFocusChanged,
+                focusRequester = focusRequester,
+                cardType = CardType.PORTRAIT,
+                itemWidth = 90.dp,
+                itemSpacing = 12.dp,
+                contentPadding = PaddingValues(horizontal = 48.dp),
+                itemContent = { movie, isSelected ->
+                    CollectionMovieCard(
+                        movie = movie,
+                        onClick = { onItemClick(movie) },
+                        isSelected = isSelected,
+                    )
+                },
+            ),
+        modifier = modifier,
     )
 }
 
@@ -320,35 +326,36 @@ fun MigratedSimilarContentRow(
     onUpDown: ((Int) -> Unit)? = null,
     focusRequester: FocusRequester? = null,
     isContentFocused: Boolean = false,
-    onContentFocusChanged: ((Boolean) -> Unit)? = null
+    onContentFocusChanged: ((Boolean) -> Unit)? = null,
 ) {
     if (similarContent.isEmpty()) return
-    
+
     val title = "Similar ${if (similarContent.firstOrNull()?.mediaType == "movie") "Movies" else "TV Shows"}"
-    
+
     UnifiedMediaRow(
-        config = MediaRowConfig(
-            title = title,
-            dataSource = DataSource.RegularList(similarContent.take(10)),
-            selectedIndex = selectedIndex,
-            isRowSelected = isRowSelected,
-            onSelectionChanged = onSelectionChanged,
-            onUpDown = onUpDown,
-            onItemClick = onItemClick,
-            onContentFocusChanged = onContentFocusChanged,
-            focusRequester = focusRequester,
-            cardType = CardType.PORTRAIT,
-            itemWidth = 90.dp,
-            itemSpacing = 12.dp,
-            contentPadding = PaddingValues(horizontal = 48.dp),
-            itemContent = { content, isSelected ->
-                SimilarContentCard(
-                    content = content,
-                    onClick = { onItemClick(content) },
-                    isSelected = isSelected
-                )
-            }
-        ),
-        modifier = modifier
+        config =
+            MediaRowConfig(
+                title = title,
+                dataSource = DataSource.RegularList(similarContent.take(10)),
+                selectedIndex = selectedIndex,
+                isRowSelected = isRowSelected,
+                onSelectionChanged = onSelectionChanged,
+                onUpDown = onUpDown,
+                onItemClick = onItemClick,
+                onContentFocusChanged = onContentFocusChanged,
+                focusRequester = focusRequester,
+                cardType = CardType.PORTRAIT,
+                itemWidth = 90.dp,
+                itemSpacing = 12.dp,
+                contentPadding = PaddingValues(horizontal = 48.dp),
+                itemContent = { content, isSelected ->
+                    SimilarContentCard(
+                        content = content,
+                        onClick = { onItemClick(content) },
+                        isSelected = isSelected,
+                    )
+                },
+            ),
+        modifier = modifier,
     )
 }

@@ -15,4 +15,4 @@ interface TraktRatingsDao {
 
     @Query("DELETE FROM trakt_ratings WHERE updatedAt < :expiry")
     suspend fun deleteOldRatings(expiry: Long)
-} 
+}

@@ -12,4 +12,4 @@ interface OmdbRatingsDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOmdbRatings(entity: OmdbRatingsEntity)
-} 
+}

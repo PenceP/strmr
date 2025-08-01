@@ -1,9 +1,9 @@
 package com.strmr.ai.data.mapper
 
-import com.strmr.ai.data.database.MovieEntity
 import com.strmr.ai.data.Actor
 import com.strmr.ai.data.BelongsToCollection
 import com.strmr.ai.data.SimilarContent
+import com.strmr.ai.data.database.MovieEntity
 import com.strmr.ai.domain.model.MovieId
 import com.strmr.ai.domain.model.TmdbId
 import org.junit.Assert.*
@@ -11,7 +11,6 @@ import org.junit.Before
 import org.junit.Test
 
 class MovieMapperTest {
-
     private lateinit var movieMapper: MovieMapper
 
     @Before
@@ -22,48 +21,52 @@ class MovieMapperTest {
     @Test
     fun `mapToDomain maps MovieEntity to Movie correctly`() {
         // Given
-        val movieEntity = MovieEntity(
-            tmdbId = 123,
-            imdbId = "tt1234567",
-            title = "Test Movie",
-            posterUrl = "https://image.tmdb.org/poster.jpg",
-            backdropUrl = "https://image.tmdb.org/backdrop.jpg",
-            overview = "Test overview",
-            rating = 8.5f,
-            logoUrl = "https://image.tmdb.org/logo.jpg",
-            traktRating = null,
-            traktVotes = null,
-            year = 2023,
-            releaseDate = "2023-01-01",
-            runtime = 120,
-            genres = listOf("Action", "Drama"),
-            cast = listOf(
-                Actor(
-                    id = 1,
-                    name = "Test Actor",
-                    character = "Test Character",
-                    profilePath = "/actor_profile.jpg"
-                )
-            ),
-            similar = listOf(
-                SimilarContent(
-                    tmdbId = 456,
-                    title = "Similar Movie",
-                    posterUrl = "/similar_poster.jpg",
-                    backdropUrl = "/similar_backdrop.jpg",
-                    rating = 7.5f,
-                    year = 2023,
-                    mediaType = "movie"
-                )
-            ),
-            belongsToCollection = BelongsToCollection(
-                id = 1,
-                name = "Test Collection",
-                poster_path = "/collection_poster.jpg",
-                backdrop_path = "/collection_backdrop.jpg"
-            ),
-            lastUpdated = System.currentTimeMillis()
-        )
+        val movieEntity =
+            MovieEntity(
+                tmdbId = 123,
+                imdbId = "tt1234567",
+                title = "Test Movie",
+                posterUrl = "https://image.tmdb.org/poster.jpg",
+                backdropUrl = "https://image.tmdb.org/backdrop.jpg",
+                overview = "Test overview",
+                rating = 8.5f,
+                logoUrl = "https://image.tmdb.org/logo.jpg",
+                traktRating = null,
+                traktVotes = null,
+                year = 2023,
+                releaseDate = "2023-01-01",
+                runtime = 120,
+                genres = listOf("Action", "Drama"),
+                cast =
+                    listOf(
+                        Actor(
+                            id = 1,
+                            name = "Test Actor",
+                            character = "Test Character",
+                            profilePath = "/actor_profile.jpg",
+                        ),
+                    ),
+                similar =
+                    listOf(
+                        SimilarContent(
+                            tmdbId = 456,
+                            title = "Similar Movie",
+                            posterUrl = "/similar_poster.jpg",
+                            backdropUrl = "/similar_backdrop.jpg",
+                            rating = 7.5f,
+                            year = 2023,
+                            mediaType = "movie",
+                        ),
+                    ),
+                belongsToCollection =
+                    BelongsToCollection(
+                        id = 1,
+                        name = "Test Collection",
+                        poster_path = "/collection_poster.jpg",
+                        backdrop_path = "/collection_backdrop.jpg",
+                    ),
+                lastUpdated = System.currentTimeMillis(),
+            )
 
         // When
         val domainMovie = movieMapper.mapToDomain(movieEntity)
@@ -94,26 +97,27 @@ class MovieMapperTest {
     @Test
     fun `mapToDomain handles null values correctly`() {
         // Given
-        val movieEntity = MovieEntity(
-            tmdbId = 123,
-            imdbId = null,
-            title = "Test Movie",
-            posterUrl = null,
-            backdropUrl = null,
-            overview = null,
-            rating = null,
-            logoUrl = null,
-            traktRating = null,
-            traktVotes = null,
-            year = null,
-            releaseDate = null,
-            runtime = null,
-            genres = emptyList(),
-            cast = emptyList(),
-            similar = emptyList(),
-            belongsToCollection = null,
-            lastUpdated = System.currentTimeMillis()
-        )
+        val movieEntity =
+            MovieEntity(
+                tmdbId = 123,
+                imdbId = null,
+                title = "Test Movie",
+                posterUrl = null,
+                backdropUrl = null,
+                overview = null,
+                rating = null,
+                logoUrl = null,
+                traktRating = null,
+                traktVotes = null,
+                year = null,
+                releaseDate = null,
+                runtime = null,
+                genres = emptyList(),
+                cast = emptyList(),
+                similar = emptyList(),
+                belongsToCollection = null,
+                lastUpdated = System.currentTimeMillis(),
+            )
 
         // When
         val domainMovie = movieMapper.mapToDomain(movieEntity)
@@ -137,26 +141,27 @@ class MovieMapperTest {
     @Test
     fun `mapToDomain with empty collections returns empty lists`() {
         // Given
-        val movieEntity = MovieEntity(
-            tmdbId = 123,
-            imdbId = "tt1234567",
-            title = "Test Movie",
-            posterUrl = "https://example.com/poster.jpg",
-            backdropUrl = "https://example.com/backdrop.jpg",
-            overview = "Test overview",
-            rating = 8.0f,
-            logoUrl = null,
-            traktRating = null,
-            traktVotes = null,
-            year = 2023,
-            releaseDate = "2023-01-01",
-            runtime = 120,
-            genres = emptyList(),
-            cast = emptyList(),
-            similar = emptyList(),
-            belongsToCollection = null,
-            lastUpdated = System.currentTimeMillis()
-        )
+        val movieEntity =
+            MovieEntity(
+                tmdbId = 123,
+                imdbId = "tt1234567",
+                title = "Test Movie",
+                posterUrl = "https://example.com/poster.jpg",
+                backdropUrl = "https://example.com/backdrop.jpg",
+                overview = "Test overview",
+                rating = 8.0f,
+                logoUrl = null,
+                traktRating = null,
+                traktVotes = null,
+                year = 2023,
+                releaseDate = "2023-01-01",
+                runtime = 120,
+                genres = emptyList(),
+                cast = emptyList(),
+                similar = emptyList(),
+                belongsToCollection = null,
+                lastUpdated = System.currentTimeMillis(),
+            )
 
         // When
         val domainMovie = movieMapper.mapToDomain(movieEntity)
@@ -171,26 +176,27 @@ class MovieMapperTest {
     @Test
     fun `mapToDomain correctly maps runtime`() {
         // Given
-        val movieEntity = MovieEntity(
-            tmdbId = 123,
-            imdbId = "tt1234567",
-            title = "Test Movie",
-            posterUrl = "https://example.com/poster.jpg",
-            backdropUrl = "https://example.com/backdrop.jpg",
-            overview = "Test overview",
-            rating = 8.0f,
-            logoUrl = null,
-            traktRating = null,
-            traktVotes = null,
-            year = 2023,
-            releaseDate = "2023-01-01",
-            runtime = 150,
-            genres = emptyList(),
-            cast = emptyList(),
-            similar = emptyList(),
-            belongsToCollection = null,
-            lastUpdated = System.currentTimeMillis()
-        )
+        val movieEntity =
+            MovieEntity(
+                tmdbId = 123,
+                imdbId = "tt1234567",
+                title = "Test Movie",
+                posterUrl = "https://example.com/poster.jpg",
+                backdropUrl = "https://example.com/backdrop.jpg",
+                overview = "Test overview",
+                rating = 8.0f,
+                logoUrl = null,
+                traktRating = null,
+                traktVotes = null,
+                year = 2023,
+                releaseDate = "2023-01-01",
+                runtime = 150,
+                genres = emptyList(),
+                cast = emptyList(),
+                similar = emptyList(),
+                belongsToCollection = null,
+                lastUpdated = System.currentTimeMillis(),
+            )
 
         // When
         val domainMovie = movieMapper.mapToDomain(movieEntity)

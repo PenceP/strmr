@@ -6,7 +6,7 @@ package com.strmr.ai.domain.repository
 data class SearchResults(
     val movies: List<SearchMovie> = emptyList(),
     val tvShows: List<SearchTvShow> = emptyList(),
-    val people: List<SearchPerson> = emptyList()
+    val people: List<SearchPerson> = emptyList(),
 )
 
 /**
@@ -18,7 +18,7 @@ data class SearchMovie(
     val year: Int? = null,
     val overview: String? = null,
     val posterUrl: String? = null,
-    val rating: Float? = null
+    val rating: Float? = null,
 )
 
 data class SearchTvShow(
@@ -27,36 +27,35 @@ data class SearchTvShow(
     val year: Int? = null,
     val overview: String? = null,
     val posterUrl: String? = null,
-    val rating: Float? = null
+    val rating: Float? = null,
 )
 
 data class SearchPerson(
     val tmdbId: Int,
     val name: String,
     val profileUrl: String? = null,
-    val knownFor: String? = null
+    val knownFor: String? = null,
 )
 
 /**
  * Clean domain repository interface for search functionality
  */
 interface SearchRepository {
-    
     /**
      * Search across multiple sources (Trakt + TMDB) and return unified results
      */
     suspend fun searchMultiSource(query: String): SearchResults
-    
+
     /**
      * Search only movies
      */
     suspend fun searchMovies(query: String): List<SearchMovie>
-    
+
     /**
      * Search only TV shows
      */
     suspend fun searchTvShows(query: String): List<SearchTvShow>
-    
+
     /**
      * Search only people
      */

@@ -8,22 +8,6 @@ import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.strmr.ai.data.database.converters.ListConverter
-import com.strmr.ai.data.database.PlaybackEntity
-import com.strmr.ai.data.database.ContinueWatchingEntity
-import com.strmr.ai.data.database.TraktUserProfileEntity
-import com.strmr.ai.data.database.TraktUserStatsEntity
-import com.strmr.ai.data.database.PlaybackDao
-import com.strmr.ai.data.database.ContinueWatchingDao
-import com.strmr.ai.data.database.TraktUserProfileDao
-import com.strmr.ai.data.database.TraktUserStatsDao
-import com.strmr.ai.data.database.OmdbRatingsEntity
-import com.strmr.ai.data.database.OmdbRatingsDao
-import com.strmr.ai.data.database.SeasonEntity
-import com.strmr.ai.data.database.EpisodeEntity
-import com.strmr.ai.data.database.SeasonDao
-import com.strmr.ai.data.database.EpisodeDao
-import com.strmr.ai.data.database.TraktRatingsEntity
-import com.strmr.ai.data.database.TraktRatingsDao
 import com.strmr.ai.utils.DatabaseOptimizer
 
 @Database(
@@ -41,26 +25,37 @@ import com.strmr.ai.utils.DatabaseOptimizer
         CollectionEntity::class,
         TraktRatingsEntity::class,
         IntermediateViewEntity::class,
-        IntermediateViewItemEntity::class
+        IntermediateViewItemEntity::class,
     ],
-    version = 13, // bumped for performance indices
-    exportSchema = false
+    version = 14, // bumped for recommendedMoviesOrder field
+    exportSchema = false,
 )
 @TypeConverters(ListConverter::class)
 abstract class StrmrDatabase : RoomDatabase() {
-
     abstract fun movieDao(): MovieDao
+
     abstract fun tvShowDao(): TvShowDao
+
     abstract fun accountDao(): AccountDao
+
     abstract fun playbackDao(): PlaybackDao
+
     abstract fun continueWatchingDao(): ContinueWatchingDao
+
     abstract fun traktUserProfileDao(): TraktUserProfileDao
+
     abstract fun traktUserStatsDao(): TraktUserStatsDao
+
     abstract fun omdbRatingsDao(): OmdbRatingsDao
+
     abstract fun seasonDao(): SeasonDao
+
     abstract fun episodeDao(): EpisodeDao
+
     abstract fun collectionDao(): CollectionDao
+
     abstract fun traktRatingsDao(): TraktRatingsDao
+
     abstract fun intermediateViewDao(): IntermediateViewDao
 
     companion object {
@@ -68,10 +63,12 @@ abstract class StrmrDatabase : RoomDatabase() {
         private var INSTANCE: StrmrDatabase? = null
 
         // Migration from version 11 to 12
-        private val MIGRATION_11_12 = object : Migration(11, 12) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                // Create intermediate_views table
-                database.execSQL("""
+        private val MIGRATION_11_12 =
+            object : Migration(11, 12) {
+                override fun migrate(database: SupportSQLiteDatabase) {
+                    // Create intermediate_views table
+                    database.execSQL(
+                        """
                     CREATE TABLE intermediate_views (
                         id TEXT PRIMARY KEY NOT NULL,
                         viewType TEXT NOT NULL,
@@ -84,10 +81,12 @@ abstract class StrmrDatabase : RoomDatabase() {
                         page INTEGER NOT NULL DEFAULT 1,
                         pageSize INTEGER NOT NULL DEFAULT 20
                     )
-                """)
-                
-                // Create intermediate_view_items table
-                database.execSQL("""
+                """,
+                    )
+
+                    // Create intermediate_view_items table
+                    database.execSQL(
+                        """
                     CREATE TABLE intermediate_view_items (
                         intermediateViewId TEXT NOT NULL,
                         mediaType TEXT NOT NULL,
@@ -96,24 +95,29 @@ abstract class StrmrDatabase : RoomDatabase() {
                         addedAt INTEGER NOT NULL DEFAULT 0,
                         PRIMARY KEY (intermediateViewId, mediaType, tmdbId)
                     )
-                """)
-                
-                // Create indices for better performance
-                database.execSQL("CREATE INDEX idx_intermediate_views_type ON intermediate_views(viewType)")
-                database.execSQL("CREATE INDEX idx_intermediate_views_updated ON intermediate_views(lastUpdated)")
-                database.execSQL("CREATE INDEX idx_intermediate_view_items_view ON intermediate_view_items(intermediateViewId)")
-                database.execSQL("CREATE INDEX idx_intermediate_view_items_order ON intermediate_view_items(intermediateViewId, orderIndex)")
-                
-                // Add rating column to episodes table
-                database.execSQL("ALTER TABLE episodes ADD COLUMN rating REAL")
+                """,
+                    )
+
+                    // Create indices for better performance
+                    database.execSQL("CREATE INDEX idx_intermediate_views_type ON intermediate_views(viewType)")
+                    database.execSQL("CREATE INDEX idx_intermediate_views_updated ON intermediate_views(lastUpdated)")
+                    database.execSQL("CREATE INDEX idx_intermediate_view_items_view ON intermediate_view_items(intermediateViewId)")
+                    database.execSQL(
+                        "CREATE INDEX idx_intermediate_view_items_order ON intermediate_view_items(intermediateViewId, orderIndex)",
+                    )
+
+                    // Add rating column to episodes table
+                    database.execSQL("ALTER TABLE episodes ADD COLUMN rating REAL")
+                }
             }
-        }
 
         // Migration from version 10 to 11
-        private val MIGRATION_10_11 = object : Migration(10, 11) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                // Create continue_watching table
-                database.execSQL("""
+        private val MIGRATION_10_11 =
+            object : Migration(10, 11) {
+                override fun migrate(database: SupportSQLiteDatabase) {
+                    // Create continue_watching table
+                    database.execSQL(
+                        """
                     CREATE TABLE continue_watching (
                         id TEXT PRIMARY KEY NOT NULL,
                         type TEXT NOT NULL,
@@ -135,18 +139,21 @@ abstract class StrmrDatabase : RoomDatabase() {
                         isNextEpisode INTEGER NOT NULL DEFAULT 0,
                         isInProgress INTEGER NOT NULL DEFAULT 0
                     )
-                """)
+                """,
+                    )
+                }
             }
-        }
 
         // Migration from version 9 to 10
-        private val MIGRATION_9_10 = object : Migration(9, 10) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                // Add belongsToCollection column to movies table
-                database.execSQL("ALTER TABLE movies ADD COLUMN belongsToCollection TEXT")
-                
-                // Create collections table
-                database.execSQL("""
+        private val MIGRATION_9_10 =
+            object : Migration(9, 10) {
+                override fun migrate(database: SupportSQLiteDatabase) {
+                    // Add belongsToCollection column to movies table
+                    database.execSQL("ALTER TABLE movies ADD COLUMN belongsToCollection TEXT")
+
+                    // Create collections table
+                    database.execSQL(
+                        """
                     CREATE TABLE collections (
                         id INTEGER PRIMARY KEY NOT NULL,
                         name TEXT NOT NULL,
@@ -156,59 +163,64 @@ abstract class StrmrDatabase : RoomDatabase() {
                         parts TEXT NOT NULL DEFAULT '[]',
                         lastUpdated INTEGER NOT NULL DEFAULT 0
                     )
-                """)
+                """,
+                    )
+                }
             }
-        }
 
         // Migration from version 8 to 9
-        private val MIGRATION_8_9 = object : Migration(8, 9) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                // Add similar column to movies table with default empty list
-                database.execSQL("ALTER TABLE movies ADD COLUMN similar TEXT NOT NULL DEFAULT '[]'")
-                
-                // Add similar column to tv_shows table with default empty list
-                database.execSQL("ALTER TABLE tv_shows ADD COLUMN similar TEXT NOT NULL DEFAULT '[]'")
+        private val MIGRATION_8_9 =
+            object : Migration(8, 9) {
+                override fun migrate(database: SupportSQLiteDatabase) {
+                    // Add similar column to movies table with default empty list
+                    database.execSQL("ALTER TABLE movies ADD COLUMN similar TEXT NOT NULL DEFAULT '[]'")
+
+                    // Add similar column to tv_shows table with default empty list
+                    database.execSQL("ALTER TABLE tv_shows ADD COLUMN similar TEXT NOT NULL DEFAULT '[]'")
+                }
             }
-        }
 
         // Migration from version 3 to 4
-        private val MIGRATION_3_4 = object : Migration(3, 4) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                // Add trendingOrder column to movies table
-                database.execSQL("ALTER TABLE movies ADD COLUMN trendingOrder INTEGER")
-                
-                // Add popularOrder column to movies table
-                database.execSQL("ALTER TABLE movies ADD COLUMN popularOrder INTEGER")
-                
-                // Add trendingOrder column to tv_shows table
-                database.execSQL("ALTER TABLE tv_shows ADD COLUMN trendingOrder INTEGER")
+        private val MIGRATION_3_4 =
+            object : Migration(3, 4) {
+                override fun migrate(database: SupportSQLiteDatabase) {
+                    // Add trendingOrder column to movies table
+                    database.execSQL("ALTER TABLE movies ADD COLUMN trendingOrder INTEGER")
+
+                    // Add popularOrder column to movies table
+                    database.execSQL("ALTER TABLE movies ADD COLUMN popularOrder INTEGER")
+
+                    // Add trendingOrder column to tv_shows table
+                    database.execSQL("ALTER TABLE tv_shows ADD COLUMN trendingOrder INTEGER")
+                }
             }
-        }
-        
+
         // Migration from version 2 to 3
-        private val MIGRATION_2_3 = object : Migration(2, 3) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                // Add popularOrder column to tv_shows table
-                database.execSQL("ALTER TABLE tv_shows ADD COLUMN popularOrder INTEGER")
+        private val MIGRATION_2_3 =
+            object : Migration(2, 3) {
+                override fun migrate(database: SupportSQLiteDatabase) {
+                    // Add popularOrder column to tv_shows table
+                    database.execSQL("ALTER TABLE tv_shows ADD COLUMN popularOrder INTEGER")
+                }
             }
-        }
 
         fun getDatabase(context: Context): StrmrDatabase {
             return INSTANCE ?: synchronized(this) {
-                val baseBuilder = Room.databaseBuilder(
-                    context.applicationContext,
-                    StrmrDatabase::class.java,
-                    "strmr_database"
-                )
-                    .addMigrations(
-                        MIGRATION_10_11,
-                        MIGRATION_9_10,
-                        MIGRATION_8_9,
-                        MIGRATION_11_12,
-                        DatabaseOptimizer.MIGRATION_PERFORMANCE_INDICES
+                val baseBuilder =
+                    Room.databaseBuilder(
+                        context.applicationContext,
+                        StrmrDatabase::class.java,
+                        "strmr_database",
                     )
-                    .fallbackToDestructiveMigration()
-                
+                        .addMigrations(
+                            MIGRATION_10_11,
+                            MIGRATION_9_10,
+                            MIGRATION_8_9,
+                            MIGRATION_11_12,
+                            DatabaseOptimizer.MIGRATION_PERFORMANCE_INDICES,
+                        )
+                        .fallbackToDestructiveMigration()
+
                 // Apply database optimizations
                 val optimizedBuilder = DatabaseOptimizer.optimizeDatabaseBuilder(baseBuilder)
                 val instance = optimizedBuilder.build()
@@ -217,4 +229,4 @@ abstract class StrmrDatabase : RoomDatabase() {
             }
         }
     }
-} 
+}

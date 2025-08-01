@@ -1,40 +1,51 @@
 package com.strmr.ai.data
 
+import com.strmr.ai.BuildConfig
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import okhttp3.logging.HttpLoggingInterceptor
-import com.strmr.ai.data.OmdbApiService
-import com.strmr.ai.BuildConfig
 import java.security.cert.X509Certificate
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 
 object RetrofitInstance {
-
     private val traktClient: OkHttpClient by lazy {
-        val logging = okhttp3.logging.HttpLoggingInterceptor().apply {
-            level = okhttp3.logging.HttpLoggingInterceptor.Level.HEADERS
-        }
-        
+        val logging =
+            okhttp3.logging.HttpLoggingInterceptor().apply {
+                level = okhttp3.logging.HttpLoggingInterceptor.Level.HEADERS
+            }
+
         // Create a trust manager that accepts all certificates (for development)
-        val trustAllCerts = arrayOf<TrustManager>(object : X509TrustManager {
-            override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
-            override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {}
-            override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
-        })
-        
+        val trustAllCerts =
+            arrayOf<TrustManager>(
+                object : X509TrustManager {
+                    override fun checkClientTrusted(
+                        chain: Array<X509Certificate>,
+                        authType: String,
+                    ) {}
+
+                    override fun checkServerTrusted(
+                        chain: Array<X509Certificate>,
+                        authType: String,
+                    ) {}
+
+                    override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+                },
+            )
+
         val sslContext = SSLContext.getInstance("SSL")
         sslContext.init(null, trustAllCerts, java.security.SecureRandom())
-        
+
         OkHttpClient.Builder()
             .addInterceptor { chain ->
-                val request = chain.request().newBuilder()
-                    .addHeader("trakt-api-key", BuildConfig.TRAKT_API_KEY)
-                    .addHeader("trakt-api-version", "2")
-                    .build()
+                val request =
+                    chain.request().newBuilder()
+                        .addHeader("trakt-api-key", BuildConfig.TRAKT_API_KEY)
+                        .addHeader("trakt-api-version", "2")
+                        .build()
                 chain.proceed(request)
             }
             .addInterceptor(logging)
@@ -53,20 +64,32 @@ object RetrofitInstance {
 
     private val tmdbClient: OkHttpClient by lazy {
         // Create a trust manager that accepts all certificates (for development)
-        val trustAllCerts = arrayOf<TrustManager>(object : X509TrustManager {
-            override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
-            override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {}
-            override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
-        })
+        val trustAllCerts =
+            arrayOf<TrustManager>(
+                object : X509TrustManager {
+                    override fun checkClientTrusted(
+                        chain: Array<X509Certificate>,
+                        authType: String,
+                    ) {}
+
+                    override fun checkServerTrusted(
+                        chain: Array<X509Certificate>,
+                        authType: String,
+                    ) {}
+
+                    override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+                },
+            )
 
         val sslContext = SSLContext.getInstance("SSL")
         sslContext.init(null, trustAllCerts, java.security.SecureRandom())
 
         OkHttpClient.Builder()
             .addInterceptor { chain ->
-                val request = chain.request().newBuilder()
-                    .addHeader("Authorization", "Bearer ${BuildConfig.TMDB_READ_KEY}")
-                    .build()
+                val request =
+                    chain.request().newBuilder()
+                        .addHeader("Authorization", "Bearer ${BuildConfig.TMDB_READ_KEY}")
+                        .build()
                 chain.proceed(request)
             }
             .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
@@ -110,79 +133,112 @@ object RetrofitInstance {
 
     // Create authenticated Trakt API service with Bearer token
     fun createAuthenticatedTraktService(accessToken: String): TraktAuthenticatedApiService {
-        val authInterceptor = Interceptor { chain ->
-            val original = chain.request()
-            val request = original.newBuilder()
-                .header("Authorization", "Bearer $accessToken")
-                .header("trakt-api-key", BuildConfig.TRAKT_API_KEY)
-                .method(original.method, original.body)
-                .build()
-            chain.proceed(request)
-        }
+        val authInterceptor =
+            Interceptor { chain ->
+                val original = chain.request()
+                val request =
+                    original.newBuilder()
+                        .header("Authorization", "Bearer $accessToken")
+                        .header("trakt-api-key", BuildConfig.TRAKT_API_KEY)
+                        .method(original.method, original.body)
+                        .build()
+                chain.proceed(request)
+            }
 
         // Create a trust manager that accepts all certificates (for development)
-        val trustAllCerts = arrayOf<TrustManager>(object : X509TrustManager {
-            override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
-            override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {}
-            override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
-        })
-        
+        val trustAllCerts =
+            arrayOf<TrustManager>(
+                object : X509TrustManager {
+                    override fun checkClientTrusted(
+                        chain: Array<X509Certificate>,
+                        authType: String,
+                    ) {}
+
+                    override fun checkServerTrusted(
+                        chain: Array<X509Certificate>,
+                        authType: String,
+                    ) {}
+
+                    override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+                },
+            )
+
         val sslContext = SSLContext.getInstance("SSL")
         sslContext.init(null, trustAllCerts, java.security.SecureRandom())
 
-        val client = OkHttpClient.Builder()
-            .addInterceptor(authInterceptor)
-            .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
-            .hostnameVerifier { _, _ -> true }
-            .build()
+        val client =
+            OkHttpClient.Builder()
+                .addInterceptor(authInterceptor)
+                .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
+                .hostnameVerifier { _, _ -> true }
+                .build()
 
-        val authenticatedRetrofit = Retrofit.Builder()
-            .baseUrl("https://api.trakt.tv/")
-            .client(client)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
+        val authenticatedRetrofit =
+            Retrofit.Builder()
+                .baseUrl("https://api.trakt.tv/")
+                .client(client)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build()
 
         return authenticatedRetrofit.create(TraktAuthenticatedApiService::class.java)
     }
 
     // Create authenticated Trakt API service with Bearer token and optional logging
-    fun createAuthenticatedTraktServiceWithLogging(accessToken: String, logging: HttpLoggingInterceptor? = null): TraktAuthenticatedApiService {
-        val authInterceptor = Interceptor { chain ->
-            val original = chain.request()
-            val request = original.newBuilder()
-                .header("Authorization", "Bearer ${accessToken.trim()}")
-                .header("trakt-api-key", BuildConfig.TRAKT_API_KEY)
-                .header("trakt-api-version", "2")
-                .method(original.method, original.body)
-                .build()
-            chain.proceed(request)
-        }
+    fun createAuthenticatedTraktServiceWithLogging(
+        accessToken: String,
+        logging: HttpLoggingInterceptor? = null,
+    ): TraktAuthenticatedApiService {
+        val authInterceptor =
+            Interceptor { chain ->
+                val original = chain.request()
+                val request =
+                    original.newBuilder()
+                        .header("Authorization", "Bearer ${accessToken.trim()}")
+                        .header("trakt-api-key", BuildConfig.TRAKT_API_KEY)
+                        .header("trakt-api-version", "2")
+                        .method(original.method, original.body)
+                        .build()
+                chain.proceed(request)
+            }
 
         // Create a trust manager that accepts all certificates (for development)
-        val trustAllCerts = arrayOf<TrustManager>(object : X509TrustManager {
-            override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
-            override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {}
-            override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
-        })
-        
+        val trustAllCerts =
+            arrayOf<TrustManager>(
+                object : X509TrustManager {
+                    override fun checkClientTrusted(
+                        chain: Array<X509Certificate>,
+                        authType: String,
+                    ) {}
+
+                    override fun checkServerTrusted(
+                        chain: Array<X509Certificate>,
+                        authType: String,
+                    ) {}
+
+                    override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+                },
+            )
+
         val sslContext = SSLContext.getInstance("SSL")
         sslContext.init(null, trustAllCerts, java.security.SecureRandom())
 
-        val clientBuilder = OkHttpClient.Builder()
-            .addInterceptor(authInterceptor)
-            .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
-            .hostnameVerifier { _, _ -> true }
+        val clientBuilder =
+            OkHttpClient.Builder()
+                .addInterceptor(authInterceptor)
+                .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
+                .hostnameVerifier { _, _ -> true }
         if (logging != null) {
             clientBuilder.addInterceptor(logging)
         }
         val client = clientBuilder.build()
 
-        val authenticatedRetrofit = Retrofit.Builder()
-            .baseUrl("https://api.trakt.tv/")
-            .client(client)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
+        val authenticatedRetrofit =
+            Retrofit.Builder()
+                .baseUrl("https://api.trakt.tv/")
+                .client(client)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build()
 
         return authenticatedRetrofit.create(TraktAuthenticatedApiService::class.java)
     }
-} 
+}

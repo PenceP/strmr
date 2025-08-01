@@ -11,5 +11,5 @@ data class TraktUserStatsEntity(
     val seasonsJson: String,
     val episodesJson: String,
     val networkJson: String,
-    val ratingsJson: String
-) 
+    val ratingsJson: String,
+)

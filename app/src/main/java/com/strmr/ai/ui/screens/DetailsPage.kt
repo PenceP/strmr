@@ -1,101 +1,72 @@
 @file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+
 package com.strmr.ai.ui.screens
 
+import android.util.Log
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ButtonDefaults
-import com.strmr.ai.ui.theme.Purple40
-import com.strmr.ai.ui.theme.StrmrConstants
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Queue
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import com.strmr.ai.data.database.MovieEntity
-import com.strmr.ai.data.database.TvShowEntity
-import com.strmr.ai.data.OmdbResponse
-import com.strmr.ai.data.OmdbRepository
-import com.strmr.ai.data.TvShowRepository
-import com.strmr.ai.data.database.SeasonEntity
-import com.strmr.ai.data.database.EpisodeEntity
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.res.painterResource
-import com.strmr.ai.R
-import androidx.compose.foundation.Image
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Queue
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material3.Icon
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsFocusedAsState
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.focusable
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.tween
-import com.strmr.ai.data.Actor
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.type
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.foundation.relocation.bringIntoViewRequester
-import kotlinx.coroutines.launch
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.layout.boundsInParent
-import com.strmr.ai.ui.components.MediaHero
-import com.strmr.ai.ui.components.MediaDetails
-import com.strmr.ai.ui.components.DetailsContentRow
-import com.strmr.ai.ui.components.UnifiedMediaRow
-import com.strmr.ai.ui.components.MediaRowConfig
-import com.strmr.ai.ui.components.DataSource
-import com.strmr.ai.ui.components.CardType
-import com.strmr.ai.ui.components.DetailsContentData
-import android.util.Log
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.TileMode
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.border
-import com.strmr.ai.ui.screens.MediaDetailsType
-import com.strmr.ai.utils.DateFormatter
-import androidx.compose.material.icons.filled.Visibility
-import com.strmr.ai.data.MovieRepository
-import com.strmr.ai.data.SimilarContent
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewModelScope
+import coil.compose.AsyncImage
+import com.strmr.ai.R
+import com.strmr.ai.data.Actor
+import com.strmr.ai.data.OmdbResponse
+import com.strmr.ai.data.SimilarContent
+import com.strmr.ai.data.database.EpisodeEntity
+import com.strmr.ai.data.database.MovieEntity
+import com.strmr.ai.data.database.SeasonEntity
+import com.strmr.ai.data.database.TvShowEntity
+import com.strmr.ai.ui.components.CardType
+import com.strmr.ai.ui.components.DataSource
+import com.strmr.ai.ui.components.DetailsContentData
+import com.strmr.ai.ui.components.DetailsContentRow
+import com.strmr.ai.ui.components.MediaDetails
+import com.strmr.ai.ui.components.MediaHero
+import com.strmr.ai.ui.components.MediaRowConfig
+import com.strmr.ai.ui.components.UnifiedMediaRow
 import com.strmr.ai.ui.components.rememberSelectionManager
-import androidx.compose.runtime.rememberCoroutineScope
+import com.strmr.ai.ui.theme.StrmrConstants
+import com.strmr.ai.utils.DateFormatter
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 sealed class MediaDetailsType {
     data class Movie(val movie: MovieEntity) : MediaDetailsType()
+
     data class TvShow(val show: TvShowEntity) : MediaDetailsType()
 }
 
@@ -111,14 +82,17 @@ fun DetailsPage(
     onTrailer: (String, String) -> Unit = { _, _ -> }, // Trailer navigation callback
     onMoreEpisodes: () -> Unit = {},
     cachedSeason: Int? = null,
-    cachedEpisode: Int? = null
+    cachedEpisode: Int? = null,
 ) {
-    Log.d("DetailsPage", "🎬 DetailsPage composable called with mediaDetails: ${when(mediaDetails) {
-        is MediaDetailsType.Movie -> "Movie: ${mediaDetails.movie.title}"
-        is MediaDetailsType.TvShow -> "TvShow: ${mediaDetails.show.title}"
-        null -> "null"
-    }}")
-    
+    Log.d(
+        "DetailsPage",
+        "🎬 DetailsPage composable called with mediaDetails: ${when (mediaDetails) {
+            is MediaDetailsType.Movie -> "Movie: ${mediaDetails.movie.title}"
+            is MediaDetailsType.TvShow -> "TvShow: ${mediaDetails.show.title}"
+            null -> "null"
+        }}",
+    )
+
     if (mediaDetails == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
@@ -126,7 +100,15 @@ fun DetailsPage(
         return
     }
     when (mediaDetails) {
-        is MediaDetailsType.Movie -> MovieDetailsView(mediaDetails.movie, viewModel, onPlay, onAddToCollection, onNavigateToSimilar, onTrailer)
+        is MediaDetailsType.Movie ->
+            MovieDetailsView(
+                mediaDetails.movie,
+                viewModel,
+                onPlay,
+                onAddToCollection,
+                onNavigateToSimilar,
+                onTrailer,
+            )
         is MediaDetailsType.TvShow -> {
             TvShowDetailsView(
                 mediaDetails.show,
@@ -139,7 +121,7 @@ fun DetailsPage(
                 cachedSeason,
                 cachedEpisode,
                 focusMemoryManager,
-                screenKey
+                screenKey,
             )
         }
     }
@@ -152,30 +134,31 @@ fun MovieDetailsView(
     onPlay: (season: Int?, episode: Int?) -> Unit,
     onAddToCollection: () -> Unit,
     onNavigateToSimilar: (String, Int) -> Unit,
-    onTrailer: (String, String) -> Unit
+    onTrailer: (String, String) -> Unit,
 ) {
     var omdbRatings by remember(movie.imdbId) { mutableStateOf<OmdbResponse?>(null) }
     var logoUrl by remember { mutableStateOf(movie.logoUrl) }
     var similarContent by remember { mutableStateOf<List<SimilarContent>>(emptyList()) }
     val scrollState = rememberScrollState()
     var collection by remember { mutableStateOf<com.strmr.ai.data.database.CollectionEntity?>(null) }
-    
+
     // Use the unified SelectionManager like HomePage
     val selectionManager = rememberSelectionManager()
-    
+
     // Row position memory - tracks last position in each row by row index
     val rowPositionMemory = remember { mutableMapOf<Int, Int>() }
-    
+
     // Build rows array dynamically based on available content
-    val rows = remember(movie.cast, collection, similarContent) {
-        mutableListOf<String>().apply {
-            add("buttons") // Row 0: Always present
-            if (movie.cast.isNotEmpty()) add("actors") // Row 1: Actors if available
-            if (collection != null && collection!!.parts.size > 1) add("collection") // Row 2: Collection if available
-            if (similarContent.isNotEmpty()) add("similar") // Row 3: Similar content if available
-        }.toList()
-    }
-    
+    val rows =
+        remember(movie.cast, collection, similarContent) {
+            mutableListOf<String>().apply {
+                add("buttons") // Row 0: Always present
+                if (movie.cast.isNotEmpty()) add("actors") // Row 1: Actors if available
+                if (collection != null && collection!!.parts.size > 1) add("collection") // Row 2: Collection if available
+                if (similarContent.isNotEmpty()) add("similar") // Row 3: Similar content if available
+            }.toList()
+        }
+
     val rowCount = rows.size
     val focusRequesters = remember(rowCount) { List(rowCount) { FocusRequester() } }
 
@@ -186,7 +169,7 @@ fun MovieDetailsView(
             selectionManager.updateSelection(0, 0)
         }
     }
-    
+
     // Handle focus changes when selectedRowIndex changes
     LaunchedEffect(selectionManager.selectedRowIndex, focusRequesters.size) {
         val index = selectionManager.selectedRowIndex
@@ -200,7 +183,7 @@ fun MovieDetailsView(
             }
         }
     }
-    
+
     // Fetch collection if movie belongs to one
     LaunchedEffect(movie.belongsToCollection?.id) {
         val collectionId = movie.belongsToCollection?.id
@@ -210,16 +193,17 @@ fun MovieDetailsView(
         Log.d("MovieDetailsView", "🎬 Collection ID: $collectionId")
         Log.d("MovieDetailsView", "🎬 Collection Name: ${movie.belongsToCollection?.name}")
         Log.d("MovieDetailsView", "🎬 DetailsViewModel available: true")
-        
+
         if (collectionId != null) {
             try {
                 Log.d("MovieDetailsView", "📡 Fetching collection for ID: $collectionId")
-                collection = withContext(Dispatchers.IO) {
-                    val fetchedCollection = viewModel.fetchMovieCollection(collectionId)
-                    Log.d("MovieDetailsView", "✅ Collection fetched: $fetchedCollection")
-                    Log.d("MovieDetailsView", "✅ Collection parts count: ${fetchedCollection?.parts?.size}")
-                    fetchedCollection
-                }
+                collection =
+                    withContext(Dispatchers.IO) {
+                        val fetchedCollection = viewModel.fetchMovieCollection(collectionId)
+                        Log.d("MovieDetailsView", "✅ Collection fetched: $fetchedCollection")
+                        Log.d("MovieDetailsView", "✅ Collection parts count: ${fetchedCollection?.parts?.size}")
+                        fetchedCollection
+                    }
                 Log.d("MovieDetailsView", "✅ Collection state updated: $collection")
             } catch (e: Exception) {
                 Log.e("MovieDetailsView", "❌ Error fetching collection for ID: $collectionId", e)
@@ -242,11 +226,12 @@ fun MovieDetailsView(
         if (!movie.imdbId.isNullOrBlank()) {
             try {
                 Log.d("MovieDetailsView", "📡 Fetching OMDb ratings for: ${movie.imdbId}")
-                omdbRatings = withContext(Dispatchers.IO) {
-                    val response = viewModel.fetchOmdbRatings(movie.imdbId)
-                    Log.d("MovieDetailsView", "✅ OMDb API response received: $response")
-                    response
-                }
+                omdbRatings =
+                    withContext(Dispatchers.IO) {
+                        val response = viewModel.fetchOmdbRatings(movie.imdbId)
+                        Log.d("MovieDetailsView", "✅ OMDb API response received: $response")
+                        response
+                    }
                 Log.d("MovieDetailsView", "✅ OMDb ratings updated in state: $omdbRatings")
             } catch (e: Exception) {
                 Log.e("MovieDetailsView", "❌ Error fetching OMDb ratings for ${movie.imdbId}", e)
@@ -262,11 +247,12 @@ fun MovieDetailsView(
     LaunchedEffect(movie.tmdbId) {
         try {
             Log.d("MovieDetailsView", "📡 Fetching similar movies for: ${movie.title}")
-            similarContent = withContext(Dispatchers.IO) {
-                val similar = viewModel.fetchSimilarMovies(movie.tmdbId)
-                Log.d("MovieDetailsView", "✅ Similar movies fetched: ${similar.size} items")
-                similar
-            }
+            similarContent =
+                withContext(Dispatchers.IO) {
+                    val similar = viewModel.fetchSimilarMovies(movie.tmdbId)
+                    Log.d("MovieDetailsView", "✅ Similar movies fetched: ${similar.size} items")
+                    similar
+                }
         } catch (e: Exception) {
             Log.e("MovieDetailsView", "❌ Error fetching similar movies for ${movie.title}", e)
             similarContent = emptyList()
@@ -279,36 +265,38 @@ fun MovieDetailsView(
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(StrmrConstants.Colors.BACKGROUND_DARK)
-
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(StrmrConstants.Colors.BACKGROUND_DARK),
     ) {
         // Backdrop
         movie.backdropUrl?.let {
             AsyncImage(
                 model = it,
                 contentDescription = null,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .blur(radius = StrmrConstants.Blur.RADIUS_STANDARD),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .blur(radius = StrmrConstants.Blur.RADIUS_STANDARD),
                 contentScale = ContentScale.Crop,
-                alpha = StrmrConstants.Colors.Alpha.LIGHT
+                alpha = StrmrConstants.Colors.Alpha.LIGHT,
             )
         }
         Column(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
         ) {
             // Hero section (top half)
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(0.5f)
-                    .padding(start = StrmrConstants.Dimensions.Icons.EXTRA_LARGE)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(0.5f)
+                        .padding(start = StrmrConstants.Dimensions.Icons.EXTRA_LARGE),
             ) {
                 Column(
                     modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.SpaceBetween
+                    verticalArrangement = Arrangement.SpaceBetween,
                 ) {
                     MediaHero(
                         mediaDetails = {
@@ -321,9 +309,9 @@ fun MovieDetailsView(
                                 rating = movie.rating,
                                 overview = movie.overview,
                                 cast = movie.cast.mapNotNull { it.name },
-                                omdbRatings = omdbRatings
+                                omdbRatings = omdbRatings,
                             )
-                        }
+                        },
                     )
                     RatingsRow(omdbRatings = omdbRatings, traktRating = movie.rating)
                 }
@@ -331,33 +319,41 @@ fun MovieDetailsView(
 
             // Lower section (scrollable if needed)
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(0.5f)
-                    .verticalScroll(scrollState)
-                    .padding(
-                        horizontal = StrmrConstants.Dimensions.Icons.EXTRA_LARGE,
-                        vertical = StrmrConstants.Dimensions.SPACING_SECTION
-                    )
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(0.5f)
+                        .verticalScroll(scrollState)
+                        .padding(
+                            horizontal = StrmrConstants.Dimensions.Icons.EXTRA_LARGE,
+                            vertical = StrmrConstants.Dimensions.SPACING_SECTION,
+                        ),
             ) {
                 // Buttons row
                 Box(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier
-                        .fillMaxWidth(0.4f)
-                        .align(Alignment.CenterStart)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(StrmrConstants.Dimensions.SPACING_STANDARD)) {
+                    Column(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth(0.4f)
+                                .align(Alignment.CenterStart),
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(StrmrConstants.Dimensions.SPACING_STANDARD),
+                        ) {
                             val playButtonInteractionSource = remember { MutableInteractionSource() }
                             val playButtonIsFocused by playButtonInteractionSource.collectIsFocusedAsState()
                             FrostedGlassButton(
                                 onClick = { onPlay(null, null) },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
-                                    .focusRequester(focusRequesters.getOrNull(0) ?: remember { FocusRequester() }),
+                                modifier =
+                                    Modifier
+                                        .weight(1f)
+                                        .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
+                                        .focusRequester(focusRequesters.getOrNull(0) ?: remember { FocusRequester() }),
                                 interactionSource = playButtonInteractionSource,
                                 isFocused = playButtonIsFocused,
                                 text = "Play",
-                                textColor = StrmrConstants.Colors.TEXT_PRIMARY
+                                textColor = StrmrConstants.Colors.TEXT_PRIMARY,
                             )
                             val trailerButtonInteractionSource = remember { MutableInteractionSource() }
                             val trailerButtonIsFocused by trailerButtonInteractionSource.collectIsFocusedAsState()
@@ -374,70 +370,79 @@ fun MovieDetailsView(
                                         }
                                     }
                                 },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT),
+                                modifier =
+                                    Modifier
+                                        .weight(1f)
+                                        .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT),
                                 interactionSource = trailerButtonInteractionSource,
                                 isFocused = trailerButtonIsFocused,
                                 text = "Trailer",
-                                textColor = StrmrConstants.Colors.TEXT_PRIMARY
+                                textColor = StrmrConstants.Colors.TEXT_PRIMARY,
                             )
                         }
                         Spacer(Modifier.height(StrmrConstants.Dimensions.SPACING_MEDIUM))
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .onKeyEvent { event ->
-                                    if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
-                                        event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
-                                        selectionManager.selectedRowIndex == 0 && rows.size > 1
-                                    ) {
-                                        // Navigate from buttons to next available row
-                                        val newRowIndex = 1
-                                        val newItemIndex = rowPositionMemory[newRowIndex] ?: 0
-                                        selectionManager.updateSelection(newRowIndex, newItemIndex)
-                                        Log.d("MovieDetailsView", "🎯 Button navigation: moving to row $newRowIndex (${rows[newRowIndex]})")
-                                        true
-                                    } else false
-                                }, 
-                            horizontalArrangement = Arrangement.spacedBy(StrmrConstants.Dimensions.SPACING_STANDARD)
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .onKeyEvent { event ->
+                                        if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
+                                            event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
+                                            selectionManager.selectedRowIndex == 0 && rows.size > 1
+                                        ) {
+                                            // Navigate from buttons to next available row
+                                            val newRowIndex = 1
+                                            val newItemIndex = rowPositionMemory[newRowIndex] ?: 0
+                                            selectionManager.updateSelection(newRowIndex, newItemIndex)
+                                            Log.d(
+                                                "MovieDetailsView",
+                                                "🎯 Button navigation: moving to row $newRowIndex (${rows[newRowIndex]})",
+                                            )
+                                            true
+                                        } else {
+                                            false
+                                        }
+                                    },
+                            horizontalArrangement = Arrangement.spacedBy(StrmrConstants.Dimensions.SPACING_STANDARD),
                         ) {
                             val collectionButtonInteractionSource = remember { MutableInteractionSource() }
                             val collectionButtonIsFocused by collectionButtonInteractionSource.collectIsFocusedAsState()
                             FrostedGlassButton(
                                 onClick = onAddToCollection,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT),
+                                modifier =
+                                    Modifier
+                                        .weight(1f)
+                                        .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT),
                                 interactionSource = collectionButtonInteractionSource,
                                 isFocused = collectionButtonIsFocused,
                                 text = "",
                                 textColor = StrmrConstants.Colors.TEXT_PRIMARY,
-                                hasCustomContent = true
+                                hasCustomContent = true,
                             ) {
                                 Icon(
-                                    Icons.Filled.Bookmark, 
-                                    contentDescription = "Collection", 
-                                    tint = if (collectionButtonIsFocused) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY
+                                    Icons.Filled.Bookmark,
+                                    contentDescription = "Collection",
+                                    tint = if (collectionButtonIsFocused) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY,
                                 )
                             }
                             val watchlistButtonInteractionSource = remember { MutableInteractionSource() }
                             val watchlistButtonIsFocused by watchlistButtonInteractionSource.collectIsFocusedAsState()
                             FrostedGlassButton(
                                 onClick = { /* TODO: Watchlist */ },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT),
+                                modifier =
+                                    Modifier
+                                        .weight(1f)
+                                        .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT),
                                 interactionSource = watchlistButtonInteractionSource,
                                 isFocused = watchlistButtonIsFocused,
                                 text = "",
                                 textColor = StrmrConstants.Colors.TEXT_PRIMARY,
-                                hasCustomContent = true
+                                hasCustomContent = true,
                             ) {
                                 Icon(
-                                    Icons.Filled.Queue, 
-                                    contentDescription = "Watchlist", 
-                                    tint = if (watchlistButtonIsFocused) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY
+                                    Icons.Filled.Queue,
+                                    contentDescription = "Watchlist",
+                                    tint = if (watchlistButtonIsFocused) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY,
                                 )
                             }
                             // --- New Watched/Unwatched Button ---
@@ -445,19 +450,20 @@ fun MovieDetailsView(
                             val watchedButtonIsFocused by watchedButtonInteractionSource.collectIsFocusedAsState()
                             FrostedGlassButton(
                                 onClick = { /* TODO: Watched/Unwatched */ },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT),
+                                modifier =
+                                    Modifier
+                                        .weight(1f)
+                                        .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT),
                                 interactionSource = watchedButtonInteractionSource,
                                 isFocused = watchedButtonIsFocused,
                                 text = "",
                                 textColor = StrmrConstants.Colors.TEXT_PRIMARY,
-                                hasCustomContent = true
+                                hasCustomContent = true,
                             ) {
                                 Icon(
                                     Icons.Filled.Visibility,
                                     contentDescription = "Watched/Unwatched",
-                                    tint = if (watchedButtonIsFocused) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY
+                                    tint = if (watchedButtonIsFocused) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY,
                                 )
                             }
                             // --- End New Button ---
@@ -465,20 +471,21 @@ fun MovieDetailsView(
                             val moreButtonIsFocused by moreButtonInteractionSource.collectIsFocusedAsState()
                             FrostedGlassButton(
                                 onClick = { /* TODO: More */ },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT),
+                                modifier =
+                                    Modifier
+                                        .weight(1f)
+                                        .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT),
                                 interactionSource = moreButtonInteractionSource,
                                 isFocused = moreButtonIsFocused,
                                 text = "...",
-                                textColor = StrmrConstants.Colors.TEXT_PRIMARY
+                                textColor = StrmrConstants.Colors.TEXT_PRIMARY,
                             )
                         }
                     }
                 }
-                
+
                 // Focus management is now handled by the unified LaunchedEffect above
-                
+
                 Spacer(Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
                 // Render rows dynamically based on the rows array
                 for ((index, rowType) in rows.withIndex()) {
@@ -502,17 +509,27 @@ fun MovieDetailsView(
                                     if (newRowIndex >= 0 && newRowIndex < rows.size) {
                                         // Save current position
                                         rowPositionMemory[actorsRowIndex] = selectionManager.selectedItemIndex
-                                        
+
                                         // Get target position from memory or use default
                                         val newItemIndex = rowPositionMemory[newRowIndex] ?: 0
-                                        
-                                        Log.d("MovieDetailsView", "🎯 Actor row navigation: $actorsRowIndex(${rows[actorsRowIndex]}) -> $newRowIndex(${rows[newRowIndex]}), direction=$direction")
+
+                                        Log.d(
+                                            "MovieDetailsView",
+                                            "🎯 Actor row navigation: $actorsRowIndex(${rows[actorsRowIndex]}) -> $newRowIndex(${rows[newRowIndex]}), direction=$direction",
+                                        )
                                         selectionManager.updateSelection(newRowIndex, newItemIndex)
                                     }
                                 },
-                                focusRequester = if (selectionManager.selectedRowIndex == actorsRowIndex) focusRequesters.getOrNull(actorsRowIndex) else null,
+                                focusRequester =
+                                    if (selectionManager.selectedRowIndex == actorsRowIndex) {
+                                        focusRequesters.getOrNull(
+                                            actorsRowIndex,
+                                        )
+                                    } else {
+                                        null
+                                    },
                                 isContentFocused = selectionManager.selectedRowIndex == actorsRowIndex,
-                                onContentFocusChanged = { /* Handled by selectionManager */ }
+                                onContentFocusChanged = { /* Handled by selectionManager */ },
                             )
                         }
                         "collection" -> {
@@ -529,7 +546,7 @@ fun MovieDetailsView(
                                             title = movie.title,
                                             posterUrl = if (!movie.poster_path.isNullOrBlank()) "https://image.tmdb.org/t/p/w500${movie.poster_path}" else null,
                                             subtitle = movie.release_date?.take(4), // Extract year
-                                            rating = String.format("%.1f", movie.vote_average)
+                                            rating = String.format("%.1f", movie.vote_average),
                                         )
                                     },
                                     selectedIndex = if (selectionManager.selectedRowIndex == collectionRowIndex) selectionManager.selectedItemIndex else 0,
@@ -546,17 +563,27 @@ fun MovieDetailsView(
                                         if (newRowIndex >= 0 && newRowIndex < rows.size) {
                                             // Save current position
                                             rowPositionMemory[collectionRowIndex] = selectionManager.selectedItemIndex
-                                            
+
                                             // Get target position from memory or use default
                                             val newItemIndex = rowPositionMemory[newRowIndex] ?: 0
-                                            
-                                            Log.d("MovieDetailsView", "🎯 Collection row navigation: $collectionRowIndex(${rows[collectionRowIndex]}) -> $newRowIndex(${rows[newRowIndex]}), direction=$direction")
+
+                                            Log.d(
+                                                "MovieDetailsView",
+                                                "🎯 Collection row navigation: $collectionRowIndex(${rows[collectionRowIndex]}) -> $newRowIndex(${rows[newRowIndex]}), direction=$direction",
+                                            )
                                             selectionManager.updateSelection(newRowIndex, newItemIndex)
                                         }
                                     },
-                                    focusRequester = if (selectionManager.selectedRowIndex == collectionRowIndex) focusRequesters.getOrNull(collectionRowIndex) else null,
+                                    focusRequester =
+                                        if (selectionManager.selectedRowIndex == collectionRowIndex) {
+                                            focusRequesters.getOrNull(
+                                                collectionRowIndex,
+                                            )
+                                        } else {
+                                            null
+                                        },
                                     isContentFocused = selectionManager.selectedRowIndex == collectionRowIndex,
-                                    onContentFocusChanged = { /* Handled by selectionManager */ }
+                                    onContentFocusChanged = { /* Handled by selectionManager */ },
                                 )
                             }
                         }
@@ -573,7 +600,7 @@ fun MovieDetailsView(
                                         title = content.title,
                                         posterUrl = content.posterUrl,
                                         subtitle = content.year?.toString(),
-                                        rating = content.rating?.let { String.format("%.1f", it) }
+                                        rating = content.rating?.let { String.format("%.1f", it) },
                                     )
                                 },
                                 modifier = Modifier.fillMaxWidth(),
@@ -591,18 +618,28 @@ fun MovieDetailsView(
                                     if (newRowIndex >= 0 && newRowIndex < rows.size) {
                                         // Save current position
                                         rowPositionMemory[similarRowIndex] = selectionManager.selectedItemIndex
-                                        
+
                                         // Get target position from memory or use default
                                         val newItemIndex = rowPositionMemory[newRowIndex] ?: 0
-                                        
-                                        Log.d("MovieDetailsView", "🎯 Similar row navigation: $similarRowIndex(${rows[similarRowIndex]}) -> $newRowIndex(${rows[newRowIndex]}), direction=$direction")
+
+                                        Log.d(
+                                            "MovieDetailsView",
+                                            "🎯 Similar row navigation: $similarRowIndex(${rows[similarRowIndex]}) -> $newRowIndex(${rows[newRowIndex]}), direction=$direction",
+                                        )
                                         selectionManager.updateSelection(newRowIndex, newItemIndex)
                                     }
                                     // Stay on current row when at bottom boundary
                                 },
-                                focusRequester = if (selectionManager.selectedRowIndex == similarRowIndex) focusRequesters.getOrNull(similarRowIndex) else null,
+                                focusRequester =
+                                    if (selectionManager.selectedRowIndex == similarRowIndex) {
+                                        focusRequesters.getOrNull(
+                                            similarRowIndex,
+                                        )
+                                    } else {
+                                        null
+                                    },
                                 isContentFocused = selectionManager.selectedRowIndex == similarRowIndex,
-                                onContentFocusChanged = { /* Handled by selectionManager */ }
+                                onContentFocusChanged = { /* Handled by selectionManager */ },
                             )
                         }
                     }
@@ -619,17 +656,18 @@ private fun HeaderSection(
     omdbRatings: OmdbResponse?,
     playButtonFocusRequester: FocusRequester,
     onPlay: (season: Int?, episode: Int?) -> Unit,
-    onAddToCollection: () -> Unit
+    onAddToCollection: () -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                start = StrmrConstants.Dimensions.Icons.EXTRA_LARGE,
-                end = StrmrConstants.Dimensions.Icons.EXTRA_LARGE,
-                bottom = StrmrConstants.Dimensions.SPACING_SECTION
-            ),
-        horizontalAlignment = Alignment.Start
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(
+                    start = StrmrConstants.Dimensions.Icons.EXTRA_LARGE,
+                    end = StrmrConstants.Dimensions.Icons.EXTRA_LARGE,
+                    bottom = StrmrConstants.Dimensions.SPACING_SECTION,
+                ),
+        horizontalAlignment = Alignment.Start,
     ) {
         Spacer(Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
         // 1. Logo/title
@@ -637,19 +675,20 @@ private fun HeaderSection(
             AsyncImage(
                 model = logoUrl,
                 contentDescription = movie.title,
-                modifier = Modifier
-                    .height(StrmrConstants.Dimensions.Icons.HUGE)
-                    .padding(bottom = StrmrConstants.Dimensions.SPACING_STANDARD)
+                modifier =
+                    Modifier
+                        .height(StrmrConstants.Dimensions.Icons.HUGE)
+                        .padding(bottom = StrmrConstants.Dimensions.SPACING_STANDARD),
             )
         } else {
             Text(
                 text = movie.title,
                 color = StrmrConstants.Colors.TEXT_PRIMARY,
                 fontSize = 48.sp,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = 16.dp),
             )
         }
-        
+
         // 2. Plot/description
         Text(
             text = movie.overview ?: "",
@@ -657,75 +696,100 @@ private fun HeaderSection(
             fontSize = 16.sp,
             maxLines = 4,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(bottom = StrmrConstants.Dimensions.SPACING_MEDIUM)
+            modifier = Modifier.padding(bottom = StrmrConstants.Dimensions.SPACING_MEDIUM),
         )
-        
+
         // Info row (runtime, date, genres)
         Row(modifier = Modifier.padding(bottom = StrmrConstants.Dimensions.SPACING_STANDARD)) {
             Text("${movie.runtime ?: ""} min", color = StrmrConstants.Colors.TEXT_SECONDARY, fontSize = 16.sp)
             Spacer(Modifier.width(StrmrConstants.Dimensions.SPACING_STANDARD))
-            Text(DateFormatter.formatMovieDate(movie.releaseDate) ?: "${movie.year}", color = StrmrConstants.Colors.TEXT_SECONDARY, fontSize = 16.sp)
+            Text(
+                DateFormatter.formatMovieDate(movie.releaseDate) ?: "${movie.year}",
+                color = StrmrConstants.Colors.TEXT_SECONDARY,
+                fontSize = 16.sp,
+            )
             Spacer(Modifier.width(StrmrConstants.Dimensions.SPACING_STANDARD))
             Text(movie.genres?.joinToString() ?: "", color = StrmrConstants.Colors.TEXT_SECONDARY, fontSize = 16.sp)
         }
-        
+
         // 3. Ratings row
         val rt = omdbRatings?.Ratings?.find { it.Source == "Rotten Tomatoes" }?.Value
         val meta = omdbRatings?.Metascore?.takeIf { !it.isNullOrBlank() && it != "N/A" }
         Row(modifier = Modifier.padding(bottom = StrmrConstants.Dimensions.SPACING_STANDARD)) {
             if (omdbRatings?.imdbRating != null) {
-                Image(painter = painterResource(id = R.drawable.imdb_logo), contentDescription = "IMDb", modifier = Modifier.size(StrmrConstants.Dimensions.Icons.LARGE))
+                Image(
+                    painter = painterResource(id = R.drawable.imdb_logo),
+                    contentDescription = "IMDb",
+                    modifier = Modifier.size(StrmrConstants.Dimensions.Icons.LARGE),
+                )
                 Spacer(Modifier.width(StrmrConstants.Dimensions.SPACING_TINY))
                 Text(omdbRatings?.imdbRating ?: "-", color = StrmrConstants.Colors.TEXT_PRIMARY, fontSize = 18.sp)
                 Spacer(Modifier.width(StrmrConstants.Dimensions.SPACING_STANDARD))
             }
             if (!meta.isNullOrBlank()) {
-                Image(painter = painterResource(id = R.drawable.metacritic_logo), contentDescription = "Metacritic", modifier = Modifier.size(StrmrConstants.Dimensions.Icons.LARGE))
+                Image(
+                    painter = painterResource(id = R.drawable.metacritic_logo),
+                    contentDescription = "Metacritic",
+                    modifier = Modifier.size(StrmrConstants.Dimensions.Icons.LARGE),
+                )
                 Spacer(Modifier.width(StrmrConstants.Dimensions.SPACING_TINY))
                 Text("$meta%", color = StrmrConstants.Colors.TEXT_PRIMARY, fontSize = 18.sp)
                 Spacer(Modifier.width(StrmrConstants.Dimensions.SPACING_STANDARD))
             }
             if (!rt.isNullOrBlank()) {
-                Image(painter = painterResource(id = R.drawable.rotten_tomatoes), contentDescription = "Rotten Tomatoes", modifier = Modifier.size(StrmrConstants.Dimensions.Icons.LARGE))
+                Image(
+                    painter = painterResource(id = R.drawable.rotten_tomatoes),
+                    contentDescription = "Rotten Tomatoes",
+                    modifier = Modifier.size(StrmrConstants.Dimensions.Icons.LARGE),
+                )
                 Spacer(Modifier.width(StrmrConstants.Dimensions.SPACING_TINY))
                 Text(rt, color = StrmrConstants.Colors.TEXT_PRIMARY, fontSize = 18.sp)
                 Spacer(Modifier.width(StrmrConstants.Dimensions.SPACING_STANDARD))
             }
-            Image(painter = painterResource(id = R.drawable.trakt1), contentDescription = "Trakt", modifier = Modifier.size(StrmrConstants.Dimensions.Icons.LARGE))
+            Image(
+                painter = painterResource(id = R.drawable.trakt1),
+                contentDescription = "Trakt",
+                modifier = Modifier.size(StrmrConstants.Dimensions.Icons.LARGE),
+            )
             Spacer(Modifier.width(4.dp))
             Text(movie.rating?.let { String.format("%.1f", it) } ?: "-", color = StrmrConstants.Colors.TEXT_PRIMARY, fontSize = 18.sp)
         }
-        
+
         // 4. Buttons (max width 40% of screen)
         Box(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier
-                .fillMaxWidth(0.4f)
-                .align(Alignment.CenterStart)) {
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth(0.4f)
+                        .align(Alignment.CenterStart),
+            ) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     val playButtonInteractionSource = remember { MutableInteractionSource() }
                     val playButtonIsFocused by playButtonInteractionSource.collectIsFocusedAsState()
                     FrostedGlassButton(
                         onClick = { onPlay(null, null) },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp)
-                            .focusRequester(playButtonFocusRequester),
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .height(48.dp)
+                                .focusRequester(playButtonFocusRequester),
                         interactionSource = playButtonInteractionSource,
                         isFocused = playButtonIsFocused,
                         text = "Play",
-                        textColor = StrmrConstants.Colors.BACKGROUND_DARK.copy(alpha = StrmrConstants.Colors.Alpha.HEAVY)
+                        textColor = StrmrConstants.Colors.BACKGROUND_DARK.copy(alpha = StrmrConstants.Colors.Alpha.HEAVY),
                     )
                     val trailerButtonInteractionSource = remember { MutableInteractionSource() }
                     val trailerButtonIsFocused by trailerButtonInteractionSource.collectIsFocusedAsState()
                     FrostedGlassButton(
                         onClick = { /* TODO: Trailer */ },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp),
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .height(48.dp),
                         interactionSource = trailerButtonInteractionSource,
                         isFocused = trailerButtonIsFocused,
                         text = "Trailer",
-                        textColor = StrmrConstants.Colors.BACKGROUND_DARK.copy(alpha = StrmrConstants.Colors.Alpha.HEAVY)
+                        textColor = StrmrConstants.Colors.BACKGROUND_DARK.copy(alpha = StrmrConstants.Colors.Alpha.HEAVY),
                     )
                 }
                 Spacer(Modifier.height(12.dp))
@@ -734,73 +798,76 @@ private fun HeaderSection(
                     val collectionButtonIsFocused by collectionButtonInteractionSource.collectIsFocusedAsState()
                     FrostedGlassButton(
                         onClick = onAddToCollection,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp),
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .height(48.dp),
                         interactionSource = collectionButtonInteractionSource,
                         isFocused = collectionButtonIsFocused,
                         text = "Collection",
-                        textColor = StrmrConstants.Colors.BACKGROUND_DARK.copy(alpha = StrmrConstants.Colors.Alpha.HEAVY)
+                        textColor = StrmrConstants.Colors.BACKGROUND_DARK.copy(alpha = StrmrConstants.Colors.Alpha.HEAVY),
                     ) {
                         Row(
                             horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Icon(
-                                Icons.Filled.Bookmark, 
-                                contentDescription = "Collection", 
-                                tint = if (collectionButtonIsFocused) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY
+                                Icons.Filled.Bookmark,
+                                contentDescription = "Collection",
+                                tint = if (collectionButtonIsFocused) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY,
                             )
-                            //Spacer(Modifier.width(8.dp))
-                            //Text(
-                             //   "Collection", 
-                             //   fontSize = 16.sp, 
-                             //   color = if (collectionButtonIsFocused) Color.Black else Color.White,
-                             //   fontWeight = if (collectionButtonIsFocused) FontWeight.Medium else FontWeight.Normal
-                            //)
+                            // Spacer(Modifier.width(8.dp))
+                            // Text(
+                            //   "Collection",
+                            //   fontSize = 16.sp,
+                            //   color = if (collectionButtonIsFocused) Color.Black else Color.White,
+                            //   fontWeight = if (collectionButtonIsFocused) FontWeight.Medium else FontWeight.Normal
+                            // )
                         }
                     }
                     val watchlistButtonInteractionSource = remember { MutableInteractionSource() }
                     val watchlistButtonIsFocused by watchlistButtonInteractionSource.collectIsFocusedAsState()
                     FrostedGlassButton(
                         onClick = { /* TODO: Watchlist */ },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp),
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .height(48.dp),
                         interactionSource = watchlistButtonInteractionSource,
                         isFocused = watchlistButtonIsFocused,
                         text = "Watchlist",
-                        textColor = StrmrConstants.Colors.BACKGROUND_DARK.copy(alpha = StrmrConstants.Colors.Alpha.HEAVY)
+                        textColor = StrmrConstants.Colors.BACKGROUND_DARK.copy(alpha = StrmrConstants.Colors.Alpha.HEAVY),
                     ) {
                         Row(
                             horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Icon(
-                                Icons.Filled.Queue, 
-                                contentDescription = "Watchlist", 
-                                tint = if (watchlistButtonIsFocused) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY
+                                Icons.Filled.Queue,
+                                contentDescription = "Watchlist",
+                                tint = if (watchlistButtonIsFocused) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY,
                             )
-                           //Spacer(Modifier.width(8.dp))
-                           //Text(
-                            //    "Watchlist", 
-                             //   fontSize = 16.sp, 
-                             //   color = if (watchlistButtonIsFocused) Color.Black else Color.White,
-                             //   fontWeight = if (watchlistButtonIsFocused) FontWeight.Medium else FontWeight.Normal
-                            //)
+                            // Spacer(Modifier.width(8.dp))
+                            // Text(
+                            //    "Watchlist",
+                            //   fontSize = 16.sp,
+                            //   color = if (watchlistButtonIsFocused) Color.Black else Color.White,
+                            //   fontWeight = if (watchlistButtonIsFocused) FontWeight.Medium else FontWeight.Normal
+                            // )
                         }
                     }
                     val moreButtonInteractionSource = remember { MutableInteractionSource() }
                     val moreButtonIsFocused by moreButtonInteractionSource.collectIsFocusedAsState()
                     FrostedGlassButton(
                         onClick = { /* TODO: More */ },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp),
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .height(48.dp),
                         interactionSource = moreButtonInteractionSource,
                         isFocused = moreButtonIsFocused,
                         text = "...",
-                        textColor = StrmrConstants.Colors.BACKGROUND_DARK.copy(alpha = StrmrConstants.Colors.Alpha.HEAVY)
+                        textColor = StrmrConstants.Colors.BACKGROUND_DARK.copy(alpha = StrmrConstants.Colors.Alpha.HEAVY),
                     )
                 }
             }
@@ -820,12 +887,11 @@ fun TvShowDetailsView(
     cachedSeason: Int? = null,
     cachedEpisode: Int? = null,
     focusMemoryManager: com.strmr.ai.FocusMemoryManager? = null,
-    screenKey: String = ""
+    screenKey: String = "",
 ) {
-
     // Use the unified SelectionManager like HomePage
     val selectionManager = rememberSelectionManager()
-    
+
     // Row position memory - tracks last position in each row by row index
     val rowPositionMemory = remember { mutableMapOf<Int, Int>() }
     var omdbRatings by remember(show.imdbId) { mutableStateOf<OmdbResponse?>(null) }
@@ -836,19 +902,20 @@ fun TvShowDetailsView(
     var loading by remember { mutableStateOf(true) }
     var similarContent by remember { mutableStateOf<List<SimilarContent>>(emptyList()) }
     val scrollState = rememberScrollState()
-    
+
     // Build rows array dynamically based on available content
-    val rows = remember(show.cast, similarContent) {
-        mutableListOf<String>().apply {
-            add("buttons") // Row 0: Always present
-            if (show.cast.isNotEmpty()) add("actors") // Row 1: Actors if available
-            if (similarContent.isNotEmpty()) add("similar") // Row 2: Similar content if available
-        }.toList()
-    }
-    
+    val rows =
+        remember(show.cast, similarContent) {
+            mutableListOf<String>().apply {
+                add("buttons") // Row 0: Always present
+                if (show.cast.isNotEmpty()) add("actors") // Row 1: Actors if available
+                if (similarContent.isNotEmpty()) add("similar") // Row 2: Similar content if available
+            }.toList()
+        }
+
     val rowCount = rows.size
     val focusRequesters = remember(rowCount) { List(rowCount) { FocusRequester() } }
-    
+
     // Initialize focus state - start with buttons row (index 0)
     LaunchedEffect(Unit) {
         Log.d("TvShowDetailsView", "🎯 Initializing selection state")
@@ -856,7 +923,7 @@ fun TvShowDetailsView(
             selectionManager.updateSelection(0, 0)
         }
     }
-    
+
     // Handle focus changes when selectedRowIndex changes
     LaunchedEffect(selectionManager.selectedRowIndex, focusRequesters.size) {
         val index = selectionManager.selectedRowIndex
@@ -870,7 +937,7 @@ fun TvShowDetailsView(
             }
         }
     }
-    
+
     // Restore focus when coming back from another screen
     LaunchedEffect(screenKey) {
         if (focusMemoryManager != null && screenKey.isNotEmpty()) {
@@ -903,11 +970,12 @@ fun TvShowDetailsView(
         if (!show.imdbId.isNullOrBlank()) {
             try {
                 Log.d("TvShowDetailsView", "📡 Fetching OMDb ratings for: ${show.imdbId}")
-                omdbRatings = withContext(Dispatchers.IO) {
-                    val response = viewModel.fetchOmdbRatings(show.imdbId)
-                    Log.d("TvShowDetailsView", "✅ OMDb API response received: $response")
-                    response
-                }
+                omdbRatings =
+                    withContext(Dispatchers.IO) {
+                        val response = viewModel.fetchOmdbRatings(show.imdbId)
+                        Log.d("TvShowDetailsView", "✅ OMDb API response received: $response")
+                        response
+                    }
                 Log.d("TvShowDetailsView", "✅ OMDb ratings updated in state: $omdbRatings")
             } catch (e: Exception) {
                 Log.e("TvShowDetailsView", "❌ Error fetching OMDb ratings for ${show.imdbId}", e)
@@ -923,11 +991,12 @@ fun TvShowDetailsView(
     LaunchedEffect(show.tmdbId) {
         try {
             Log.d("TvShowDetailsView", "📡 Fetching similar TV shows for: ${show.title}")
-            similarContent = withContext(Dispatchers.IO) {
+            similarContent =
+                withContext(Dispatchers.IO) {
                     val similar = viewModel.fetchSimilarTvShows(show.tmdbId)
-                Log.d("TvShowDetailsView", "✅ Similar TV shows fetched: ${similar.size} items")
-                similar
-            }
+                    Log.d("TvShowDetailsView", "✅ Similar TV shows fetched: ${similar.size} items")
+                    similar
+                }
         } catch (e: Exception) {
             Log.e("TvShowDetailsView", "❌ Error fetching similar TV shows for ${show.title}", e)
             similarContent = emptyList()
@@ -944,11 +1013,11 @@ fun TvShowDetailsView(
         try {
             loading = true
             Log.d("TvShowDetailsView", "📡 Fetching seasons for show: ${show.title}")
-                                val fetchedSeasons = viewModel.fetchTvShowSeasons(show.tmdbId)
+            val fetchedSeasons = viewModel.fetchTvShowSeasons(show.tmdbId)
             seasons = fetchedSeasons
             Log.d("TvShowDetailsView", "✅ Fetched ${fetchedSeasons.size} seasons")
             Log.d("TvShowDetailsView", "🎯 DEBUG: Available seasons: ${fetchedSeasons.map { it.seasonNumber }}")
-            
+
             // Use cached season if available, otherwise auto-select first season
             if (cachedSeason != null && fetchedSeasons.any { it.seasonNumber == cachedSeason }) {
                 selectedSeason = cachedSeason
@@ -957,14 +1026,14 @@ fun TvShowDetailsView(
                 selectedSeason = fetchedSeasons.first().seasonNumber
                 Log.d("TvShowDetailsView", "🎯 Auto-selected season: $selectedSeason")
             }
-            
+
             // Fetch episodes for the selected season
             if (selectedSeason != null) {
                 val fetchedEpisodes = viewModel.fetchTvShowEpisodes(show.tmdbId, selectedSeason!!)
                 episodes = fetchedEpisodes
                 Log.d("TvShowDetailsView", "✅ Fetched ${fetchedEpisodes.size} episodes for season $selectedSeason")
                 Log.d("TvShowDetailsView", "🎯 DEBUG: Available episodes: ${fetchedEpisodes.map { it.episodeNumber }}")
-                
+
                 // Use cached episode if available, otherwise auto-select first episode
                 if (cachedEpisode != null && fetchedEpisodes.any { it.episodeNumber == cachedEpisode }) {
                     selectedEpisode = fetchedEpisodes.find { it.episodeNumber == cachedEpisode }
@@ -989,7 +1058,7 @@ fun TvShowDetailsView(
                 val fetchedEpisodes = viewModel.fetchTvShowEpisodes(show.tmdbId, selectedSeason!!)
                 episodes = fetchedEpisodes
                 Log.d("TvShowDetailsView", "✅ Fetched ${fetchedEpisodes.size} episodes for season $selectedSeason")
-                
+
                 // Auto-select first episode if available
                 if (fetchedEpisodes.isNotEmpty()) {
                     selectedEpisode = fetchedEpisodes.first()
@@ -1004,35 +1073,38 @@ fun TvShowDetailsView(
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(StrmrConstants.Colors.BACKGROUND_DARK)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(StrmrConstants.Colors.BACKGROUND_DARK),
     ) {
         // Backdrop
         show.backdropUrl?.let {
             AsyncImage(
                 model = it,
                 contentDescription = null,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .blur(radius = StrmrConstants.Blur.RADIUS_STANDARD),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .blur(radius = StrmrConstants.Blur.RADIUS_STANDARD),
                 contentScale = ContentScale.Crop,
-                alpha = StrmrConstants.Colors.Alpha.LIGHT
+                alpha = StrmrConstants.Colors.Alpha.LIGHT,
             )
         }
         Column(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
         ) {
             // Hero section (top half)
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(0.5f)
-                    .padding(start = StrmrConstants.Dimensions.Icons.EXTRA_LARGE)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(0.5f)
+                        .padding(start = StrmrConstants.Dimensions.Icons.EXTRA_LARGE),
             ) {
                 Column(
                     modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.SpaceBetween
+                    verticalArrangement = Arrangement.SpaceBetween,
                 ) {
                     MediaHero(
                         mediaDetails = {
@@ -1046,9 +1118,9 @@ fun TvShowDetailsView(
                                 rating = show.rating,
                                 overview = selectedEpisode?.overview?.takeIf { !it.isNullOrBlank() } ?: show.overview,
                                 cast = show.cast.mapNotNull { it.name },
-                                omdbRatings = omdbRatings
+                                omdbRatings = omdbRatings,
                             )
-                        }
+                        },
                     )
                     RatingsRow(omdbRatings = omdbRatings, traktRating = show.rating)
                 }
@@ -1056,36 +1128,47 @@ fun TvShowDetailsView(
 
             // Lower section (scrollable if needed)
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(0.5f)
-                    .verticalScroll(scrollState)
-                    .padding(
-                        horizontal = StrmrConstants.Dimensions.Icons.EXTRA_LARGE,
-                        vertical = StrmrConstants.Dimensions.SPACING_SECTION
-                    )
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(0.5f)
+                        .verticalScroll(scrollState)
+                        .padding(
+                            horizontal = StrmrConstants.Dimensions.Icons.EXTRA_LARGE,
+                            vertical = StrmrConstants.Dimensions.SPACING_SECTION,
+                        ),
             ) {
                 // Buttons row
                 Box(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier
-                        .fillMaxWidth(0.4f)
-                        .align(Alignment.CenterStart)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(StrmrConstants.Dimensions.SPACING_STANDARD)) {
+                    Column(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth(0.4f)
+                                .align(Alignment.CenterStart),
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(StrmrConstants.Dimensions.SPACING_STANDARD),
+                        ) {
                             val playButtonInteractionSource = remember { MutableInteractionSource() }
                             val playButtonIsFocused by playButtonInteractionSource.collectIsFocusedAsState()
                             val episodeNumber = selectedEpisode?.episodeNumber
-                            val playButtonText = if (selectedSeason != null && episodeNumber != null) "Play S${selectedSeason}: E${episodeNumber}" else "Play"
-                            Log.d("TvShowDetailsView", "🎯 DEBUG: Play button text: '$playButtonText' (selectedSeason: $selectedSeason, episodeNumber: $episodeNumber)")
+                            val playButtonText = if (selectedSeason != null && episodeNumber != null) "Play S$selectedSeason: E$episodeNumber" else "Play"
+                            Log.d(
+                                "TvShowDetailsView",
+                                "🎯 DEBUG: Play button text: '$playButtonText' (selectedSeason: $selectedSeason, episodeNumber: $episodeNumber)",
+                            )
                             FrostedGlassButton(
                                 onClick = { onPlay(selectedSeason, episodeNumber) },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
-                                    .focusRequester(focusRequesters.getOrNull(0) ?: remember { FocusRequester() }),
+                                modifier =
+                                    Modifier
+                                        .weight(1f)
+                                        .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
+                                        .focusRequester(focusRequesters.getOrNull(0) ?: remember { FocusRequester() }),
                                 interactionSource = playButtonInteractionSource,
                                 isFocused = playButtonIsFocused,
                                 text = playButtonText,
-                                textColor = StrmrConstants.Colors.TEXT_PRIMARY
+                                textColor = StrmrConstants.Colors.TEXT_PRIMARY,
                             )
                             val trailerButtonInteractionSource = remember { MutableInteractionSource() }
                             val trailerButtonIsFocused by trailerButtonInteractionSource.collectIsFocusedAsState()
@@ -1102,86 +1185,96 @@ fun TvShowDetailsView(
                                         }
                                     }
                                 },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
-                                    .focusRequester(focusRequesters.getOrNull(0) ?: remember { FocusRequester() }),
+                                modifier =
+                                    Modifier
+                                        .weight(1f)
+                                        .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
+                                        .focusRequester(focusRequesters.getOrNull(0) ?: remember { FocusRequester() }),
                                 interactionSource = trailerButtonInteractionSource,
                                 isFocused = trailerButtonIsFocused,
                                 text = "Trailer",
-                                textColor = StrmrConstants.Colors.TEXT_PRIMARY
+                                textColor = StrmrConstants.Colors.TEXT_PRIMARY,
                             )
                             val moreEpisodesButtonInteractionSource = remember { MutableInteractionSource() }
                             val moreEpisodesButtonIsFocused by moreEpisodesButtonInteractionSource.collectIsFocusedAsState()
                             FrostedGlassButton(
                                 onClick = onMoreEpisodes,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
-                                    .focusRequester(focusRequesters.getOrNull(0) ?: remember { FocusRequester() }),
+                                modifier =
+                                    Modifier
+                                        .weight(1f)
+                                        .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
+                                        .focusRequester(focusRequesters.getOrNull(0) ?: remember { FocusRequester() }),
                                 interactionSource = moreEpisodesButtonInteractionSource,
                                 isFocused = moreEpisodesButtonIsFocused,
                                 text = "More Episodes",
-                                textColor = StrmrConstants.Colors.TEXT_PRIMARY
+                                textColor = StrmrConstants.Colors.TEXT_PRIMARY,
                             )
                         }
                         Spacer(Modifier.height(StrmrConstants.Dimensions.SPACING_MEDIUM))
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .onKeyEvent { event ->
-                                    if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
-                                        event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
-                                        selectionManager.selectedRowIndex == 0 && rows.size > 1
-                                    ) {
-                                        // Navigate from buttons to next available row
-                                        val newRowIndex = 1
-                                        val newItemIndex = rowPositionMemory[newRowIndex] ?: 0
-                                        selectionManager.updateSelection(newRowIndex, newItemIndex)
-                                        Log.d("TvShowDetailsView", "🎯 Button navigation: moving to row $newRowIndex (${rows[newRowIndex]})")
-                                        true
-                                    } else false
-                                }, 
-                            horizontalArrangement = Arrangement.spacedBy(StrmrConstants.Dimensions.SPACING_STANDARD)
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .onKeyEvent { event ->
+                                        if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
+                                            event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
+                                            selectionManager.selectedRowIndex == 0 && rows.size > 1
+                                        ) {
+                                            // Navigate from buttons to next available row
+                                            val newRowIndex = 1
+                                            val newItemIndex = rowPositionMemory[newRowIndex] ?: 0
+                                            selectionManager.updateSelection(newRowIndex, newItemIndex)
+                                            Log.d(
+                                                "TvShowDetailsView",
+                                                "🎯 Button navigation: moving to row $newRowIndex (${rows[newRowIndex]})",
+                                            )
+                                            true
+                                        } else {
+                                            false
+                                        }
+                                    },
+                            horizontalArrangement = Arrangement.spacedBy(StrmrConstants.Dimensions.SPACING_STANDARD),
                         ) {
                             val collectionButtonInteractionSource = remember { MutableInteractionSource() }
                             val collectionButtonIsFocused by collectionButtonInteractionSource.collectIsFocusedAsState()
                             FrostedGlassButton(
                                 onClick = onAddToCollection,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
-                                    .focusRequester(focusRequesters.getOrNull(0) ?: remember { FocusRequester() }),
+                                modifier =
+                                    Modifier
+                                        .weight(1f)
+                                        .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
+                                        .focusRequester(focusRequesters.getOrNull(0) ?: remember { FocusRequester() }),
                                 interactionSource = collectionButtonInteractionSource,
                                 isFocused = collectionButtonIsFocused,
                                 text = "",
                                 textColor = StrmrConstants.Colors.TEXT_PRIMARY,
-                                hasCustomContent = true
+                                hasCustomContent = true,
                             ) {
                                 Icon(
-                                    Icons.Filled.Bookmark, 
-                                    contentDescription = "Collection", 
-                                    tint = if (collectionButtonIsFocused) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY
+                                    Icons.Filled.Bookmark,
+                                    contentDescription = "Collection",
+                                    tint = if (collectionButtonIsFocused) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY,
                                 )
                             }
                             val watchlistButtonInteractionSource = remember { MutableInteractionSource() }
                             val watchlistButtonIsFocused by watchlistButtonInteractionSource.collectIsFocusedAsState()
                             FrostedGlassButton(
                                 onClick = { /* TODO: Watchlist */ },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
-                                    .focusRequester(focusRequesters.getOrNull(0) ?: remember { FocusRequester() }),
+                                modifier =
+                                    Modifier
+                                        .weight(1f)
+                                        .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
+                                        .focusRequester(focusRequesters.getOrNull(0) ?: remember { FocusRequester() }),
                                 interactionSource = watchlistButtonInteractionSource,
                                 isFocused = watchlistButtonIsFocused,
                                 text = "",
                                 textColor = StrmrConstants.Colors.TEXT_PRIMARY,
-                                hasCustomContent = true
+                                hasCustomContent = true,
                             ) {
                                 Icon(
-                                    Icons.Filled.Queue, 
-                                    contentDescription = "Watchlist", 
-                                    tint = if (watchlistButtonIsFocused) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY
+                                    Icons.Filled.Queue,
+                                    contentDescription = "Watchlist",
+                                    tint = if (watchlistButtonIsFocused) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY,
                                 )
                             }
                             // --- New Watched/Unwatched Button ---
@@ -1189,20 +1282,21 @@ fun TvShowDetailsView(
                             val watchedButtonIsFocused by watchedButtonInteractionSource.collectIsFocusedAsState()
                             FrostedGlassButton(
                                 onClick = { /* TODO: Watched/Unwatched */ },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
-                                    .focusRequester(focusRequesters.getOrNull(0) ?: remember { FocusRequester() }),
+                                modifier =
+                                    Modifier
+                                        .weight(1f)
+                                        .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
+                                        .focusRequester(focusRequesters.getOrNull(0) ?: remember { FocusRequester() }),
                                 interactionSource = watchedButtonInteractionSource,
                                 isFocused = watchedButtonIsFocused,
                                 text = "",
                                 textColor = StrmrConstants.Colors.TEXT_PRIMARY,
-                                hasCustomContent = true
+                                hasCustomContent = true,
                             ) {
                                 Icon(
                                     Icons.Filled.Visibility,
                                     contentDescription = "Watched/Unwatched",
-                                    tint = if (watchedButtonIsFocused) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY
+                                    tint = if (watchedButtonIsFocused) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY,
                                 )
                             }
                             // --- End New Button ---
@@ -1210,14 +1304,15 @@ fun TvShowDetailsView(
                             val moreButtonIsFocused by moreButtonInteractionSource.collectIsFocusedAsState()
                             FrostedGlassButton(
                                 onClick = { /* TODO: More */ },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
-                                    .focusRequester(focusRequesters.getOrNull(0) ?: remember { FocusRequester() }),
+                                modifier =
+                                    Modifier
+                                        .weight(1f)
+                                        .height(StrmrConstants.Dimensions.Components.BUTTON_HEIGHT)
+                                        .focusRequester(focusRequesters.getOrNull(0) ?: remember { FocusRequester() }),
                                 interactionSource = moreButtonInteractionSource,
                                 isFocused = moreButtonIsFocused,
                                 text = "...",
-                                textColor = StrmrConstants.Colors.TEXT_PRIMARY
+                                textColor = StrmrConstants.Colors.TEXT_PRIMARY,
                             )
                         }
                     }
@@ -1248,17 +1343,27 @@ fun TvShowDetailsView(
                                     if (newRowIndex >= 0 && newRowIndex < rows.size) {
                                         // Save current position
                                         rowPositionMemory[actorsRowIndex] = selectionManager.selectedItemIndex
-                                        
+
                                         // Get target position from memory or use default
                                         val newItemIndex = rowPositionMemory[newRowIndex] ?: 0
-                                        
-                                        Log.d("TvShowDetailsView", "🎯 Actor row navigation: $actorsRowIndex(${rows[actorsRowIndex]}) -> $newRowIndex(${rows[newRowIndex]}), direction=$direction")
+
+                                        Log.d(
+                                            "TvShowDetailsView",
+                                            "🎯 Actor row navigation: $actorsRowIndex(${rows[actorsRowIndex]}) -> $newRowIndex(${rows[newRowIndex]}), direction=$direction",
+                                        )
                                         selectionManager.updateSelection(newRowIndex, newItemIndex)
                                     }
                                 },
-                                focusRequester = if (selectionManager.selectedRowIndex == actorsRowIndex) focusRequesters.getOrNull(actorsRowIndex) else null,
+                                focusRequester =
+                                    if (selectionManager.selectedRowIndex == actorsRowIndex) {
+                                        focusRequesters.getOrNull(
+                                            actorsRowIndex,
+                                        )
+                                    } else {
+                                        null
+                                    },
                                 isContentFocused = selectionManager.selectedRowIndex == actorsRowIndex,
-                                onContentFocusChanged = { /* Handled by selectionManager */ }
+                                onContentFocusChanged = { /* Handled by selectionManager */ },
                             )
                         }
                         "similar" -> {
@@ -1275,7 +1380,7 @@ fun TvShowDetailsView(
                                         title = content.title,
                                         posterUrl = content.posterUrl,
                                         subtitle = content.year?.toString(),
-                                        rating = content.rating?.let { String.format("%.1f", it) }
+                                        rating = content.rating?.let { String.format("%.1f", it) },
                                     )
                                 },
                                 modifier = Modifier.fillMaxWidth(),
@@ -1293,18 +1398,28 @@ fun TvShowDetailsView(
                                     if (newRowIndex >= 0 && newRowIndex < rows.size) {
                                         // Save current position
                                         rowPositionMemory[similarRowIndex] = selectionManager.selectedItemIndex
-                                        
+
                                         // Get target position from memory or use default
                                         val newItemIndex = rowPositionMemory[newRowIndex] ?: 0
-                                        
-                                        Log.d("TvShowDetailsView", "🎯 Similar row navigation: $similarRowIndex(${rows[similarRowIndex]}) -> $newRowIndex(${rows[newRowIndex]}), direction=$direction")
+
+                                        Log.d(
+                                            "TvShowDetailsView",
+                                            "🎯 Similar row navigation: $similarRowIndex(${rows[similarRowIndex]}) -> $newRowIndex(${rows[newRowIndex]}), direction=$direction",
+                                        )
                                         selectionManager.updateSelection(newRowIndex, newItemIndex)
                                     }
                                     // Stay on current row when at bottom boundary
                                 },
-                                focusRequester = if (selectionManager.selectedRowIndex == similarRowIndex) focusRequesters.getOrNull(similarRowIndex) else null,
+                                focusRequester =
+                                    if (selectionManager.selectedRowIndex == similarRowIndex) {
+                                        focusRequesters.getOrNull(
+                                            similarRowIndex,
+                                        )
+                                    } else {
+                                        null
+                                    },
                                 isContentFocused = selectionManager.selectedRowIndex == similarRowIndex,
-                                onContentFocusChanged = { /* Handled by selectionManager */ }
+                                onContentFocusChanged = { /* Handled by selectionManager */ },
                             )
                         }
                     }
@@ -1324,29 +1439,30 @@ fun ActorsRow(
     onUpDown: ((Int) -> Unit)? = null,
     focusRequester: FocusRequester? = null,
     isContentFocused: Boolean = false,
-    onContentFocusChanged: ((Boolean) -> Unit)? = null
+    onContentFocusChanged: ((Boolean) -> Unit)? = null,
 ) {
     if (actors.isEmpty()) return
-    
+
     UnifiedMediaRow(
-        config = MediaRowConfig(
-            title = "Actors",
-            dataSource = DataSource.RegularList(actors.take(StrmrConstants.UI.MAX_CAST_ITEMS)),
-            selectedIndex = selectedIndex,
-            isRowSelected = isRowSelected,
-            onSelectionChanged = onSelectionChanged,
-            onUpDown = onUpDown,
-            focusRequester = focusRequester,
-            onContentFocusChanged = onContentFocusChanged,
-            cardType = CardType.PORTRAIT,
-            itemWidth = 90.dp, // Keep as 90.dp since it's specific for actors
-            itemSpacing = StrmrConstants.Dimensions.SPACING_MEDIUM,
-            contentPadding = PaddingValues(horizontal = 48.dp),
-            itemContent = { actor, isSelected ->
-                ActorCard(actor = actor, isSelected = isSelected)
-            }
-        ),
-        modifier = modifier
+        config =
+            MediaRowConfig(
+                title = "Actors",
+                dataSource = DataSource.RegularList(actors.take(StrmrConstants.UI.MAX_CAST_ITEMS)),
+                selectedIndex = selectedIndex,
+                isRowSelected = isRowSelected,
+                onSelectionChanged = onSelectionChanged,
+                onUpDown = onUpDown,
+                focusRequester = focusRequester,
+                onContentFocusChanged = onContentFocusChanged,
+                cardType = CardType.PORTRAIT,
+                itemWidth = 90.dp, // Keep as 90.dp since it's specific for actors
+                itemSpacing = StrmrConstants.Dimensions.SPACING_MEDIUM,
+                contentPadding = PaddingValues(horizontal = 48.dp),
+                itemContent = { actor, isSelected ->
+                    ActorCard(actor = actor, isSelected = isSelected)
+                },
+            ),
+        modifier = modifier,
     )
 }
 
@@ -1354,53 +1470,61 @@ fun ActorsRow(
 fun ActorCard(
     actor: Actor,
     modifier: Modifier = Modifier,
-    isSelected: Boolean = false
+    isSelected: Boolean = false,
 ) {
     val baseWidth = StrmrConstants.Dimensions.Cards.BASE_WIDTH
     val baseHeight = StrmrConstants.Dimensions.Cards.BASE_HEIGHT
     val targetWidth = if (isSelected) baseWidth * 1.1f else baseWidth
     val targetHeight = if (isSelected) baseHeight * 1.1f else baseHeight
-    val animatedWidth by animateDpAsState(targetValue = targetWidth, animationSpec = tween(durationMillis = StrmrConstants.Animation.DURATION_INSTANT))
-    val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = tween(durationMillis = StrmrConstants.Animation.DURATION_INSTANT))
+    val animatedWidth by animateDpAsState(
+        targetValue = targetWidth,
+        animationSpec = tween(durationMillis = StrmrConstants.Animation.DURATION_INSTANT),
+    )
+    val animatedHeight by animateDpAsState(
+        targetValue = targetHeight,
+        animationSpec = tween(durationMillis = StrmrConstants.Animation.DURATION_INSTANT),
+    )
 
     Column(
-        modifier = modifier
-            .width(animatedWidth)
-            .height(animatedHeight)
-            .border(
-                width = if (isSelected) StrmrConstants.Dimensions.Components.BORDER_WIDTH else 0.dp,
-                color = Color.Transparent,
-                shape = StrmrConstants.Shapes.CORNER_RADIUS_STANDARD
-            ),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier =
+            modifier
+                .width(animatedWidth)
+                .height(animatedHeight)
+                .border(
+                    width = if (isSelected) StrmrConstants.Dimensions.Components.BORDER_WIDTH else 0.dp,
+                    color = Color.Transparent,
+                    shape = StrmrConstants.Shapes.CORNER_RADIUS_STANDARD,
+                ),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // Actor image
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .clip(StrmrConstants.Shapes.CORNER_RADIUS_STANDARD)
-                .background(StrmrConstants.Colors.TEXT_SECONDARY),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .clip(StrmrConstants.Shapes.CORNER_RADIUS_STANDARD)
+                    .background(StrmrConstants.Colors.TEXT_SECONDARY),
+            contentAlignment = Alignment.Center,
         ) {
             if (!actor.profilePath.isNullOrBlank()) {
                 AsyncImage(
                     model = "https://image.tmdb.org/t/p/w185${actor.profilePath}",
                     contentDescription = actor.name,
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
                 )
             } else {
                 Text(
                     text = actor.name?.firstOrNull()?.uppercase() ?: "?",
                     color = StrmrConstants.Colors.TEXT_PRIMARY,
-                    fontSize = 20.sp
+                    fontSize = 20.sp,
                 )
             }
         }
-        
+
         Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_SMALL))
-        
+
         // Actor name
         Text(
             text = actor.name ?: "Unknown",
@@ -1408,9 +1532,9 @@ fun ActorCard(
             fontSize = 12.sp,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
         )
-        
+
         // Character name
         if (!actor.character.isNullOrBlank()) {
             Text(
@@ -1419,7 +1543,7 @@ fun ActorCard(
                 fontSize = 10.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
         }
     }
@@ -1428,20 +1552,20 @@ fun ActorCard(
 @Composable
 private fun RatingsRow(
     omdbRatings: OmdbResponse?,
-    traktRating: Float?
+    traktRating: Float?,
 ) {
     // Add comprehensive logging for debugging
     Log.d("RatingsRow", "⭐ RatingsRow composable called")
     Log.d("RatingsRow", "⭐ omdbRatings: $omdbRatings")
     Log.d("RatingsRow", "⭐ traktRating: $traktRating")
-    
+
     val rt = omdbRatings?.Ratings?.find { it.Source == "Rotten Tomatoes" }?.Value
     val meta = omdbRatings?.Metascore?.takeIf { !it.isNullOrBlank() && it != "N/A" }
-    
+
     Log.d("RatingsRow", "⭐ IMDb rating: ${omdbRatings?.imdbRating}")
     Log.d("RatingsRow", "⭐ Rotten Tomatoes rating: $rt")
     Log.d("RatingsRow", "⭐ Metacritic rating: $meta")
-    
+
     Row(verticalAlignment = Alignment.CenterVertically) {
         if (omdbRatings?.imdbRating != null) {
             Log.d("RatingsRow", "⭐ Rendering IMDb rating: ${omdbRatings.imdbRating}")
@@ -1454,7 +1578,11 @@ private fun RatingsRow(
         }
         if (!meta.isNullOrBlank()) {
             Log.d("RatingsRow", "⭐ Rendering Metacritic rating: $meta")
-            Image(painter = painterResource(id = R.drawable.metacritic_logo), contentDescription = "Metacritic", modifier = Modifier.size(32.dp))
+            Image(
+                painter = painterResource(id = R.drawable.metacritic_logo),
+                contentDescription = "Metacritic",
+                modifier = Modifier.size(32.dp),
+            )
             Spacer(Modifier.width(4.dp))
             Text("$meta%", color = StrmrConstants.Colors.TEXT_PRIMARY, fontSize = 18.sp)
             Spacer(Modifier.width(StrmrConstants.Dimensions.SPACING_STANDARD))
@@ -1463,7 +1591,11 @@ private fun RatingsRow(
         }
         if (!rt.isNullOrBlank()) {
             Log.d("RatingsRow", "⭐ Rendering Rotten Tomatoes rating: $rt")
-            Image(painter = painterResource(id = R.drawable.rotten_tomatoes), contentDescription = "Rotten Tomatoes", modifier = Modifier.size(32.dp))
+            Image(
+                painter = painterResource(id = R.drawable.rotten_tomatoes),
+                contentDescription = "Rotten Tomatoes",
+                modifier = Modifier.size(32.dp),
+            )
             Spacer(Modifier.width(4.dp))
             Text(rt, color = StrmrConstants.Colors.TEXT_PRIMARY, fontSize = 18.sp)
             Spacer(Modifier.width(StrmrConstants.Dimensions.SPACING_STANDARD))
@@ -1475,7 +1607,7 @@ private fun RatingsRow(
         Spacer(Modifier.width(4.dp))
         Text(traktRating?.let { String.format("%.1f", it) } ?: "-", color = StrmrConstants.Colors.TEXT_PRIMARY, fontSize = 18.sp)
     }
-} 
+}
 
 @Composable
 fun FrostedGlassButton(
@@ -1486,32 +1618,39 @@ fun FrostedGlassButton(
     text: String = "",
     textColor: Color = StrmrConstants.Colors.TEXT_PRIMARY,
     hasCustomContent: Boolean = false,
-    content: @Composable () -> Unit = {}
+    content: @Composable () -> Unit = {},
 ) {
     val cornerRadius = StrmrConstants.Dimensions.SPACING_SMALL
-    
+
     Box(
-        modifier = modifier
-            .focusable(interactionSource = interactionSource)
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
+        modifier =
+            modifier
+                .focusable(interactionSource = interactionSource)
+                .clickable { onClick() },
+        contentAlignment = Alignment.Center,
     ) {
         // Frosted glass background
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    color = if (isFocused) StrmrConstants.Colors.TEXT_PRIMARY.copy(alpha = StrmrConstants.Colors.Alpha.FOCUS) else StrmrConstants.Colors.BACKGROUND_DARK.copy(
-                        alpha = StrmrConstants.Colors.Alpha.MEDIUM
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        color =
+                            if (isFocused) {
+                                StrmrConstants.Colors.TEXT_PRIMARY.copy(alpha = StrmrConstants.Colors.Alpha.FOCUS)
+                            } else {
+                                StrmrConstants.Colors.BACKGROUND_DARK.copy(
+                                    alpha = StrmrConstants.Colors.Alpha.MEDIUM,
+                                )
+                            },
+                        shape = RoundedCornerShape(cornerRadius),
                     ),
-                    shape = RoundedCornerShape(cornerRadius)
-                )
         )
-        
+
         // Sharp content layer
         Box(
             modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             if (hasCustomContent) {
                 content()
@@ -1520,11 +1659,9 @@ fun FrostedGlassButton(
                     text = text,
                     color = if (isFocused) StrmrConstants.Colors.BACKGROUND_DARK else StrmrConstants.Colors.TEXT_PRIMARY,
                     fontSize = 16.sp,
-                    fontWeight = if (isFocused) FontWeight.Medium else FontWeight.Normal
+                    fontWeight = if (isFocused) FontWeight.Medium else FontWeight.Normal,
                 )
             }
         }
     }
-} 
-
- 
+}

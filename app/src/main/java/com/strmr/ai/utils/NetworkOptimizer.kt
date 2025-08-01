@@ -8,36 +8,33 @@ import okhttp3.logging.HttpLoggingInterceptor
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 /**
  * Network optimization utilities for request deduplication and caching
  * Reduces redundant API calls and improves performance
  */
 object NetworkOptimizer {
-    
     private const val TAG = "NetworkOptimizer"
-    
+
     // Request deduplication cache
     private val inFlightRequests = ConcurrentHashMap<String, Call>()
     private val responseCache = ConcurrentHashMap<String, CacheEntry>()
-    
+
     // Cache settings
     private const val DEFAULT_CACHE_DURATION_MS = 5 * 60 * 1000L // 5 minutes
     private const val TRENDING_CACHE_DURATION_MS = 30 * 60 * 1000L // 30 minutes
     private const val POPULAR_CACHE_DURATION_MS = 60 * 60 * 1000L // 1 hour
-    
+
     data class CacheEntry(
         val response: String,
         val timestamp: Long,
-        val cacheDurationMs: Long = DEFAULT_CACHE_DURATION_MS
+        val cacheDurationMs: Long = DEFAULT_CACHE_DURATION_MS,
     ) {
         fun isExpired(): Boolean {
             return System.currentTimeMillis() - timestamp > cacheDurationMs
         }
     }
-    
+
     /**
      * Request deduplication interceptor
      * Prevents multiple identical requests from being made simultaneously
@@ -46,7 +43,7 @@ object NetworkOptimizer {
         override fun intercept(chain: Interceptor.Chain): Response {
             val request = chain.request()
             val cacheKey = generateCacheKey(request)
-            
+
             // Check if we have a fresh cached response
             responseCache[cacheKey]?.let { cached ->
                 if (!cached.isExpired()) {
@@ -57,7 +54,7 @@ object NetworkOptimizer {
                     responseCache.remove(cacheKey)
                 }
             }
-            
+
             // Check if request is already in flight
             inFlightRequests[cacheKey]?.let { existingCall ->
                 if (!existingCall.isCanceled()) {
@@ -67,14 +64,14 @@ object NetworkOptimizer {
                     return chain.proceed(request)
                 }
             }
-            
+
             // Proceed with new request
             val call = chain.call()
             inFlightRequests[cacheKey] = call
-            
+
             try {
                 val response = chain.proceed(request)
-                
+
                 // Cache successful responses
                 if (response.isSuccessful) {
                     val responseBody = response.body?.string()
@@ -82,27 +79,26 @@ object NetworkOptimizer {
                         val cacheDuration = getCacheDurationForUrl(request.url.toString())
                         responseCache[cacheKey] = CacheEntry(body, System.currentTimeMillis(), cacheDuration)
                         Log.d(TAG, "💾 Cached response for $cacheKey (${cacheDuration}ms)")
-                        
+
                         // Recreate response with cached body
                         return response.newBuilder()
                             .body(body.toResponseBody(response.body?.contentType()))
                             .build()
                     }
                 }
-                
+
                 return response
-                
             } finally {
                 inFlightRequests.remove(cacheKey)
             }
         }
-        
+
         private fun generateCacheKey(request: Request): String {
             val url = request.url.toString()
             val method = request.method
             return "${method}_${url.hashCode()}"
         }
-        
+
         private fun getCacheDurationForUrl(url: String): Long {
             return when {
                 url.contains("trending") -> TRENDING_CACHE_DURATION_MS
@@ -110,8 +106,11 @@ object NetworkOptimizer {
                 else -> DEFAULT_CACHE_DURATION_MS
             }
         }
-        
-        private fun createResponseFromCache(request: Request, cachedBody: String): Response {
+
+        private fun createResponseFromCache(
+            request: Request,
+            cachedBody: String,
+        ): Response {
             return Response.Builder()
                 .request(request)
                 .protocol(Protocol.HTTP_1_1)
@@ -123,7 +122,7 @@ object NetworkOptimizer {
                 .build()
         }
     }
-    
+
     /**
      * Request timing interceptor for performance monitoring
      */
@@ -131,23 +130,23 @@ object NetworkOptimizer {
         override fun intercept(chain: Interceptor.Chain): Response {
             val request = chain.request()
             val startTime = System.currentTimeMillis()
-            
+
             val response = chain.proceed(request)
-            
+
             val endTime = System.currentTimeMillis()
             val duration = endTime - startTime
-            
+
             val url = request.url.toString()
             when {
                 duration > 3000 -> Log.w(TAG, "🐌 SLOW REQUEST: $url took ${duration}ms")
                 duration > 1000 -> Log.w(TAG, "⚠️ SLOW REQUEST: $url took ${duration}ms")
                 else -> Log.d(TAG, "⚡ Request: $url (${duration}ms)")
             }
-            
+
             return response
         }
     }
-    
+
     /**
      * Create optimized OkHttp client with deduplication and caching
      */
@@ -163,15 +162,17 @@ object NetworkOptimizer {
             .apply {
                 // Add logging in debug builds
                 if (android.util.Log.isLoggable(TAG, Log.DEBUG)) {
-                    addInterceptor(HttpLoggingInterceptor().apply {
-                        level = HttpLoggingInterceptor.Level.BASIC
-                    })
+                    addInterceptor(
+                        HttpLoggingInterceptor().apply {
+                            level = HttpLoggingInterceptor.Level.BASIC
+                        },
+                    )
                 }
             }
             .cache(createDiskCache())
             .build()
     }
-    
+
     /**
      * Create retry interceptor for failed requests
      */
@@ -181,13 +182,13 @@ object NetworkOptimizer {
             var response = chain.proceed(request)
             var retryCount = 0
             val maxRetries = 3
-            
+
             while (!response.isSuccessful && retryCount < maxRetries) {
                 retryCount++
                 Log.w(TAG, "🔄 Retrying request (attempt $retryCount/$maxRetries): ${request.url}")
-                
+
                 response.close()
-                
+
                 // Exponential backoff
                 try {
                     Thread.sleep(1000L * retryCount)
@@ -195,18 +196,18 @@ object NetworkOptimizer {
                     Thread.currentThread().interrupt()
                     throw IOException("Request interrupted during retry", e)
                 }
-                
+
                 response = chain.proceed(request)
             }
-            
+
             if (!response.isSuccessful && retryCount >= maxRetries) {
                 Log.e(TAG, "❌ Request failed after $maxRetries retries: ${request.url}")
             }
-            
+
             response
         }
     }
-    
+
     /**
      * Create disk cache for HTTP responses
      */
@@ -220,7 +221,7 @@ object NetworkOptimizer {
             null
         }
     }
-    
+
     /**
      * Clear network caches
      */
@@ -229,7 +230,7 @@ object NetworkOptimizer {
         responseCache.clear()
         inFlightRequests.clear()
     }
-    
+
     /**
      * Get cache statistics
      */
@@ -238,22 +239,22 @@ object NetworkOptimizer {
         val expiredEntries = responseCache.values.count { it.isExpired() }
         val activeEntries = totalRequests - expiredEntries
         val inFlightCount = inFlightRequests.size
-        
+
         return CacheStats(
             totalCachedRequests = totalRequests,
             activeCachedRequests = activeEntries,
             expiredCachedRequests = expiredEntries,
-            inFlightRequests = inFlightCount
+            inFlightRequests = inFlightCount,
         )
     }
-    
+
     data class CacheStats(
         val totalCachedRequests: Int,
         val activeCachedRequests: Int,
         val expiredCachedRequests: Int,
-        val inFlightRequests: Int
+        val inFlightRequests: Int,
     )
-    
+
     /**
      * Log cache statistics
      */
@@ -265,21 +266,21 @@ object NetworkOptimizer {
         Log.d(TAG, "  Expired: ${stats.expiredCachedRequests}")
         Log.d(TAG, "  In-flight: ${stats.inFlightRequests}")
     }
-    
+
     /**
      * Periodic cache cleanup
      */
     fun cleanupExpiredEntries() {
         val initialSize = responseCache.size
         val iterator = responseCache.iterator()
-        
+
         while (iterator.hasNext()) {
             val entry = iterator.next()
             if (entry.value.isExpired()) {
                 iterator.remove()
             }
         }
-        
+
         val removedCount = initialSize - responseCache.size
         if (removedCount > 0) {
             Log.d(TAG, "🧹 Cleaned up $removedCount expired cache entries")

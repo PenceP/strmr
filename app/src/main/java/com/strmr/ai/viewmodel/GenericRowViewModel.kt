@@ -9,13 +9,11 @@ import com.strmr.ai.data.GenericTraktRepository
 import com.strmr.ai.data.database.MovieEntity
 import com.strmr.ai.ui.components.PaginationStateInfo
 import com.strmr.ai.ui.components.PagingState
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 /**
  * Generic ViewModel for all row types in the application
@@ -24,31 +22,32 @@ import javax.inject.Inject
  */
 class GenericRowViewModel constructor(
     private val genericRepository: GenericTraktRepository,
-    private val configuration: GenericRowConfiguration
+    private val configuration: GenericRowConfiguration,
 ) : ViewModel() {
-
     private val _items = MutableStateFlow<List<MovieEntity>>(emptyList())
     val items = _items.asStateFlow()
 
-    private val _paginationState = MutableStateFlow(
-        PaginationStateInfo(
-            canPaginate = configuration.isPaginated,
-            pagingState = PagingState.LOADING,
-            currentPage = 1
+    private val _paginationState =
+        MutableStateFlow(
+            PaginationStateInfo(
+                canPaginate = configuration.isPaginated,
+                pagingState = PagingState.LOADING,
+                currentPage = 1,
+            ),
         )
-    )
     val paginationState = _paginationState.asStateFlow()
 
     private var loadingJob: Job? = null
     private var lastLoadedPage = 0 // Track the last successfully loaded page
 
-    private val dataSourceConfig = DataSourceConfig(
-        id = configuration.id,
-        title = configuration.title,
-        endpoint = configuration.endpoint,
-        mediaType = configuration.mediaType,
-        cacheKey = configuration.cacheKey
-    )
+    private val dataSourceConfig =
+        DataSourceConfig(
+            id = configuration.id,
+            title = configuration.title,
+            endpoint = configuration.endpoint,
+            mediaType = configuration.mediaType,
+            cacheKey = configuration.cacheKey,
+        )
 
     init {
         Log.d("GenericRowViewModel", "<� Initializing ${configuration.title} (${configuration.id})")
@@ -64,33 +63,39 @@ class GenericRowViewModel constructor(
                 if (cachedItems.isNotEmpty()) {
                     Log.d("GenericRowViewModel", " ${configuration.title}: Loaded ${cachedItems.size} cached items")
                     _items.value = cachedItems
-                    
+
                     if (configuration.isPaginated) {
                         // Handle paginated content
                         if (cachedItems.size <= configuration.pageSize) {
-                            Log.d("GenericRowViewModel", "= ${configuration.title}: Cached data incomplete (${cachedItems.size} <= ${configuration.pageSize}), refreshing...")
-                            lastLoadedPage = if (cachedItems.size == configuration.pageSize) 1 else 0
-                            _paginationState.value = _paginationState.value.copy(
-                                pagingState = PagingState.LOADING,
-                                canPaginate = true,
-                                currentPage = 1
+                            Log.d(
+                                "GenericRowViewModel",
+                                "= ${configuration.title}: Cached data incomplete (${cachedItems.size} <= ${configuration.pageSize}), refreshing...",
                             )
+                            lastLoadedPage = if (cachedItems.size == configuration.pageSize) 1 else 0
+                            _paginationState.value =
+                                _paginationState.value.copy(
+                                    pagingState = PagingState.LOADING,
+                                    canPaginate = true,
+                                    currentPage = 1,
+                                )
                             loadPage(1) // Refresh first page
                         } else {
                             // Calculate how many pages we have loaded based on cached data
                             lastLoadedPage = (cachedItems.size + configuration.pageSize - 1) / configuration.pageSize // Round up
-                            _paginationState.value = _paginationState.value.copy(
-                                pagingState = PagingState.IDLE,
-                                canPaginate = true,
-                                currentPage = lastLoadedPage + 1
-                            )
+                            _paginationState.value =
+                                _paginationState.value.copy(
+                                    pagingState = PagingState.IDLE,
+                                    canPaginate = true,
+                                    currentPage = lastLoadedPage + 1,
+                                )
                         }
                     } else {
                         // Handle static content (non-paginated)
-                        _paginationState.value = _paginationState.value.copy(
-                            pagingState = PagingState.IDLE,
-                            canPaginate = false
-                        )
+                        _paginationState.value =
+                            _paginationState.value.copy(
+                                pagingState = PagingState.IDLE,
+                                canPaginate = false,
+                            )
                     }
                 } else {
                     // No cached data, load from API
@@ -102,9 +107,10 @@ class GenericRowViewModel constructor(
                 }
             } catch (e: Exception) {
                 Log.e("GenericRowViewModel", "L ${configuration.title}: Error loading initial data", e)
-                _paginationState.value = _paginationState.value.copy(
-                    pagingState = PagingState.ERROR
-                )
+                _paginationState.value =
+                    _paginationState.value.copy(
+                        pagingState = PagingState.ERROR,
+                    )
             }
         }
     }
@@ -117,7 +123,7 @@ class GenericRowViewModel constructor(
             Log.w("GenericRowViewModel", "� ${configuration.title}: loadPage called on non-paginated row")
             return
         }
-        
+
         // Prevent concurrent requests
         if (loadingJob?.isActive == true) {
             Log.d("GenericRowViewModel", "� ${configuration.title}: Load already in progress, skipping page $page")
@@ -138,51 +144,54 @@ class GenericRowViewModel constructor(
         }
 
         Log.d("GenericRowViewModel", "=� ${configuration.title}: Starting pagination for page $page")
-        
-        loadingJob = viewModelScope.launch {
-            try {
-                _paginationState.value = _paginationState.value.copy(
-                    pagingState = if (page == 1) PagingState.LOADING else PagingState.PAGINATING
-                )
 
-                if (page == 1) {
-                    // Refresh first page
-                    genericRepository.refreshMovieDataSource(dataSourceConfig)
-                } else {
-                    // Load additional page
-                    val itemsLoaded = genericRepository.loadMovieDataSourcePage(dataSourceConfig, page)
-                    Log.d("GenericRowViewModel", "=� ${configuration.title}: Loaded $itemsLoaded items for page $page")
+        loadingJob =
+            viewModelScope.launch {
+                try {
+                    _paginationState.value =
+                        _paginationState.value.copy(
+                            pagingState = if (page == 1) PagingState.LOADING else PagingState.PAGINATING,
+                        )
+
+                    if (page == 1) {
+                        // Refresh first page
+                        genericRepository.refreshMovieDataSource(dataSourceConfig)
+                    } else {
+                        // Load additional page
+                        val itemsLoaded = genericRepository.loadMovieDataSourcePage(dataSourceConfig, page)
+                        Log.d("GenericRowViewModel", "=� ${configuration.title}: Loaded $itemsLoaded items for page $page")
+                    }
+
+                    // Get updated data from database
+                    val updatedItems = genericRepository.getMoviesFromDataSource(dataSourceConfig).first()
+
+                    // Check if we got a full page of results
+                    val previousSize = _items.value.size
+                    val itemsLoaded = if (page == 1) updatedItems.size else updatedItems.size - previousSize
+                    val gotFullPage = itemsLoaded >= configuration.pageSize
+
+                    // Can paginate if we got a full page and haven't hit the max limit
+                    val totalPagesLoaded = (updatedItems.size + configuration.pageSize - 1) / configuration.pageSize
+                    val canPaginate = gotFullPage && totalPagesLoaded < configuration.maxPages
+
+                    _items.value = updatedItems
+                    lastLoadedPage = page // Update last loaded page on success
+                    _paginationState.value =
+                        PaginationStateInfo(
+                            canPaginate = canPaginate,
+                            pagingState = if (canPaginate) PagingState.IDLE else PagingState.PAGINATING_EXHAUST,
+                            currentPage = if (canPaginate) page + 1 else page,
+                        )
+
+                    Log.d("GenericRowViewModel", " ${configuration.title}: Pagination complete: ${updatedItems.size} total items, canPaginate=$canPaginate, nextPage=${_paginationState.value.currentPage}, lastLoaded=$lastLoadedPage")
+                } catch (e: Exception) {
+                    Log.e("GenericRowViewModel", "L ${configuration.title}: Error paginating page $page", e)
+                    _paginationState.value =
+                        _paginationState.value.copy(
+                            pagingState = PagingState.ERROR,
+                        )
                 }
-
-                // Get updated data from database
-                val updatedItems = genericRepository.getMoviesFromDataSource(dataSourceConfig).first()
-                
-                // Check if we got a full page of results
-                val previousSize = _items.value.size
-                val itemsLoaded = if (page == 1) updatedItems.size else updatedItems.size - previousSize
-                val gotFullPage = itemsLoaded >= configuration.pageSize
-                
-                // Can paginate if we got a full page and haven't hit the max limit
-                val totalPagesLoaded = (updatedItems.size + configuration.pageSize - 1) / configuration.pageSize
-                val canPaginate = gotFullPage && totalPagesLoaded < configuration.maxPages
-
-                _items.value = updatedItems
-                lastLoadedPage = page // Update last loaded page on success
-                _paginationState.value = PaginationStateInfo(
-                    canPaginate = canPaginate,
-                    pagingState = if (canPaginate) PagingState.IDLE else PagingState.PAGINATING_EXHAUST,
-                    currentPage = if (canPaginate) page + 1 else page
-                )
-
-                Log.d("GenericRowViewModel", " ${configuration.title}: Pagination complete: ${updatedItems.size} total items, canPaginate=$canPaginate, nextPage=${_paginationState.value.currentPage}, lastLoaded=$lastLoadedPage")
-
-            } catch (e: Exception) {
-                Log.e("GenericRowViewModel", "L ${configuration.title}: Error paginating page $page", e)
-                _paginationState.value = _paginationState.value.copy(
-                    pagingState = PagingState.ERROR
-                )
             }
-        }
     }
 
     /**
@@ -203,35 +212,38 @@ class GenericRowViewModel constructor(
         }
 
         Log.d("GenericRowViewModel", "=� ${configuration.title}: Loading static data")
-        
-        loadingJob = viewModelScope.launch {
-            try {
-                _paginationState.value = _paginationState.value.copy(
-                    pagingState = PagingState.LOADING
-                )
 
-                // Refresh the data
-                genericRepository.refreshMovieDataSource(dataSourceConfig)
+        loadingJob =
+            viewModelScope.launch {
+                try {
+                    _paginationState.value =
+                        _paginationState.value.copy(
+                            pagingState = PagingState.LOADING,
+                        )
 
-                // Get updated data from database
-                val updatedItems = genericRepository.getMoviesFromDataSource(dataSourceConfig).first()
+                    // Refresh the data
+                    genericRepository.refreshMovieDataSource(dataSourceConfig)
 
-                _items.value = updatedItems
-                _paginationState.value = PaginationStateInfo(
-                    canPaginate = false, // Static lists don't paginate
-                    pagingState = PagingState.IDLE,
-                    currentPage = 1
-                )
+                    // Get updated data from database
+                    val updatedItems = genericRepository.getMoviesFromDataSource(dataSourceConfig).first()
 
-                Log.d("GenericRowViewModel", " ${configuration.title}: Load complete: ${updatedItems.size} total items")
+                    _items.value = updatedItems
+                    _paginationState.value =
+                        PaginationStateInfo(
+                            canPaginate = false, // Static lists don't paginate
+                            pagingState = PagingState.IDLE,
+                            currentPage = 1,
+                        )
 
-            } catch (e: Exception) {
-                Log.e("GenericRowViewModel", "L ${configuration.title}: Error loading data", e)
-                _paginationState.value = _paginationState.value.copy(
-                    pagingState = PagingState.ERROR
-                )
+                    Log.d("GenericRowViewModel", " ${configuration.title}: Load complete: ${updatedItems.size} total items")
+                } catch (e: Exception) {
+                    Log.e("GenericRowViewModel", "L ${configuration.title}: Error loading data", e)
+                    _paginationState.value =
+                        _paginationState.value.copy(
+                            pagingState = PagingState.ERROR,
+                        )
+                }
             }
-        }
     }
 
     /**

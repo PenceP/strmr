@@ -3,7 +3,6 @@ package com.strmr.ai.ui.components
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.height
@@ -28,23 +27,24 @@ fun SquareMediaCard(
     posterUrl: String?,
     isSelected: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val cardHeight by animateDpAsState(
         targetValue = if (isSelected) 130.dp else 120.dp,
-        animationSpec = tween(durationMillis = 200)
+        animationSpec = tween(durationMillis = 200),
     )
 
     Box(
-        modifier = modifier
-            .height(cardHeight)
-            .aspectRatio(1f)
-            .background(
-                color = Color.Transparent,
-                shape = RoundedCornerShape(8.dp)
-            )
-            .clip(RoundedCornerShape(8.dp)),
-        contentAlignment = Alignment.Center
+        modifier =
+            modifier
+                .height(cardHeight)
+                .aspectRatio(1f)
+                .background(
+                    color = Color.Transparent,
+                    shape = RoundedCornerShape(8.dp),
+                )
+                .clip(RoundedCornerShape(8.dp)),
+        contentAlignment = Alignment.Center,
     ) {
         val resolvedPosterSource = resolveImageSource(posterUrl)
         if (resolvedPosterSource != null) {
@@ -52,15 +52,15 @@ fun SquareMediaCard(
                 model = resolvedPosterSource,
                 contentDescription = title,
                 modifier = Modifier.matchParentSize(),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
             )
         } else {
             Text(
                 text = title,
                 color = Color.White,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(8.dp)
+                modifier = Modifier.padding(8.dp),
             )
         }
     }
-} 
+}

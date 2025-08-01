@@ -12,7 +12,7 @@ data class Rating(
     val traktRating: Float? = null,
     val traktVotes: Int? = null,
     val imdbRating: Float? = null,
-    val rottenTomatoesRating: Int? = null
+    val rottenTomatoesRating: Int? = null,
 ) {
     /**
      * Get the primary rating to display, preferring Trakt then TMDB
@@ -35,11 +35,12 @@ data class Rating(
 value class Runtime(val minutes: Int) {
     val duration: Duration
         get() = Duration.parse("${minutes}m")
-        
+
     val displayText: String
-        get() = when {
-            minutes < 60 -> "${minutes}m"
-            minutes % 60 == 0 -> "${minutes / 60}h"
-            else -> "${minutes / 60}h ${minutes % 60}m"
-        }
+        get() =
+            when {
+                minutes < 60 -> "${minutes}m"
+                minutes % 60 == 0 -> "${minutes / 60}h"
+                else -> "${minutes / 60}h ${minutes % 60}m"
+            }
 }

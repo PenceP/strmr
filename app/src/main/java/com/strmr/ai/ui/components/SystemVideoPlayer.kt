@@ -30,67 +30,68 @@ fun SystemVideoPlayer(
     modifier: Modifier = Modifier,
     onPlayerError: ((String) -> Unit)? = null,
     onVideoEnded: (() -> Unit)? = null,
-    autoPlay: Boolean = true
+    autoPlay: Boolean = true,
 ) {
     val context = LocalContext.current
     var isPlayerReady by remember { mutableStateOf(false) }
     var hasError by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     var isBuffering by remember { mutableStateOf(true) }
-    
-    val mediaPlayer = remember {
-        MediaPlayer().apply {
-            setOnPreparedListener {
-                isPlayerReady = true
-                isBuffering = false
-                hasError = false
-                Log.d("SystemVideoPlayer", "✅ System MediaPlayer prepared")
-                if (autoPlay) {
-                    start()
-                }
-            }
-            
-            setOnBufferingUpdateListener { _, percent ->
-                isBuffering = percent < 100
-                if (percent % 25 == 0) {
-                    Log.d("SystemVideoPlayer", "⏳ Buffering: $percent%")
-                }
-            }
-            
-            setOnCompletionListener {
-                Log.d("SystemVideoPlayer", "🏁 Video playback completed")
-                onVideoEnded?.invoke()
-            }
-            
-            setOnErrorListener { _, what, extra ->
-                hasError = true
-                errorMessage = "System MediaPlayer error (what=$what, extra=$extra)"
-                Log.e("SystemVideoPlayer", "❌ $errorMessage")
-                onPlayerError?.invoke(errorMessage)
-                true
-            }
-            
-            setOnInfoListener { _, what, extra ->
-                when (what) {
-                    MediaPlayer.MEDIA_INFO_BUFFERING_START -> {
-                        isBuffering = true
-                        Log.d("SystemVideoPlayer", "⏳ Buffering started")
-                    }
-                    MediaPlayer.MEDIA_INFO_BUFFERING_END -> {
-                        isBuffering = false
-                        Log.d("SystemVideoPlayer", "✅ Buffering ended")
-                    }
-                    MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START -> {
-                        isPlayerReady = true
-                        isBuffering = false
-                        Log.d("SystemVideoPlayer", "🎥 Video rendering started")
+
+    val mediaPlayer =
+        remember {
+            MediaPlayer().apply {
+                setOnPreparedListener {
+                    isPlayerReady = true
+                    isBuffering = false
+                    hasError = false
+                    Log.d("SystemVideoPlayer", "✅ System MediaPlayer prepared")
+                    if (autoPlay) {
+                        start()
                     }
                 }
-                true
+
+                setOnBufferingUpdateListener { _, percent ->
+                    isBuffering = percent < 100
+                    if (percent % 25 == 0) {
+                        Log.d("SystemVideoPlayer", "⏳ Buffering: $percent%")
+                    }
+                }
+
+                setOnCompletionListener {
+                    Log.d("SystemVideoPlayer", "🏁 Video playback completed")
+                    onVideoEnded?.invoke()
+                }
+
+                setOnErrorListener { _, what, extra ->
+                    hasError = true
+                    errorMessage = "System MediaPlayer error (what=$what, extra=$extra)"
+                    Log.e("SystemVideoPlayer", "❌ $errorMessage")
+                    onPlayerError?.invoke(errorMessage)
+                    true
+                }
+
+                setOnInfoListener { _, what, extra ->
+                    when (what) {
+                        MediaPlayer.MEDIA_INFO_BUFFERING_START -> {
+                            isBuffering = true
+                            Log.d("SystemVideoPlayer", "⏳ Buffering started")
+                        }
+                        MediaPlayer.MEDIA_INFO_BUFFERING_END -> {
+                            isBuffering = false
+                            Log.d("SystemVideoPlayer", "✅ Buffering ended")
+                        }
+                        MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START -> {
+                            isPlayerReady = true
+                            isBuffering = false
+                            Log.d("SystemVideoPlayer", "🎥 Video rendering started")
+                        }
+                    }
+                    true
+                }
             }
         }
-    }
-    
+
     DisposableEffect(mediaPlayer) {
         onDispose {
             Log.d("SystemVideoPlayer", "🔄 Disposing System MediaPlayer")
@@ -104,140 +105,147 @@ fun SystemVideoPlayer(
             }
         }
     }
-    
+
     Box(
         modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         when {
             hasError -> {
                 SystemVideoPlayerError(
                     message = errorMessage,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
                 )
             }
             else -> {
                 AndroidView(
                     factory = { ctx ->
                         SurfaceView(ctx).apply {
-                            holder.addCallback(object : android.view.SurfaceHolder.Callback {
-                                override fun surfaceCreated(holder: android.view.SurfaceHolder) {
-                                    try {
-                                        mediaPlayer.setDisplay(holder)
-                                        mediaPlayer.setDataSource(ctx, Uri.parse(videoUrl))
-                                        mediaPlayer.prepareAsync()
-                                        Log.d("SystemVideoPlayer", "🎬 System MediaPlayer setup for: $videoUrl")
-                                    } catch (e: Exception) {
-                                        hasError = true
-                                        errorMessage = "Failed to setup MediaPlayer: ${e.message}"
-                                        Log.e("SystemVideoPlayer", errorMessage, e)
+                            holder.addCallback(
+                                object : android.view.SurfaceHolder.Callback {
+                                    override fun surfaceCreated(holder: android.view.SurfaceHolder) {
+                                        try {
+                                            mediaPlayer.setDisplay(holder)
+                                            mediaPlayer.setDataSource(ctx, Uri.parse(videoUrl))
+                                            mediaPlayer.prepareAsync()
+                                            Log.d("SystemVideoPlayer", "🎬 System MediaPlayer setup for: $videoUrl")
+                                        } catch (e: Exception) {
+                                            hasError = true
+                                            errorMessage = "Failed to setup MediaPlayer: ${e.message}"
+                                            Log.e("SystemVideoPlayer", errorMessage, e)
+                                        }
                                     }
-                                }
-                                
-                                override fun surfaceChanged(
-                                    holder: android.view.SurfaceHolder,
-                                    format: Int,
-                                    width: Int,
-                                    height: Int
-                                ) {
-                                    Log.d("SystemVideoPlayer", "📐 Surface changed: ${width}x${height}")
-                                }
-                                
-                                override fun surfaceDestroyed(holder: android.view.SurfaceHolder) {
-                                    Log.d("SystemVideoPlayer", "🔻 Surface destroyed")
-                                }
-                            })
+
+                                    override fun surfaceChanged(
+                                        holder: android.view.SurfaceHolder,
+                                        format: Int,
+                                        width: Int,
+                                        height: Int,
+                                    ) {
+                                        Log.d("SystemVideoPlayer", "📐 Surface changed: ${width}x$height")
+                                    }
+
+                                    override fun surfaceDestroyed(holder: android.view.SurfaceHolder) {
+                                        Log.d("SystemVideoPlayer", "🔻 Surface destroyed")
+                                    }
+                                },
+                            )
                         }
                     },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .focusable()
-                        .onKeyEvent { keyEvent ->
-                            when {
-                                keyEvent.key == Key.DirectionCenter && keyEvent.type == KeyEventType.KeyDown -> {
-                                    try {
-                                        if (mediaPlayer.isPlaying) {
-                                            mediaPlayer.pause()
-                                        } else {
-                                            mediaPlayer.start()
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .focusable()
+                            .onKeyEvent { keyEvent ->
+                                when {
+                                    keyEvent.key == Key.DirectionCenter && keyEvent.type == KeyEventType.KeyDown -> {
+                                        try {
+                                            if (mediaPlayer.isPlaying) {
+                                                mediaPlayer.pause()
+                                            } else {
+                                                mediaPlayer.start()
+                                            }
+                                        } catch (e: Exception) {
+                                            Log.w("SystemVideoPlayer", "Error controlling playback: ${e.message}")
                                         }
-                                    } catch (e: Exception) {
-                                        Log.w("SystemVideoPlayer", "Error controlling playback: ${e.message}")
+                                        true
                                     }
-                                    true
-                                }
-                                keyEvent.key == Key.DirectionRight && keyEvent.type == KeyEventType.KeyDown -> {
-                                    try {
-                                        val currentPos = mediaPlayer.currentPosition
-                                        val duration = mediaPlayer.duration
-                                        val newPos = minOf(currentPos + 10000, duration)
-                                        mediaPlayer.seekTo(newPos)
-                                    } catch (e: Exception) {
-                                        Log.w("SystemVideoPlayer", "Error seeking: ${e.message}")
+                                    keyEvent.key == Key.DirectionRight && keyEvent.type == KeyEventType.KeyDown -> {
+                                        try {
+                                            val currentPos = mediaPlayer.currentPosition
+                                            val duration = mediaPlayer.duration
+                                            val newPos = minOf(currentPos + 10000, duration)
+                                            mediaPlayer.seekTo(newPos)
+                                        } catch (e: Exception) {
+                                            Log.w("SystemVideoPlayer", "Error seeking: ${e.message}")
+                                        }
+                                        true
                                     }
-                                    true
-                                }
-                                keyEvent.key == Key.DirectionLeft && keyEvent.type == KeyEventType.KeyDown -> {
-                                    try {
-                                        val currentPos = mediaPlayer.currentPosition
-                                        val newPos = maxOf(currentPos - 10000, 0)
-                                        mediaPlayer.seekTo(newPos)
-                                    } catch (e: Exception) {
-                                        Log.w("SystemVideoPlayer", "Error seeking: ${e.message}")
+                                    keyEvent.key == Key.DirectionLeft && keyEvent.type == KeyEventType.KeyDown -> {
+                                        try {
+                                            val currentPos = mediaPlayer.currentPosition
+                                            val newPos = maxOf(currentPos - 10000, 0)
+                                            mediaPlayer.seekTo(newPos)
+                                        } catch (e: Exception) {
+                                            Log.w("SystemVideoPlayer", "Error seeking: ${e.message}")
+                                        }
+                                        true
                                     }
-                                    true
+                                    else -> false
                                 }
-                                else -> false
-                            }
-                        }
+                            },
                 )
-                
+
                 // Loading/Buffering overlay
                 if (isBuffering || !isPlayerReady) {
                     Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.7f)),
-                        contentAlignment = Alignment.Center
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.7f)),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
                             CircularProgressIndicator(
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.primary,
                             )
                             Text(
                                 text = if (isBuffering) "Buffering..." else "Loading video...",
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = Color.White
+                                color = Color.White,
                             )
                         }
                     }
                 }
-                
+
                 // Simple controls overlay
                 if (isPlayerReady && !isBuffering) {
                     Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Transparent),
-                        contentAlignment = Alignment.BottomCenter
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .background(Color.Transparent),
+                        contentAlignment = Alignment.BottomCenter,
                     ) {
                         Card(
-                            modifier = Modifier
-                                .padding(16.dp)
-                                .background(Color.Transparent),
-                            colors = CardDefaults.cardColors(
-                                containerColor = Color.Black.copy(alpha = 0.6f)
-                            )
+                            modifier =
+                                Modifier
+                                    .padding(16.dp)
+                                    .background(Color.Transparent),
+                            colors =
+                                CardDefaults.cardColors(
+                                    containerColor = Color.Black.copy(alpha = 0.6f),
+                                ),
                         ) {
                             Text(
                                 text = "OK: Play/Pause • ←→: Seek • Back: Exit",
                                 modifier = Modifier.padding(12.dp),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = Color.White,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
                             )
                         }
                     }
@@ -250,47 +258,49 @@ fun SystemVideoPlayer(
 @Composable
 private fun SystemVideoPlayerError(
     message: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier.background(Color.Black),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Card(
-            modifier = Modifier
-                .fillMaxWidth(0.6f)
-                .padding(32.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer
-            )
+            modifier =
+                Modifier
+                    .fillMaxWidth(0.6f)
+                    .padding(32.dp),
+            colors =
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                ),
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Icon(
                     imageVector = Icons.Default.Error,
                     contentDescription = "Error",
                     tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(48.dp),
                 )
                 Text(
                     text = "Unable to play video",
                     style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onErrorContainer
+                    color = MaterialTheme.colorScheme.onErrorContainer,
                 )
                 Text(
                     text = message,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onErrorContainer,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
                 Text(
                     text = "This video format may not be supported on this device",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f),
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
             }
         }
