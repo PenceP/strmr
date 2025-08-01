@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -72,136 +73,7 @@ private data class HeroData(
 
 // Data class for collections (removed hardcoded collections - now loaded from JSON)
 
-@Composable
-fun HomeMediaRow(
-    title: String,
-    mediaItems: List<Any>,
-    selectedIndex: Int = 0, // Not used anymore with TvLazyRow
-    isRowSelected: Boolean = true, // Not used anymore
-    onSelectionChanged: (Int) -> Unit = {}, // Not used anymore
-    modifier: Modifier = Modifier,
-    focusRequester: FocusRequester? = null,
-    onUpDown: ((Int) -> Unit)? = null, // Not used anymore
-    isContentFocused: Boolean = false, // Not used anymore
-    onContentFocusChanged: ((Boolean) -> Unit)? = null, // Not used anymore
-    onLeftBoundary: (() -> Unit)? = null, // Not used anymore
-    showOverlays: Boolean = false,
-    rowHeight: Dp = 120.dp,
-    onItemClick: ((Any) -> Unit)? = null,
-    cardType: String = "portrait",
-) {
-    // ✅ UPDATED: Use simplified UnifiedMediaRow with TvLazyRow focus handling
-    UnifiedMediaRow(
-        config =
-            MediaRowConfig(
-                title = title,
-                dataSource = DataSource.RegularList(mediaItems),
-                onItemClick = onItemClick,
-                onItemLongPress = { item ->
-                    Log.d(
-                        "HomeMediaRow",
-                        "🔒 Long-press detected on: ${when (item) {
-                            is HomeMediaItem.Movie -> item.movie.title
-                            is HomeMediaItem.TvShow -> item.show.title
-                            else -> "Unknown item"
-                        }}",
-                    )
-                },
-                focusRequester = focusRequester,
-                cardType = if (cardType == "landscape") CardType.LANDSCAPE else CardType.PORTRAIT,
-                itemWidth = if (cardType == "landscape") 200.dp else 120.dp,
-                itemSpacing = 12.dp,
-                itemContent = { mediaItem, isFocused ->
-                    when (mediaItem) {
-                        is HomeMediaItem.Movie ->
-                            LandscapeMediaCard(
-                                title = mediaItem.movie.title,
-                                landscapeUrl = mediaItem.movie.backdropUrl,
-                                logoUrl = mediaItem.movie.logoUrl,
-                                progress = mediaItem.progress ?: 0f,
-                                isSelected = isFocused, // ✅ FIXED: Use isFocused instead of isSelected
-                                onClick = {
-                                    Log.d("HomeMediaRow", "🎯 Movie item clicked")
-                                    // Click is now handled by UnifiedMediaRow's onItemClick
-                                },
-                            )
-                        is HomeMediaItem.TvShow ->
-                            LandscapeMediaCard(
-                                title = mediaItem.show.title,
-                                landscapeUrl = mediaItem.episodeImageUrl ?: mediaItem.show.backdropUrl,
-                                logoUrl = mediaItem.show.logoUrl,
-                                progress = mediaItem.progress ?: 0f,
-                                isSelected = isFocused, // ✅ FIXED: Use isFocused instead of isSelected
-                                onClick = {
-                                    Log.d("HomeMediaRow", "🎯 TvShow item clicked")
-                                    // Click is now handled by UnifiedMediaRow's onItemClick
-                                },
-                                bottomRightLabel =
-                                    if (mediaItem.season != null && mediaItem.episode != null) {
-                                        if (mediaItem.isNextEpisode) {
-                                            "Next: S${mediaItem.season}: E${mediaItem.episode}"
-                                        } else {
-                                            "S${mediaItem.season}: E${mediaItem.episode}"
-                                        }
-                                    } else {
-                                        null
-                                    },
-                            )
-                        is com.strmr.ai.data.NetworkInfo ->
-                            LandscapeMediaCard(
-                                title = mediaItem.name,
-                                landscapeUrl = mediaItem.posterUrl,
-                                logoUrl = null,
-                                isSelected = isFocused, // ✅ FIXED: Use isFocused instead of isSelected
-                                onClick = {
-                                    Log.d("HomeMediaRow", "🎯 Network item clicked")
-                                    // Click is now handled by UnifiedMediaRow's onItemClick
-                                },
-                            )
-                        is HomeMediaItem.Collection -> {
-                            if (cardType == "landscape") {
-                                LandscapeMediaCard(
-                                    title = if (mediaItem.nameDisplayMode != "Hidden") mediaItem.name else "",
-                                    landscapeUrl = mediaItem.backgroundImageUrl,
-                                    logoUrl = null,
-                                    isSelected = isFocused, // ✅ FIXED: Use isFocused instead of isSelected
-                                    onClick = {
-                                        Log.d("HomeMediaRow", "🎯 Collection item clicked")
-                                        // Click is now handled by UnifiedMediaRow's onItemClick
-                                    },
-                                )
-                            } else {
-                                // Poster card for collections
-                                MediaCard(
-                                    title = if (mediaItem.nameDisplayMode != "Hidden") mediaItem.name else "",
-                                    posterUrl = mediaItem.backgroundImageUrl,
-                                    isSelected = isFocused, // ✅ FIXED: Use isFocused instead of isSelected
-                                    onClick = {
-                                        Log.d("HomeMediaRow", "🎯 Collection poster item clicked")
-                                        // Click is now handled by UnifiedMediaRow's onItemClick
-                                    },
-                                )
-                            }
-                        }
-                        else -> {
-                            // Fallback for unknown types to prevent crashes
-                            Log.w("HomeMediaRow", "⚠️ Unknown media item type: ${mediaItem::class.simpleName}")
-                            MediaCard(
-                                title = "Unknown Item",
-                                posterUrl = null,
-                                isSelected = isFocused, // ✅ FIXED: Use isFocused instead of isSelected
-                                onClick = {
-                                    Log.d("HomeMediaRow", "🎯 Unknown item clicked")
-                                    // Click is now handled by UnifiedMediaRow's onItemClick
-                                },
-                            )
-                        }
-                    }
-                },
-            ),
-        modifier = modifier,
-    )
-}
+// Removed HomeMediaRow - now using UnifiedMediaRow directly in HomePage
 
 @Composable
 fun HomePage(
@@ -242,11 +114,9 @@ fun HomePage(
         viewModel.refreshTraktLists()
     }
 
-    // Use the new SelectionManager
-    val selectionManager = rememberSelectionManager()
-
-    // Row position memory - tracks last position in each row by row title
-    val rowPositionMemory = ComposeOptimizationUtils.rememberMutableMap<String, Int>()
+    // Simplified state management - no complex selection needed
+    var selectedRowIndex by remember { mutableStateOf(0) }
+    var selectedItemIndex by remember { mutableStateOf(0) }
 
     // Load configuration from JSON
     var pageConfiguration by remember { mutableStateOf<PageConfiguration?>(null) }
@@ -264,11 +134,7 @@ fun HomePage(
         }
     }
 
-    // Update SelectionManager with focus state from MainActivity
-    LaunchedEffect(isContentFocused) {
-        Log.d("HomePage", "🎯 External focus changed: isContentFocused=$isContentFocused")
-        selectionManager.updateContentFocus(isContentFocused)
-    }
+    // Simple focus handling - no complex selection manager needed
 
     // Create media rows dynamically based on configuration - optimized with expensive calculation helper
     val mediaRows =
@@ -360,17 +226,10 @@ fun HomePage(
         }
     }
 
-    // Use derivedStateOf for expensive computed properties that depend on mediaRows
-    val rowTitles by ComposeOptimizationUtils.rememberDerivedState(mediaRows) {
-        mediaRows.keys.toList()
-    }
-    val rows by ComposeOptimizationUtils.rememberDerivedState(mediaRows) {
-        mediaRows.values.toList()
-    }
-    val rowCount by ComposeOptimizationUtils.rememberDerivedState(rowTitles) {
-        rowTitles.size
-    }
-    val focusRequesters = ComposeOptimizationUtils.rememberFocusRequesters(rowTitles.size)
+    // Simple row data calculation  
+    val rowTitles = mediaRows.keys.toList()
+    val rows = mediaRows.values.toList()
+    val validRowIndex = if (selectedRowIndex >= rows.size) 0 else selectedRowIndex
 
     // Optimized OMDb ratings prefetch - only for visible items and with batching
     val coroutineScope = rememberCoroutineScope()
@@ -402,44 +261,13 @@ fun HomePage(
         }
     }
 
-    // Initialize focus state when HomePage loads and ensure first row is selected
+    // Simple initialization
     LaunchedEffect(Unit) {
         Log.d("HomePage", "🎯 HomePage composition started")
-        // Don't auto-focus - let the user navigate from the nav bar
-        // This matches the behavior of Movies and TV Shows pages
-
-        // Still ensure first row is selected (but don't focus it)
-        if (selectionManager.selectedRowIndex != 0) {
-            selectionManager.updateSelection(0, 0)
-        }
     }
 
-    // Handle focus changes when selectedRowIndex changes
-    LaunchedEffect(selectionManager.selectedRowIndex, focusRequesters.size, selectionManager.isContentFocused) {
-        val index = selectionManager.selectedRowIndex
-        // Only request focus if content is focused (user has navigated from nav bar)
-        if (selectionManager.isContentFocused && index >= 0 && index < focusRequesters.size && index < rows.size) {
-            try {
-                // Add delay to ensure composition is complete (like EpisodeView)
-                kotlinx.coroutines.delay(100)
-                focusRequesters[index].requestFocus()
-                Log.d("HomePage", "🎯 Successfully requested focus on row $index")
-            } catch (e: Exception) {
-                Log.w("HomePage", "🚨 Failed to request focus on row $index: ${e.message}")
-            }
-        } else if (!selectionManager.isContentFocused) {
-            Log.d("HomePage", "🎯 Skipping focus request - content not focused")
-        } else {
-            Log.w(
-                "HomePage",
-                "🚨 Invalid focus request: index=$index, focusRequesters.size=${focusRequesters.size}, rows.size=${rows.size}",
-            )
-        }
-    }
-
-    val validRowIndex = if (selectionManager.selectedRowIndex >= rows.size) 0 else selectionManager.selectedRowIndex
     val selectedRow = rows.getOrNull(validRowIndex) ?: emptyList<Any>()
-    val selectedItem = selectedRow.getOrNull(selectionManager.selectedItemIndex)
+    val selectedItem = selectedRow.getOrNull(selectedItemIndex)
 
     val heroLogoRefreshTrigger = remember { mutableStateOf(0) }
     val heroData =
@@ -512,13 +340,13 @@ fun HomePage(
 
     // Debug logging
     LaunchedEffect(
-        selectionManager.selectedRowIndex,
-        selectionManager.selectedItemIndex,
+        selectedRowIndex,
+        selectedItemIndex,
         continueWatching.size,
         networkInfos.size,
         collections.size,
     ) {
-        Log.d("HomePage", "🔄 Selection updated: rowIndex=$validRowIndex, itemIndex=${selectionManager.selectedItemIndex}")
+        Log.d("HomePage", "🔄 Selection updated: rowIndex=$validRowIndex, itemIndex=$selectedItemIndex")
         Log.d("HomePage", "📊 Data: continueWatching=${continueWatching.size}, networks=${networkInfos.size}")
         Log.d("HomePage", "📦 Collections size: ${collections.size}")
         Log.d("HomePage", "⚙️ Configuration loaded: ${pageConfiguration != null}")
@@ -640,233 +468,159 @@ fun HomePage(
             }
         }
 
-        // All rows section (always visible, overlaying wallpaper)
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(start = 0.dp),
+        // Simplified layout using LazyColumn like MoviesPage/TvShowsPage
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(start = navBarWidth),
+            contentPadding = PaddingValues(
+                top = if (shouldShowHero) 290.dp else 32.dp,
+                bottom = 32.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Spacer(modifier = Modifier.height(if (shouldShowHero) 290.dp else 32.dp)) // Dynamic space for hero overlay
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState())
-                        .padding(top = 0.dp, bottom = 32.dp),
-            ) {
-                for ((rowIndex, rowTitle) in rowTitles.withIndex()) {
-                    val rowItems = rows.getOrNull(rowIndex) ?: emptyList()
+            rowTitles.forEachIndexed { rowIndex, rowTitle ->
+                val rowItems = rows.getOrNull(rowIndex) ?: emptyList()
+                val rowConfig = rowConfigs[rowTitle] ?: pageConfiguration?.rows?.find { it.title == rowTitle }
+                
+                // Check if this row should show loading state
+                val isLoading = rowConfig?.showLoading == true &&
+                    when (rowConfig?.type) {
+                        "continue_watching" -> isContinueWatchingLoading
+                        "networks" -> isNetworksLoading  
+                        "nested_items" -> if (rowTitle == "Trakt Lists") isTraktListsLoading else false
+                        else -> false
+                    }
 
-                    // Get row configuration for this row
-                    val rowConfig = rowConfigs[rowTitle] ?: pageConfiguration?.rows?.find { it.title == rowTitle }
-                    val rowHeight = rowConfig?.cardHeight?.dp ?: 140.dp
-
-                    // Check if this row should show loading state based on configuration
-                    val isLoading =
-                        rowConfig?.showLoading == true &&
-                            when (rowConfig?.type) {
-                                "continue_watching" -> isContinueWatchingLoading
-                                "networks" -> isNetworksLoading
-                                "nested_items" -> if (rowTitle == "Trakt Lists") isTraktListsLoading else false
-                                else -> false
-                            }
-
-                    Log.d("HomePage", "🎬 Rendering row $rowIndex: '$rowTitle' with ${rowItems.size} items, loading: $isLoading")
-
+                item(key = rowTitle) {
                     if (isLoading) {
-                        // Show skeleton loading state based on configuration
-                        val skeletonCardType =
-                            when (rowConfig?.cardType) {
-                                "landscape" -> SkeletonCardType.LANDSCAPE
-                                "portrait" -> SkeletonCardType.PORTRAIT
-                                else -> SkeletonCardType.PORTRAIT
-                            }
+                        val skeletonCardType = when (rowConfig?.cardType) {
+                            "landscape" -> SkeletonCardType.LANDSCAPE
+                            "portrait" -> SkeletonCardType.PORTRAIT
+                            else -> SkeletonCardType.PORTRAIT
+                        }
                         MediaRowSkeleton(
                             title = rowTitle,
                             cardCount = 6,
-                            cardType = skeletonCardType,
-                            modifier = Modifier.padding(bottom = 16.dp),
+                            cardType = skeletonCardType
                         )
-                    } else {
-                        // Show actual content
-                        HomeMediaRow(
-                            modifier = Modifier.padding(bottom = 16.dp),
-                            title = rowTitle,
-                            mediaItems = rowItems,
-                            selectedIndex = if (rowIndex == validRowIndex) selectionManager.selectedItemIndex else 0,
-                            isRowSelected = rowIndex == validRowIndex,
-                            onSelectionChanged = { newIndex ->
-                                if (rowIndex == validRowIndex) {
-                                    selectionManager.updateSelection(validRowIndex, newIndex)
-
-                                    // Update position memory for current row when selection changes
-                                    val currentRowTitle = rowTitles.getOrNull(validRowIndex)
-                                    if (currentRowTitle != null) {
-                                        rowPositionMemory[currentRowTitle] = newIndex
-                                        Log.d("HomePage", "💾 Updated position $newIndex for row '$currentRowTitle'")
-                                    }
-                                }
-                            },
-                            focusRequester = if (rowIndex == validRowIndex) focusRequesters.getOrNull(rowIndex) else null,
-                            onUpDown = { direction ->
-                                val newRowIndex = validRowIndex + direction
-                                if (newRowIndex >= 0 && newRowIndex < rows.size) {
-                                    val currentRowTitle = rowTitles.getOrNull(validRowIndex)
-                                    val newRowTitle = rowTitles.getOrNull(newRowIndex)
-
-                                    Log.d(
-                                        "HomePage",
-                                        "🎯 Row navigation: $validRowIndex($currentRowTitle) -> $newRowIndex($newRowTitle), direction=$direction",
-                                    )
-
-                                    // Save current position in memory for the row we're leaving
-                                    if (currentRowTitle != null) {
-                                        val currentItemIndex = selectionManager.selectedItemIndex
-                                        rowPositionMemory[currentRowTitle] = currentItemIndex
-                                        Log.d("HomePage", "💾 Saved position $currentItemIndex for row '$currentRowTitle'")
-                                    }
-
-                                    // Get target position from memory or use default
-                                    val newRowItems = rows.getOrNull(newRowIndex) ?: emptyList()
-                                    val newItemIndex =
-                                        if (newRowTitle != null && rowPositionMemory.containsKey(newRowTitle)) {
-                                            // Use remembered position, but clamp to row bounds
-                                            val rememberedPosition = rowPositionMemory[newRowTitle]!!
-                                            val clampedPosition =
-                                                if (newRowItems.isNotEmpty()) {
-                                                    minOf(rememberedPosition, newRowItems.size - 1)
-                                                } else {
-                                                    0
-                                                }
-                                            Log.d(
-                                                "HomePage",
-                                                "🧠 Recalling position $rememberedPosition -> $clampedPosition for row '$newRowTitle'",
-                                            )
-                                            clampedPosition
-                                        } else {
-                                            // First time visiting this row, start at position 0
-                                            Log.d("HomePage", "🆕 First visit to row '$newRowTitle', starting at position 0")
-                                            0
-                                        }
-
-                                    Log.d(
-                                        "HomePage",
-                                        "🎯 Updating selection: row $validRowIndex->$newRowIndex, item ${selectionManager.selectedItemIndex}->$newItemIndex (row size: ${newRowItems.size})",
-                                    )
-                                    selectionManager.updateSelection(newRowIndex, newItemIndex)
-                                    // Ensure content focus is maintained during row transitions
-                                    selectionManager.updateContentFocus(true)
-                                }
-                            },
-                            isContentFocused = selectionManager.isContentFocused,
-                            onContentFocusChanged = { focused ->
-                                selectionManager.updateContentFocus(focused)
-                                onContentFocusChanged?.invoke(focused)
-                            },
-                            onLeftBoundary = if (rowIndex == validRowIndex) onLeftBoundary else null,
-                            showOverlays = rowConfig?.displayOptions?.showOverlays == true,
-                            rowHeight = rowHeight,
-                            cardType = rowConfig?.cardType ?: "portrait",
-                            onItemClick =
-                                if (rowConfig?.displayOptions?.clickable == true) {
+                    } else if (rowItems.isNotEmpty()) {
+                        UnifiedMediaRow(
+                            config = MediaRowConfig(
+                                title = rowTitle,
+                                dataSource = DataSource.RegularList(rowItems),
+                                cardType = if (rowConfig?.cardType == "landscape") CardType.LANDSCAPE else CardType.PORTRAIT,
+                                itemWidth = if (rowConfig?.cardType == "landscape") 200.dp else 120.dp,
+                                itemSpacing = 12.dp,
+                                onItemClick = if (rowConfig?.displayOptions?.clickable == true) {
                                     { item ->
                                         when (item) {
                                             is HomeMediaItem.Movie -> onNavigateToDetails?.invoke("movie", item.movie.tmdbId, null, null)
-                                            is HomeMediaItem.TvShow -> {
-                                                Log.d(
-                                                    "HomePage",
-                                                    "🎯 DEBUG: Navigating to TvShow details - show: ${item.show.title}, season: ${item.season}, episode: ${item.episode}",
-                                                )
-                                                onNavigateToDetails?.invoke("tvshow", item.show.tmdbId, item.season, item.episode)
-                                            }
+                                            is HomeMediaItem.TvShow -> onNavigateToDetails?.invoke("tvshow", item.show.tmdbId, item.season, item.episode)
                                             is com.strmr.ai.data.NetworkInfo -> {
-                                                // Use id as fallback if name is empty (common for networks with hidden names)
                                                 val displayName = if (item.name.isBlank()) item.id else item.name
-                                                Log.d(
-                                                    "HomePage",
-                                                    "🎯 DEBUG: Navigating to Network intermediate view - network: $displayName (id: ${item.id})",
-                                                )
-                                                // Check if this is a Trakt list (nested item) or a regular network
-                                                val viewType =
-                                                    if (item.dataUrl?.contains("api.trakt.tv") == true) {
-                                                        "trakt_list"
-                                                    } else {
-                                                        "network"
-                                                    }
-                                                onNavigateToIntermediateView?.invoke(
-                                                    viewType,
-                                                    item.id,
-                                                    displayName,
-                                                    item.posterUrl,
-                                                    item.dataUrl,
-                                                )
+                                                val viewType = if (item.dataUrl?.contains("api.trakt.tv") == true) "trakt_list" else "network"
+                                                onNavigateToIntermediateView?.invoke(viewType, item.id, displayName, item.posterUrl, item.dataUrl)
                                             }
                                             is HomeMediaItem.Collection -> {
-                                                // Use id as fallback if name is empty (defensive programming)
                                                 val displayName = if (item.name.isBlank()) item.id else item.name
-                                                Log.d(
-                                                    "HomePage",
-                                                    "🎯 DEBUG: Navigating to Collection intermediate view - collection: $displayName (id: ${item.id})",
-                                                )
-                                                val viewType =
-                                                    when (rowConfig?.type) {
-                                                        "collections" -> "collection"
-                                                        "directors" -> "director"
-                                                        else -> "collection"
-                                                    }
-                                                onNavigateToIntermediateView?.invoke(
-                                                    viewType,
-                                                    item.id,
-                                                    displayName,
-                                                    item.backgroundImageUrl,
-                                                    item.dataUrl,
-                                                )
+                                                val viewType = when (rowConfig?.type) {
+                                                    "collections" -> "collection"
+                                                    "directors" -> "director"
+                                                    else -> "collection"
+                                                }
+                                                onNavigateToIntermediateView?.invoke(viewType, item.id, displayName, item.backgroundImageUrl, item.dataUrl)
                                             }
                                         }
                                     }
-                                } else {
-                                    null
-                                },
+                                } else null,
+                                itemContent = { mediaItem, isFocused ->
+                                    when (mediaItem) {
+                                        is HomeMediaItem.Movie -> {
+                                            if (rowConfig?.cardType == "landscape") {
+                                                LandscapeMediaCard(
+                                                    title = mediaItem.movie.title,
+                                                    landscapeUrl = mediaItem.movie.backdropUrl,
+                                                    logoUrl = mediaItem.movie.logoUrl,
+                                                    progress = mediaItem.progress ?: 0f,
+                                                    isSelected = isFocused,
+                                                    onClick = { }
+                                                )
+                                            } else {
+                                                MediaCard(
+                                                    title = mediaItem.movie.title,
+                                                    posterUrl = mediaItem.movie.posterUrl,
+                                                    isSelected = isFocused,
+                                                    onClick = { }
+                                                )
+                                            }
+                                        }
+                                        is HomeMediaItem.TvShow -> {
+                                            if (rowConfig?.cardType == "landscape") {
+                                                LandscapeMediaCard(
+                                                    title = mediaItem.show.title,
+                                                    landscapeUrl = mediaItem.episodeImageUrl ?: mediaItem.show.backdropUrl,
+                                                    logoUrl = mediaItem.show.logoUrl,
+                                                    progress = mediaItem.progress ?: 0f,
+                                                    isSelected = isFocused,
+                                                    onClick = { },
+                                                    bottomRightLabel = if (mediaItem.season != null && mediaItem.episode != null) {
+                                                        if (mediaItem.isNextEpisode) "Next: S${mediaItem.season}: E${mediaItem.episode}"
+                                                        else "S${mediaItem.season}: E${mediaItem.episode}"
+                                                    } else null
+                                                )
+                                            } else {
+                                                MediaCard(
+                                                    title = mediaItem.show.title,
+                                                    posterUrl = mediaItem.show.posterUrl,
+                                                    isSelected = isFocused,
+                                                    onClick = { }
+                                                )
+                                            }
+                                        }
+                                        is com.strmr.ai.data.NetworkInfo -> {
+                                            LandscapeMediaCard(
+                                                title = mediaItem.name,
+                                                landscapeUrl = mediaItem.posterUrl,
+                                                logoUrl = null,
+                                                isSelected = isFocused,
+                                                onClick = { }
+                                            )
+                                        }
+                                        is HomeMediaItem.Collection -> {
+                                            if (rowConfig?.cardType == "landscape") {
+                                                LandscapeMediaCard(
+                                                    title = if (mediaItem.nameDisplayMode != "Hidden") mediaItem.name else "",
+                                                    landscapeUrl = mediaItem.backgroundImageUrl,
+                                                    logoUrl = null,
+                                                    isSelected = isFocused,
+                                                    onClick = { }
+                                                )
+                                            } else {
+                                                MediaCard(
+                                                    title = if (mediaItem.nameDisplayMode != "Hidden") mediaItem.name else "",
+                                                    posterUrl = mediaItem.backgroundImageUrl,
+                                                    isSelected = isFocused,
+                                                    onClick = { }
+                                                )
+                                            }
+                                        }
+                                        else -> {
+                                            MediaCard(
+                                                title = "Unknown Item",
+                                                posterUrl = null,
+                                                isSelected = isFocused,
+                                                onClick = { }
+                                            )
+                                        }
+                                    }
+                                }
+                            )
                         )
                     }
                 }
             }
         }
 
-        // Up arrow (drawn on top)
-        if (validRowIndex > 0) {
-            Box(
-                modifier =
-                    Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = 16.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.KeyboardArrowUp,
-                    contentDescription = "Navigate up",
-                    tint = Color.White.copy(alpha = 0.7f),
-                    modifier = Modifier.size(32.dp),
-                )
-            }
-        }
-
-        // Down arrow (drawn on bottom)
-        if (validRowIndex < rowCount - 1) {
-            Box(
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 16.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.KeyboardArrowDown,
-                    contentDescription = "Navigate down",
-                    tint = Color.White.copy(alpha = 0.7f),
-                    modifier = Modifier.size(32.dp),
-                )
-            }
-        }
     }
 }

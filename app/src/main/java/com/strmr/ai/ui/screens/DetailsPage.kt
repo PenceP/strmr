@@ -549,41 +549,6 @@ fun MovieDetailsView(
                                             rating = String.format("%.1f", movie.vote_average),
                                         )
                                     },
-                                    selectedIndex = if (selectionManager.selectedRowIndex == collectionRowIndex) selectionManager.selectedItemIndex else 0,
-                                    isRowSelected = selectionManager.selectedRowIndex == collectionRowIndex,
-                                    onSelectionChanged = { newIndex ->
-                                        if (selectionManager.selectedRowIndex == collectionRowIndex) {
-                                            selectionManager.updateSelection(collectionRowIndex, newIndex)
-                                            rowPositionMemory[collectionRowIndex] = newIndex
-                                            Log.d("MovieDetailsView", "💾 Updated position $newIndex for collection row")
-                                        }
-                                    },
-                                    onUpDown = { direction ->
-                                        val newRowIndex = collectionRowIndex + direction
-                                        if (newRowIndex >= 0 && newRowIndex < rows.size) {
-                                            // Save current position
-                                            rowPositionMemory[collectionRowIndex] = selectionManager.selectedItemIndex
-
-                                            // Get target position from memory or use default
-                                            val newItemIndex = rowPositionMemory[newRowIndex] ?: 0
-
-                                            Log.d(
-                                                "MovieDetailsView",
-                                                "🎯 Collection row navigation: $collectionRowIndex(${rows[collectionRowIndex]}) -> $newRowIndex(${rows[newRowIndex]}), direction=$direction",
-                                            )
-                                            selectionManager.updateSelection(newRowIndex, newItemIndex)
-                                        }
-                                    },
-                                    focusRequester =
-                                        if (selectionManager.selectedRowIndex == collectionRowIndex) {
-                                            focusRequesters.getOrNull(
-                                                collectionRowIndex,
-                                            )
-                                        } else {
-                                            null
-                                        },
-                                    isContentFocused = selectionManager.selectedRowIndex == collectionRowIndex,
-                                    onContentFocusChanged = { /* Handled by selectionManager */ },
                                 )
                             }
                         }
@@ -604,42 +569,6 @@ fun MovieDetailsView(
                                     )
                                 },
                                 modifier = Modifier.fillMaxWidth(),
-                                selectedIndex = if (selectionManager.selectedRowIndex == similarRowIndex) selectionManager.selectedItemIndex else 0,
-                                isRowSelected = selectionManager.selectedRowIndex == similarRowIndex,
-                                onSelectionChanged = { newIndex ->
-                                    if (selectionManager.selectedRowIndex == similarRowIndex) {
-                                        selectionManager.updateSelection(similarRowIndex, newIndex)
-                                        rowPositionMemory[similarRowIndex] = newIndex
-                                        Log.d("MovieDetailsView", "💾 Updated position $newIndex for similar row")
-                                    }
-                                },
-                                onUpDown = { direction ->
-                                    val newRowIndex = similarRowIndex + direction
-                                    if (newRowIndex >= 0 && newRowIndex < rows.size) {
-                                        // Save current position
-                                        rowPositionMemory[similarRowIndex] = selectionManager.selectedItemIndex
-
-                                        // Get target position from memory or use default
-                                        val newItemIndex = rowPositionMemory[newRowIndex] ?: 0
-
-                                        Log.d(
-                                            "MovieDetailsView",
-                                            "🎯 Similar row navigation: $similarRowIndex(${rows[similarRowIndex]}) -> $newRowIndex(${rows[newRowIndex]}), direction=$direction",
-                                        )
-                                        selectionManager.updateSelection(newRowIndex, newItemIndex)
-                                    }
-                                    // Stay on current row when at bottom boundary
-                                },
-                                focusRequester =
-                                    if (selectionManager.selectedRowIndex == similarRowIndex) {
-                                        focusRequesters.getOrNull(
-                                            similarRowIndex,
-                                        )
-                                    } else {
-                                        null
-                                    },
-                                isContentFocused = selectionManager.selectedRowIndex == similarRowIndex,
-                                onContentFocusChanged = { /* Handled by selectionManager */ },
                             )
                         }
                     }
@@ -1384,42 +1313,6 @@ fun TvShowDetailsView(
                                     )
                                 },
                                 modifier = Modifier.fillMaxWidth(),
-                                selectedIndex = if (selectionManager.selectedRowIndex == similarRowIndex) selectionManager.selectedItemIndex else 0,
-                                isRowSelected = selectionManager.selectedRowIndex == similarRowIndex,
-                                onSelectionChanged = { newIndex ->
-                                    if (selectionManager.selectedRowIndex == similarRowIndex) {
-                                        selectionManager.updateSelection(similarRowIndex, newIndex)
-                                        rowPositionMemory[similarRowIndex] = newIndex
-                                        Log.d("TvShowDetailsView", "💾 Updated position $newIndex for similar row")
-                                    }
-                                },
-                                onUpDown = { direction ->
-                                    val newRowIndex = similarRowIndex + direction
-                                    if (newRowIndex >= 0 && newRowIndex < rows.size) {
-                                        // Save current position
-                                        rowPositionMemory[similarRowIndex] = selectionManager.selectedItemIndex
-
-                                        // Get target position from memory or use default
-                                        val newItemIndex = rowPositionMemory[newRowIndex] ?: 0
-
-                                        Log.d(
-                                            "TvShowDetailsView",
-                                            "🎯 Similar row navigation: $similarRowIndex(${rows[similarRowIndex]}) -> $newRowIndex(${rows[newRowIndex]}), direction=$direction",
-                                        )
-                                        selectionManager.updateSelection(newRowIndex, newItemIndex)
-                                    }
-                                    // Stay on current row when at bottom boundary
-                                },
-                                focusRequester =
-                                    if (selectionManager.selectedRowIndex == similarRowIndex) {
-                                        focusRequesters.getOrNull(
-                                            similarRowIndex,
-                                        )
-                                    } else {
-                                        null
-                                    },
-                                isContentFocused = selectionManager.selectedRowIndex == similarRowIndex,
-                                onContentFocusChanged = { /* Handled by selectionManager */ },
                             )
                         }
                     }
@@ -1443,25 +1336,19 @@ fun ActorsRow(
 ) {
     if (actors.isEmpty()) return
 
+    // Simplified ActorsRow using new UnifiedMediaRow pattern
     UnifiedMediaRow(
-        config =
-            MediaRowConfig(
-                title = "Actors",
-                dataSource = DataSource.RegularList(actors.take(StrmrConstants.UI.MAX_CAST_ITEMS)),
-                selectedIndex = selectedIndex,
-                isRowSelected = isRowSelected,
-                onSelectionChanged = onSelectionChanged,
-                onUpDown = onUpDown,
-                focusRequester = focusRequester,
-                onContentFocusChanged = onContentFocusChanged,
-                cardType = CardType.PORTRAIT,
-                itemWidth = 90.dp, // Keep as 90.dp since it's specific for actors
-                itemSpacing = StrmrConstants.Dimensions.SPACING_MEDIUM,
-                contentPadding = PaddingValues(horizontal = 48.dp),
-                itemContent = { actor, isSelected ->
-                    ActorCard(actor = actor, isSelected = isSelected)
-                },
-            ),
+        config = MediaRowConfig(
+            title = "Actors",
+            dataSource = DataSource.RegularList(actors.take(StrmrConstants.UI.MAX_CAST_ITEMS)),
+            cardType = CardType.PORTRAIT,
+            itemWidth = 90.dp, // Keep as 90.dp since it's specific for actors
+            itemSpacing = StrmrConstants.Dimensions.SPACING_MEDIUM,
+            contentPadding = PaddingValues(horizontal = 48.dp),
+            itemContent = { actor, isSelected ->
+                ActorCard(actor = actor, isSelected = isSelected)
+            },
+        ),
         modifier = modifier,
     )
 }

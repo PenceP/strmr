@@ -3,6 +3,7 @@ package com.strmr.ai.ui.screens
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -40,25 +41,16 @@ import kotlinx.coroutines.withContext
 @Composable
 fun <T : Any> MediaPagingPage(
     pagingUiState: PagingUiState<T>,
-    selectedRowIndex: Int,
-    selectedItemIndex: Int,
-    onItemSelected: (Int, Int) -> Unit,
-    onSelectionChanged: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    focusRequester: FocusRequester? = null,
-    onUpDown: ((Int) -> Unit)? = null,
-    isContentFocused: Boolean = false,
-    onContentFocusChanged: ((Boolean) -> Unit)? = null,
     onItemClick: ((T) -> Unit)? = null,
     getOmdbRatings: suspend (String) -> OmdbResponse? = { null },
     onFetchLogo: ((T) -> Unit)? = null,
 ) {
     val rowTitles = pagingUiState.mediaRows.keys.toList()
-    val rowCount = rowTitles.size
-
-    LaunchedEffect(selectedRowIndex, selectedItemIndex) {
-        onItemSelected(selectedRowIndex, selectedItemIndex)
-    }
+    
+    // Simple state for selected item (for hero display)
+    var selectedRowIndex by remember { mutableStateOf(0) }
+    var selectedItemIndex by remember { mutableStateOf(0) }
 
     // Get the selected item for hero section
     val selectedRowFlow = pagingUiState.mediaRows.values.toList().getOrNull(selectedRowIndex)
@@ -167,19 +159,17 @@ fun <T : Any> MediaPagingPage(
                     ),
         )
 
-        // Main content (no vertical scroll - fixed layout)
+        // Simplified layout with hero and LazyColumn
         Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(start = navBarWidth),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(start = navBarWidth)
         ) {
-            // Hero section (top half)
+            // Hero section (fixed height at top)
             Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .weight(0.49f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp)
             ) {
                 if (selectedItem != null) {
                     MediaHero(
@@ -209,94 +199,48 @@ fun <T : Any> MediaPagingPage(
                 }
             }
 
-            // Active row section with indicators - simplified without AnimatedContent
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .weight(0.51f),
+            // Rows section with LazyColumn  
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Render only the selected row (like HomePage approach)
-                val rowTitle = rowTitles.getOrNull(selectedRowIndex) ?: ""
-                val pagingFlow = pagingUiState.mediaRows[rowTitle]
+                rowTitles.forEachIndexed { rowIndex, rowTitle ->
+                    val pagingFlow = pagingUiState.mediaRows[rowTitle]
+                    
+                    if (pagingFlow != null) {
+                        item(key = rowTitle) {
+                            val lazyPagingItems = pagingFlow.collectAsLazyPagingItems()
 
-                if (pagingFlow != null) {
-                    val lazyPagingItems = pagingFlow.collectAsLazyPagingItems()
-
-                    if (lazyPagingItems.itemCount > 0) {
-                        UnifiedMediaRow(
-                            config =
-                                MediaRowConfig(
-                                    title = rowTitle,
-                                    dataSource = DataSource.PagingList(lazyPagingItems),
-                                    selectedIndex = selectedItemIndex,
-                                    isRowSelected = true,
-                                    onSelectionChanged = { newIndex ->
-                                        onSelectionChanged(newIndex)
-                                        onItemSelected(selectedRowIndex, newIndex)
-                                    },
-                                    onUpDown = { direction ->
-                                        val newRowIndex = selectedRowIndex + direction
-                                        if (newRowIndex in 0 until rowCount) {
-                                            Log.d(
-                                                "MediaPagingPage",
-                                                "🎯 Row navigation: $selectedRowIndex -> $newRowIndex, maintaining content focus",
+                            if (lazyPagingItems.itemCount > 0) {
+                                UnifiedMediaRow(
+                                    config = MediaRowConfig(
+                                        title = rowTitle,
+                                        dataSource = DataSource.PagingList(lazyPagingItems),
+                                        cardType = CardType.PORTRAIT,
+                                        itemWidth = 120.dp,
+                                        itemSpacing = 12.dp,
+                                        contentPadding = PaddingValues(horizontal = 48.dp),
+                                        onItemClick = onItemClick,
+                                        itemContent = { item, isSelected ->
+                                            MediaCard(
+                                                title = item.getTitle(),
+                                                posterUrl = item.getPosterUrl(),
+                                                isSelected = isSelected,
+                                                onClick = { onItemClick?.invoke(item) },
                                             )
-                                            onItemSelected(newRowIndex, 0)
-                                            onContentFocusChanged?.invoke(true)
-                                        }
-                                    },
-                                    focusRequester = focusRequester,
-                                    onContentFocusChanged = onContentFocusChanged,
-                                    onItemClick = onItemClick,
-                                    cardType = CardType.PORTRAIT,
-                                    itemWidth = 120.dp,
-                                    itemSpacing = 12.dp,
-                                    contentPadding = PaddingValues(horizontal = 48.dp),
-                                    itemContent = { item, isSelected ->
-                                        MediaCard(
-                                            title = item.getTitle(),
-                                            posterUrl = item.getPosterUrl(),
-                                            isSelected = isSelected,
-                                            onClick = { onItemClick?.invoke(item) },
-                                        )
-                                    },
-                                ),
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    } else {
-                        // Show skeleton when no items loaded yet
-                        MediaRowSkeleton(
-                            title = rowTitle,
-                            cardCount = 8,
-                            cardType = SkeletonCardType.PORTRAIT,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+                                        },
+                                    )
+                                )
+                            } else {
+                                MediaRowSkeleton(
+                                    title = rowTitle,
+                                    cardCount = 8,
+                                    cardType = SkeletonCardType.PORTRAIT
+                                )
+                            }
+                        }
                     }
-                }
-
-                // Up/down indicators
-                if (selectedRowIndex > 0) {
-                    Icon(
-                        imageVector = Icons.Filled.KeyboardArrowUp,
-                        contentDescription = "Up",
-                        tint = Color.White,
-                        modifier =
-                            Modifier
-                                .align(Alignment.TopCenter)
-                                .size(32.dp),
-                    )
-                }
-                if (selectedRowIndex < rowCount - 1) {
-                    Icon(
-                        imageVector = Icons.Filled.KeyboardArrowDown,
-                        contentDescription = "Down",
-                        tint = Color.White,
-                        modifier =
-                            Modifier
-                                .align(Alignment.BottomCenter)
-                                .size(32.dp),
-                    )
                 }
             }
         }

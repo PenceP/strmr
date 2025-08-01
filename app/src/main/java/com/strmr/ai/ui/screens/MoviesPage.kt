@@ -349,7 +349,7 @@ fun MoviesPage(
                                         val config = dataSourceConfigs.find { it.title == row.title }
                                         if (config != null) {
                                             when (config.id) {
-                                                "trending", "popular" -> moviesViewModel.paginateMovies(config, page)
+                                                "trending", "popular" -> moviesViewModel.paginateMovies(config, page + 1)
                                                 else -> moviesViewModel.loadMovies(config)
                                             }
                                         }

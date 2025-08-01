@@ -8,17 +8,15 @@ import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Mic
@@ -58,10 +56,8 @@ import com.strmr.ai.ui.components.MediaRowConfig
 import com.strmr.ai.ui.components.MediaRowSkeleton
 import com.strmr.ai.ui.components.SkeletonCardType
 import com.strmr.ai.ui.components.UnifiedMediaRow
-import com.strmr.ai.ui.components.rememberSelectionManager
 import com.strmr.ai.ui.theme.StrmrConstants
 import com.strmr.ai.viewmodel.SearchViewModel
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -165,41 +161,40 @@ fun SearchPage(
                 modifier = Modifier.padding(16.dp),
             )
 
-            // Scrollable content area
-            val scrollState = rememberScrollState()
-            val coroutineScope = rememberCoroutineScope()
-
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .verticalScroll(scrollState)
-                        .padding(horizontal = 0.dp),
+            // Single LazyColumn for all content 
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentPadding = PaddingValues(horizontal = 0.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 // Error message
                 errorMessage?.let { error ->
-                    Card(
-                        modifier =
-                            Modifier
+                    item {
+                        Card(
+                            modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.Red.copy(alpha = 0.1f)),
-                    ) {
-                        Text(
-                            text = error,
-                            color = Color.Red,
-                            modifier = Modifier.padding(16.dp),
-                        )
+                            colors = CardDefaults.cardColors(containerColor = Color.Red.copy(alpha = 0.1f)),
+                        ) {
+                            Text(
+                                text = error,
+                                color = Color.Red,
+                                modifier = Modifier.padding(16.dp),
+                            )
+                        }
                     }
                 }
 
                 // Search results
                 when {
                     isLoading -> {
-                        SearchResultsLoading(
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+                        item {
+                            SearchResultsLoading(
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
                     }
                     searchResults != null -> {
                         searchResults?.let { results ->
@@ -207,42 +202,84 @@ fun SearchPage(
                                 "SearchPage",
                                 "📊 Search results received: movies=${results.movies.size}, shows=${results.tvShows.size}, people=${results.people.size}",
                             )
-                            SearchResultsContent(
-                                searchResults = results,
-                                onNavigateToDetails = onNavigateToDetails,
-                                onFocusReturnToSearchBar = {
-                                    // Return focus to search bar when UP pressed on first row
-                                    searchBarFocusRequester.requestFocus()
-                                    localContentFocused = false
-                                    onContentFocusChanged?.invoke(false)
-                                },
-                                isContentFocused = localContentFocused,
-                                onContentFocusChanged = { focused ->
-                                    localContentFocused = focused
-                                    onContentFocusChanged?.invoke(focused)
-                                },
-                                onLeftBoundary = onLeftBoundary,
-                                scrollState = scrollState,
-                                coroutineScope = coroutineScope,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
+                            
+                            // Add sections directly as LazyColumn items
+                            val sections = buildList {
+                                if (results.movies.isNotEmpty()) {
+                                    add("Movies" to results.movies)
+                                }
+                                if (results.tvShows.isNotEmpty()) {
+                                    add("TV Shows" to results.tvShows)
+                                }
+                                if (results.people.isNotEmpty()) {
+                                    add("People" to results.people)
+                                }
+                            }
+                            
+                            sections.forEach { (title, items) ->
+                                item(key = title) {
+                                    UnifiedMediaRow(
+                                        config = MediaRowConfig(
+                                            title = title,
+                                            dataSource = DataSource.RegularList(items),
+                                            cardType = CardType.PORTRAIT,
+                                            itemWidth = 120.dp,
+                                            itemSpacing = 12.dp,
+                                            contentPadding = PaddingValues(horizontal = 48.dp),
+                                            onItemClick = { item ->
+                                                when (item) {
+                                                    is SearchResultItem.Movie -> {
+                                                        onNavigateToDetails?.invoke("movie", item.tmdbId ?: item.id)
+                                                    }
+                                                    is SearchResultItem.TvShow -> {
+                                                        onNavigateToDetails?.invoke("tvshow", item.tmdbId ?: item.id)
+                                                    }
+                                                    is SearchResultItem.Person -> {
+                                                        Log.d("SearchPage", "Person clicked: ${item.name}")
+                                                    }
+                                                }
+                                            },
+                                            itemContent = { item, isSelected ->
+                                                SearchResultCard(
+                                                    item = item,
+                                                    isSelected = isSelected,
+                                                    onClick = {
+                                                        when (item) {
+                                                            is SearchResultItem.Movie -> {
+                                                                onNavigateToDetails?.invoke("movie", item.tmdbId ?: item.id)
+                                                            }
+                                                            is SearchResultItem.TvShow -> {
+                                                                onNavigateToDetails?.invoke("tvshow", item.tmdbId ?: item.id)
+                                                            }
+                                                            is SearchResultItem.Person -> {
+                                                                Log.d("SearchPage", "Person clicked: ${item.name}")
+                                                            }
+                                                        }
+                                                    },
+                                                )
+                                            },
+                                        )
+                                    )
+                                }
+                            }
                         }
                     }
                     searchQuery.length >= 2 -> {
                         // Show empty state
-                        Box(
-                            modifier =
-                                Modifier
+                        item {
+                            Box(
+                                modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(32.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = "No results found for \"$searchQuery\"",
-                                color = Color.White.copy(alpha = 0.7f),
-                                fontSize = 18.sp,
-                                textAlign = TextAlign.Center,
-                            )
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = "No results found for \"$searchQuery\"",
+                                    color = Color.White.copy(alpha = 0.7f),
+                                    fontSize = 18.sp,
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
                         }
                     }
                 }
@@ -435,222 +472,7 @@ private fun SearchResultsLoading(modifier: Modifier = Modifier) {
     }
 }
 
-@Composable
-private fun SearchResultsContent(
-    searchResults: com.strmr.ai.data.SearchResults,
-    onNavigateToDetails: ((String, Int) -> Unit)?,
-    onFocusReturnToSearchBar: () -> Unit = {},
-    isContentFocused: Boolean = false,
-    onContentFocusChanged: ((Boolean) -> Unit)? = null,
-    onLeftBoundary: (() -> Unit)? = null,
-    scrollState: ScrollState? = null,
-    coroutineScope: CoroutineScope? = null,
-    modifier: Modifier = Modifier,
-) {
-    // Build list of available sections - always include sections if they have data
-    val sections =
-        buildList {
-            if (searchResults.movies.isNotEmpty()) {
-                add("Movies" to searchResults.movies)
-            }
-            if (searchResults.tvShows.isNotEmpty()) {
-                add("TV Shows" to searchResults.tvShows)
-            }
-            if (searchResults.people.isNotEmpty()) {
-                add("People" to searchResults.people)
-            }
-        }
-
-    // Debug logging
-    Log.d("SearchPage", "🔍 Search results sections: ${sections.size}")
-    sections.forEachIndexed { index, (title, items) ->
-        Log.d("SearchPage", "  Section $index: $title (${items.size} items)")
-    }
-
-    // Use the unified SelectionManager like HomePage and DetailsPage
-    val selectionManager = rememberSelectionManager()
-
-    // Update SelectionManager with external focus state - but only when user explicitly focuses
-    LaunchedEffect(isContentFocused) {
-        Log.d("SearchPage", "🎯 Content focus changed: isContentFocused=$isContentFocused")
-        selectionManager.updateContentFocus(isContentFocused)
-    }
-
-    // Row position memory - tracks last position in each row by row index
-    val rowPositionMemory = remember { mutableMapOf<Int, Int>() }
-
-    // Build rows array based on available sections
-    val rows =
-        remember(sections) {
-            sections.map { it.first } // Extract section titles
-        }
-
-    val rowCount = rows.size
-    val focusRequesters = remember(rowCount) { List(rowCount) { FocusRequester() } }
-
-    // Initialize selection state only once
-    LaunchedEffect(sections.size) {
-        Log.d("SearchPage", "🎯 Initializing selection state for ${sections.size} sections")
-        if (sections.isNotEmpty() && selectionManager.selectedRowIndex == -1) {
-            selectionManager.updateSelection(0, 0)
-        }
-    }
-
-    // Handle focus changes when user explicitly navigates to content
-    LaunchedEffect(selectionManager.selectedRowIndex, isContentFocused) {
-        val index = selectionManager.selectedRowIndex
-        // Only request focus if user has explicitly focused content and we have valid row
-        if (index >= 0 && index < focusRequesters.size && index < rows.size && isContentFocused) {
-            try {
-                kotlinx.coroutines.delay(100)
-                focusRequesters[index].requestFocus()
-                Log.d("SearchPage", "🎯 Successfully requested focus on row $index (${rows[index]})")
-            } catch (e: Exception) {
-                Log.w("SearchPage", "🚨 Failed to request focus on row $index: ${e.message}")
-            }
-        }
-    }
-
-    // Auto-scroll to bring focused row into view when row changes
-    LaunchedEffect(selectionManager.selectedRowIndex) {
-        val index = selectionManager.selectedRowIndex
-        Log.d("SearchPage", "🎯 Row selection changed to $index, isContentFocused=$isContentFocused, scrollState=${scrollState != null}")
-
-        if (scrollState != null && index >= 0 && index < rows.size) {
-            try {
-                // Wait for focus request to complete first
-                kotlinx.coroutines.delay(250)
-
-                // Calculate scroll position to bring row into view
-                // Using actual measured scroll positions when rows are properly visible
-                val scrollOffset =
-                    when (index) {
-                        0 -> 0 // Movies - already at top
-                        1 -> 641 // TV Shows - exact position when fully visible
-                        2 -> 1342 // People - exact position when fully visible
-                        else -> index * 641 // Fallback for additional rows
-                    }
-
-                Log.d("SearchPage", "🎯 Attempting to scroll to row $index (${rows[index]}) at offset $scrollOffset")
-                scrollState.animateScrollTo(scrollOffset)
-                Log.d("SearchPage", "🎯 Successfully auto-scrolled to row $index (${rows[index]}) at offset $scrollOffset")
-            } catch (e: Exception) {
-                Log.w("SearchPage", "🚨 Failed to auto-scroll to row $index: ${e.message}")
-            }
-        } else {
-            Log.d("SearchPage", "🚨 Auto-scroll skipped: scrollState=${scrollState != null}, index=$index, rows.size=${rows.size}")
-        }
-    }
-
-    // Log scroll position when horizontal navigation occurs (to capture desired positions)
-    LaunchedEffect(selectionManager.selectedItemIndex, selectionManager.selectedRowIndex) {
-        if (scrollState != null && selectionManager.selectedRowIndex >= 0) {
-            val currentScrollPosition = scrollState.value
-            val rowIndex = selectionManager.selectedRowIndex
-            val itemIndex = selectionManager.selectedItemIndex
-            val rowName = rows.getOrNull(rowIndex) ?: "Unknown"
-
-            Log.d(
-                "SearchPage",
-                "📍 POSITION LOG - Row: $rowIndex ($rowName), Item: $itemIndex, Current Scroll Position: $currentScrollPosition",
-            )
-        }
-    }
-
-    Column(
-        modifier =
-            modifier
-                .fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        sections.forEachIndexed { rowIndex, (title, items) ->
-            UnifiedMediaRow(
-                config =
-                    MediaRowConfig(
-                        title = title,
-                        dataSource = DataSource.RegularList(items),
-                        selectedIndex = if (selectionManager.selectedRowIndex == rowIndex) selectionManager.selectedItemIndex else 0,
-                        isRowSelected = selectionManager.selectedRowIndex == rowIndex,
-                        onSelectionChanged = { newIndex ->
-                            if (selectionManager.selectedRowIndex == rowIndex) {
-                                selectionManager.updateSelection(rowIndex, newIndex)
-                                rowPositionMemory[rowIndex] = newIndex
-                                Log.d("SearchPage", "💾 Updated position $newIndex for row $rowIndex ($title)")
-                            }
-                        },
-                        onUpDown = { direction ->
-                            val newRowIndex = selectionManager.selectedRowIndex + direction
-                            if (newRowIndex >= 0 && newRowIndex < sections.size) {
-                                // Save current position
-                                rowPositionMemory[selectionManager.selectedRowIndex] = selectionManager.selectedItemIndex
-
-                                // Get target position from memory or use default
-                                val newItemIndex = rowPositionMemory[newRowIndex] ?: 0
-
-                                Log.d(
-                                    "SearchPage",
-                                    "🎯 Row navigation: ${selectionManager.selectedRowIndex}(${rows[selectionManager.selectedRowIndex]}) -> $newRowIndex(${rows[newRowIndex]}), direction=$direction",
-                                )
-                                selectionManager.updateSelection(newRowIndex, newItemIndex)
-                            } else if (newRowIndex < 0) {
-                                // Go back to search bar
-                                onFocusReturnToSearchBar()
-                            }
-                        },
-                        focusRequester =
-                            if (selectionManager.selectedRowIndex == rowIndex && isContentFocused) {
-                                focusRequesters.getOrNull(
-                                    rowIndex,
-                                )
-                            } else {
-                                null
-                            },
-                        onContentFocusChanged = { focused ->
-                            selectionManager.updateContentFocus(focused)
-                            onContentFocusChanged?.invoke(focused)
-                        },
-                        onLeftBoundary = if (rowIndex == selectionManager.selectedRowIndex) onLeftBoundary else null,
-                        cardType = CardType.PORTRAIT,
-                        itemWidth = 120.dp,
-                        itemSpacing = 12.dp,
-                        contentPadding = PaddingValues(horizontal = 48.dp),
-                        onItemClick = { item ->
-                            when (item) {
-                                is SearchResultItem.Movie -> {
-                                    onNavigateToDetails?.invoke("movie", item.tmdbId ?: item.id)
-                                }
-                                is SearchResultItem.TvShow -> {
-                                    onNavigateToDetails?.invoke("tvshow", item.tmdbId ?: item.id)
-                                }
-                                is SearchResultItem.Person -> {
-                                    Log.d("SearchPage", "Person clicked: ${item.name}")
-                                }
-                            }
-                        },
-                        itemContent = { item, isSelected ->
-                            SearchResultCard(
-                                item = item,
-                                isSelected = isSelected,
-                                onClick = {
-                                    when (item) {
-                                        is SearchResultItem.Movie -> {
-                                            onNavigateToDetails?.invoke("movie", item.tmdbId ?: item.id)
-                                        }
-                                        is SearchResultItem.TvShow -> {
-                                            onNavigateToDetails?.invoke("tvshow", item.tmdbId ?: item.id)
-                                        }
-                                        is SearchResultItem.Person -> {
-                                            Log.d("SearchPage", "Person clicked: ${item.name}")
-                                        }
-                                    }
-                                },
-                            )
-                        },
-                    ),
-            )
-        }
-    }
-}
+// SearchResultsContent function removed - now handled directly in main LazyColumn
 
 @Composable
 private fun SearchResultCard(

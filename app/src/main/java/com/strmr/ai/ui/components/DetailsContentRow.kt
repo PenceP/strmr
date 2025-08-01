@@ -46,30 +46,24 @@ fun <T : Any> DetailsContentRow(
 ) {
     if (items.isEmpty()) return
 
+    // Simplified DetailsContentRow using new UnifiedMediaRow pattern
     UnifiedMediaRow(
-        config =
-            MediaRowConfig(
-                title = title,
-                dataSource = DataSource.RegularList(items.take(10)),
-                selectedIndex = selectedIndex,
-                isRowSelected = isRowSelected,
-                onSelectionChanged = onSelectionChanged,
-                onUpDown = onUpDown,
-                onItemClick = onItemClick,
-                focusRequester = focusRequester,
-                onContentFocusChanged = onContentFocusChanged,
-                cardType = CardType.PORTRAIT,
-                itemWidth = 120.dp,
-                itemSpacing = 12.dp,
-                contentPadding = PaddingValues(horizontal = 48.dp),
-                itemContent = { item, isSelected ->
-                    DetailsContentCard(
-                        content = contentMapper(item),
-                        onClick = { onItemClick(item) },
-                        isSelected = isSelected,
-                    )
-                },
-            ),
+        config = MediaRowConfig(
+            title = title,
+            dataSource = DataSource.RegularList(items.take(10)),
+            cardType = CardType.PORTRAIT,
+            itemWidth = 120.dp,
+            itemSpacing = 12.dp,
+            contentPadding = PaddingValues(horizontal = 48.dp),
+            onItemClick = onItemClick,
+            itemContent = { item, isSelected ->
+                DetailsContentCard(
+                    content = contentMapper(item),
+                    onClick = { onItemClick(item) },
+                    isSelected = isSelected,
+                )
+            },
+        ),
         modifier = modifier,
     )
 }

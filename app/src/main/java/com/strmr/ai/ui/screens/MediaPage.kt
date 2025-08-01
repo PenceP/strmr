@@ -10,6 +10,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -51,57 +52,36 @@ import kotlinx.coroutines.withContext
 @Composable
 fun <T> MediaPage(
     uiState: UiState<T>,
-    selectedRowIndex: Int,
-    selectedItemIndex: Int,
-    onItemSelected: (Int, Int) -> Unit,
-    onSelectionChanged: (Int) -> Unit,
-    onCheckForMoreItems: (Int, Int, Int) -> Unit,
     modifier: Modifier = Modifier,
-    focusRequester: FocusRequester? = null,
-    onUpDown: ((Int) -> Unit)? = null,
-    isContentFocused: Boolean = false,
-    onContentFocusChanged: ((Boolean) -> Unit)? = null,
     getOmdbRatings: suspend (String) -> OmdbResponse? = { null },
     onItemClick: ((T) -> Unit)? = null,
 ) where T : Any {
     val rowTitles = uiState.mediaRows.keys.toList()
     val rows = uiState.mediaRows.values.toList()
-    val rowCount = rows.size
+    
+    // Simple state for selected item (for hero display)
+    var selectedRowIndex by remember { mutableStateOf(0) }
+    var selectedItemIndex by remember { mutableStateOf(0) }
+    
     val selectedRow = rows.getOrNull(selectedRowIndex) ?: emptyList<T>()
     val selectedItem = selectedRow.getOrNull(selectedItemIndex)
 
+    // Prefetch OMDb ratings for all items
     val coroutineScope = rememberCoroutineScope()
     LaunchedEffect(rows) {
         rows.flatten().forEach { item ->
-            val imdbId =
-                when (item) {
-                    is com.strmr.ai.data.database.MovieEntity -> item.imdbId
-                    is com.strmr.ai.data.database.TvShowEntity -> item.imdbId
-                    is com.strmr.ai.viewmodel.HomeMediaItem.Movie -> item.movie.imdbId
-                    is com.strmr.ai.viewmodel.HomeMediaItem.TvShow -> item.show.imdbId
-                    else -> null
-                }
+            val imdbId = when (item) {
+                is com.strmr.ai.data.database.MovieEntity -> item.imdbId
+                is com.strmr.ai.data.database.TvShowEntity -> item.imdbId
+                is com.strmr.ai.viewmodel.HomeMediaItem.Movie -> item.movie.imdbId
+                is com.strmr.ai.viewmodel.HomeMediaItem.TvShow -> item.show.imdbId
+                else -> null
+            }
             if (!imdbId.isNullOrBlank()) {
                 coroutineScope.launch {
                     getOmdbRatings(imdbId)
                 }
             }
-        }
-    }
-
-    LaunchedEffect(selectedRowIndex, selectedItemIndex) {
-        onItemSelected(selectedRowIndex, selectedItemIndex)
-    }
-
-    // Ensure selection is properly initialized when content gets focus
-    LaunchedEffect(isContentFocused, selectedRowIndex, selectedItemIndex) {
-        if (isContentFocused && selectedRow.isNotEmpty()) {
-            Log.d(
-                "MediaPage",
-                "🎯 Content focused: rowIndex=$selectedRowIndex, selectedItemIndex=$selectedItemIndex, items=${selectedRow.size}",
-            )
-            // Force update the selection to ensure details are shown
-            onItemSelected(selectedRowIndex, selectedItemIndex)
         }
     }
 
@@ -224,36 +204,32 @@ fun <T> MediaPage(
                 //         .fillMaxSize()
                 //         .background(Color.Black.copy(alpha = 0.5f))
                 // )
-                // All content overlays (Column, MediaHero, MediaRow, etc.)
+                // Simplified layout with hero and LazyColumn
                 Column(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .padding(start = navBarWidth)
-                            .verticalScroll(rememberScrollState()),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(start = navBarWidth)
                 ) {
+                    // Hero section (fixed at top)
                     Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .weight(0.49f),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(300.dp)
                     ) {
-                        val selectedImdbId =
-                            when (selectedItem) {
-                                is com.strmr.ai.data.database.MovieEntity -> selectedItem.imdbId
-                                is com.strmr.ai.data.database.TvShowEntity -> selectedItem.imdbId
-                                is com.strmr.ai.viewmodel.HomeMediaItem.Movie -> selectedItem.movie.imdbId
-                                is com.strmr.ai.viewmodel.HomeMediaItem.TvShow -> selectedItem.show.imdbId
-                                else -> null
-                            }
+                        val selectedImdbId = when (selectedItem) {
+                            is com.strmr.ai.data.database.MovieEntity -> selectedItem.imdbId
+                            is com.strmr.ai.data.database.TvShowEntity -> selectedItem.imdbId
+                            is com.strmr.ai.viewmodel.HomeMediaItem.Movie -> selectedItem.movie.imdbId
+                            is com.strmr.ai.viewmodel.HomeMediaItem.TvShow -> selectedItem.show.imdbId
+                            else -> null
+                        }
                         var omdbRatings by remember(selectedImdbId) { mutableStateOf<OmdbResponse?>(null) }
                         LaunchedEffect(selectedImdbId) {
                             if (!selectedImdbId.isNullOrBlank()) {
                                 try {
-                                    omdbRatings =
-                                        withContext(Dispatchers.IO) {
-                                            getOmdbRatings(selectedImdbId)
-                                        }
+                                    omdbRatings = withContext(Dispatchers.IO) {
+                                        getOmdbRatings(selectedImdbId)
+                                    }
                                 } catch (_: Exception) {
                                     omdbRatings = null
                                 }
@@ -275,62 +251,32 @@ fun <T> MediaPage(
                                         rating = details.rating,
                                         overview = details.overview,
                                         cast = details.cast,
-                                        omdbRatings = omdbRatings, // pass OMDb ratings
+                                        omdbRatings = omdbRatings,
                                     )
                                 }
                             },
                         )
                     }
-                    // Active row section with indicators
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .weight(0.51f),
+                    
+                    // Rows section with LazyColumn
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(vertical = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        AnimatedContent(
-                            targetState = selectedRowIndex,
-                            transitionSpec = {
-                                val direction = if (targetState > initialState) 1 else -1
-                                (
-                                    slideInVertically(
-                                        animationSpec = tween(350),
-                                        initialOffsetY = { height -> direction * height },
-                                    ) + fadeIn()
-                                ).togetherWith(
-                                    slideOutVertically(
-                                        animationSpec = tween(350),
-                                        targetOffsetY = { height -> -direction * height },
-                                    ) + fadeOut(),
-                                )
-                            },
-                        ) { rowIdx ->
-                            val rowTitle = rowTitles.getOrNull(rowIdx) ?: ""
-                            val rowItems = rows.getOrNull(rowIdx) as? List<T> ?: emptyList()
+                        rowTitles.forEachIndexed { rowIndex, rowTitle ->
+                            val rowItems = rows.getOrNull(rowIndex) as? List<T> ?: emptyList()
                             if (rowItems.isNotEmpty()) {
-                                UnifiedMediaRow(
-                                    config =
-                                        MediaRowConfig(
+                                item(key = rowTitle) {
+                                    UnifiedMediaRow(
+                                        config = MediaRowConfig(
                                             title = rowTitle,
                                             dataSource = DataSource.RegularList(rowItems),
-                                            selectedIndex = if (rowIdx == selectedRowIndex) selectedItemIndex else 0,
-                                            isRowSelected = rowIdx == selectedRowIndex,
-                                            onSelectionChanged = { newIndex ->
-                                                if (rowIdx == selectedRowIndex) onItemSelected(rowIdx, newIndex)
-                                            },
-                                            onUpDown = { direction ->
-                                                val newRowIndex = selectedRowIndex + direction
-                                                if (newRowIndex in 0 until rowCount) {
-                                                    onItemSelected(newRowIndex, 0)
-                                                }
-                                            },
-                                            onItemClick = onItemClick,
-                                            focusRequester = if (rowIdx == selectedRowIndex) focusRequester else null,
-                                            onContentFocusChanged = onContentFocusChanged,
                                             cardType = CardType.PORTRAIT,
                                             itemWidth = 120.dp,
                                             itemSpacing = 12.dp,
                                             contentPadding = PaddingValues(horizontal = 48.dp),
+                                            onItemClick = onItemClick,
                                             itemContent = { item, isSelected ->
                                                 MediaCard(
                                                     title = item.getTitle(),
@@ -339,32 +285,10 @@ fun <T> MediaPage(
                                                     onClick = { onItemClick?.invoke(item) },
                                                 )
                                             },
-                                        ),
-                                )
+                                        )
+                                    )
+                                }
                             }
-                        }
-                        // Up/down indicators
-                        if (selectedRowIndex > 0) {
-                            Icon(
-                                imageVector = Icons.Filled.KeyboardArrowUp,
-                                contentDescription = "Up",
-                                tint = Color.White,
-                                modifier =
-                                    Modifier
-                                        .align(Alignment.TopCenter)
-                                        .size(32.dp),
-                            )
-                        }
-                        if (selectedRowIndex < rowCount - 1) {
-                            Icon(
-                                imageVector = Icons.Filled.KeyboardArrowDown,
-                                contentDescription = "Down",
-                                tint = Color.White,
-                                modifier =
-                                    Modifier
-                                        .align(Alignment.BottomCenter)
-                                        .size(32.dp),
-                            )
                         }
                     }
                 }
