@@ -6,7 +6,6 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.PagingSource
-import com.strmr.ai.data.database.BaseMediaDao
 import com.strmr.ai.data.database.StrmrDatabase
 import com.strmr.ai.data.database.TraktRatingsDao
 import com.strmr.ai.data.database.TraktRatingsEntity
@@ -24,7 +23,7 @@ abstract class BaseMediaRepository<EntityType : Any, TraktType : Any, TrendingTy
     protected val traktApi: TraktApiService,
     protected val tmdbApi: TmdbApiService,
     protected val database: StrmrDatabase,
-    protected val traktRatingsDao: TraktRatingsDao
+    protected val traktRatingsDao: TraktRatingsDao,
 ) {
     protected val detailsExpiryMs = 7 * 24 * 60 * 60 * 1000L // 7 days
     protected val ratingsExpiryMs = 7 * 24 * 60 * 60 * 1000L // 7 days
@@ -40,44 +39,46 @@ abstract class BaseMediaRepository<EntityType : Any, TraktType : Any, TrendingTy
         fetchTrendingFromTrakt: suspend (Int, Int) -> List<TrendingType>,
         fetchPopularFromTrakt: suspend (Int, Int) -> List<TraktType>,
         mapTrendingToEntity: suspend (TrendingType, Int) -> EntityType?,
-        mapPopularToEntity: suspend (TraktType, Int) -> EntityType?
+        mapPopularToEntity: suspend (TraktType, Int) -> EntityType?,
     ) {
         withContext(Dispatchers.IO) {
             val limit = pageSize
-            val page = when (contentType) {
-                ContentType.TRENDING -> {
-                    currentTrendingPage++
-                    currentTrendingPage
+            val page =
+                when (contentType) {
+                    ContentType.TRENDING -> {
+                        currentTrendingPage++
+                        currentTrendingPage
+                    }
+                    ContentType.POPULAR -> {
+                        currentPopularPage++
+                        currentPopularPage
+                    }
                 }
-                ContentType.POPULAR -> {
-                    currentPopularPage++
-                    currentPopularPage
-                }
-            }
-            
-            val entities = when (contentType) {
-                ContentType.TRENDING -> {
-                    val trending = fetchTrendingFromTrakt(page, limit)
-                    trending.mapIndexedNotNull { index, item ->
-                        val actualIndex = (page - 1) * pageSize + index
-                        mapTrendingToEntity(item, actualIndex)?.let { entity ->
-                            updateEntityTimestamp(entity)
+
+            val entities =
+                when (contentType) {
+                    ContentType.TRENDING -> {
+                        val trending = fetchTrendingFromTrakt(page, limit)
+                        trending.mapIndexedNotNull { index, item ->
+                            val actualIndex = (page - 1) * pageSize + index
+                            mapTrendingToEntity(item, actualIndex)?.let { entity ->
+                                updateEntityTimestamp(entity)
+                            }
+                        }
+                    }
+                    ContentType.POPULAR -> {
+                        val popular = fetchPopularFromTrakt(page, limit)
+                        popular.mapIndexedNotNull { index, item ->
+                            val actualIndex = (page - 1) * pageSize + index
+                            mapPopularToEntity(item, actualIndex)?.let { entity ->
+                                updateEntityTimestamp(entity)
+                            }
                         }
                     }
                 }
-                ContentType.POPULAR -> {
-                    val popular = fetchPopularFromTrakt(page, limit)
-                    popular.mapIndexedNotNull { index, item ->
-                        val actualIndex = (page - 1) * pageSize + index
-                        mapPopularToEntity(item, actualIndex)?.let { entity ->
-                            updateEntityTimestamp(entity)
-                        }
-                    }
-                }
-            }
-            
+
             Log.d(getLogTag(), "Fetched ${contentType.name.lowercase()} page $page, got ${entities.size} items")
-            
+
             if (page == 1) {
                 when (contentType) {
                     ContentType.TRENDING -> updateTrendingItems(entities)
@@ -96,26 +97,35 @@ abstract class BaseMediaRepository<EntityType : Any, TraktType : Any, TrendingTy
     protected fun createPager(
         contentType: ContentType,
         remoteMediator: Any, // Will be cast to RemoteMediator in concrete implementations
-        pagingSourceFactory: () -> PagingSource<Int, EntityType>
+        pagingSourceFactory: () -> PagingSource<Int, EntityType>,
     ): Flow<PagingData<EntityType>> {
         @Suppress("UNCHECKED_CAST")
         return Pager<Int, EntityType>(
-            config = PagingConfig(
-                pageSize = 20,
-                enablePlaceholders = false,
-                prefetchDistance = 5
-            ),
+            config =
+                PagingConfig(
+                    pageSize = 20,
+                    enablePlaceholders = false,
+                    prefetchDistance = 5,
+                ),
             remoteMediator = remoteMediator as androidx.paging.RemoteMediator<Int, EntityType>?,
-            pagingSourceFactory = pagingSourceFactory
+            pagingSourceFactory = pagingSourceFactory,
         ).flow
     }
 
     // Abstract methods for DAO operations that concrete repositories must implement
     abstract suspend fun insertItems(items: List<EntityType>)
+
     abstract suspend fun updateTrendingItems(items: List<EntityType>)
+
     abstract suspend fun updatePopularItems(items: List<EntityType>)
+
     abstract suspend fun getItemByTmdbId(tmdbId: Int): EntityType?
-    abstract suspend fun updateItemLogo(tmdbId: Int, logoUrl: String?)
+
+    abstract suspend fun updateItemLogo(
+        tmdbId: Int,
+        logoUrl: String?,
+    )
+
     abstract suspend fun clearNullLogos()
 
     /**
@@ -133,26 +143,36 @@ abstract class BaseMediaRepository<EntityType : Any, TraktType : Any, TrendingTy
     /**
      * Save Trakt ratings to database
      */
-    protected suspend fun saveTraktRatings(traktId: Int, rating: Float, votes: Int) {
-        val entity = TraktRatingsEntity(
-            traktId = traktId,
-            rating = rating,
-            votes = votes,
-            updatedAt = System.currentTimeMillis()
-        )
+    protected suspend fun saveTraktRatings(
+        traktId: Int,
+        rating: Float,
+        votes: Int,
+    ) {
+        val entity =
+            TraktRatingsEntity(
+                traktId = traktId,
+                rating = rating,
+                votes = votes,
+                updatedAt = System.currentTimeMillis(),
+            )
         traktRatingsDao.insertOrUpdate(entity)
     }
 
     // Abstract methods that concrete repositories must implement
     abstract fun getLogTag(): String
+
     abstract suspend fun getTmdbId(item: TraktType): Int?
+
     abstract suspend fun getTraktId(item: TraktType): Int?
+
     abstract suspend fun getTmdbIdFromTrending(item: TrendingType): Int?
+
     abstract suspend fun getTraktIdFromTrending(item: TrendingType): Int?
+
     abstract suspend fun updateEntityTimestamp(entity: EntityType): EntityType
 }
 
 enum class ContentType {
     TRENDING,
-    POPULAR
+    POPULAR,
 }

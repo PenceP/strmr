@@ -15,38 +15,38 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-    
     @Provides
     @Singleton
     fun provideTraktApiService(): TraktApiService {
         return RetrofitInstance.trakt.create(TraktApiService::class.java)
     }
-    
+
     @Provides
     @Singleton
     fun provideTmdbApiService(): TmdbApiService {
         return RetrofitInstance.tmdb.create(TmdbApiService::class.java)
     }
-    
+
     @Provides
     @Singleton
     fun provideTraktAuthService(): TraktAuthService {
         return RetrofitInstance.traktAuth
     }
-    
+
     @Provides
     @Singleton
     fun provideOmdbApiService(): OmdbApiService {
         return RetrofitInstance.omdbApiService
     }
-    
+
     @Provides
     @Singleton
     fun provideOkHttpClient(): OkHttpClient {
-        val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BASIC
-        }
-        
+        val loggingInterceptor =
+            HttpLoggingInterceptor().apply {
+                level = HttpLoggingInterceptor.Level.BASIC
+            }
+
         return OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
@@ -54,7 +54,7 @@ object NetworkModule {
             .writeTimeout(30, TimeUnit.SECONDS)
             .build()
     }
-    
+
     @Provides
     @Singleton
     fun provideGson(): Gson {
@@ -62,4 +62,4 @@ object NetworkModule {
             .setLenient()
             .create()
     }
-} 
+}

@@ -6,7 +6,7 @@ package com.strmr.ai.domain.model
 data class Person(
     val id: PersonId?,
     val name: String,
-    val profileImageUrl: String? = null
+    val profileImageUrl: String? = null,
 )
 
 /**
@@ -14,7 +14,7 @@ data class Person(
  */
 data class CastMember(
     val person: Person,
-    val character: String?
+    val character: String?,
 )
 
 @JvmInline

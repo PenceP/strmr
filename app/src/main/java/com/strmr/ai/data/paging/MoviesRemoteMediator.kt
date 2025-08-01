@@ -7,11 +7,10 @@ import androidx.paging.PagingState
 import androidx.paging.RemoteMediator
 import androidx.room.withTransaction
 import com.strmr.ai.data.MovieRepository
-import com.strmr.ai.data.TraktApiService
 import com.strmr.ai.data.TmdbApiService
+import com.strmr.ai.data.TraktApiService
 import com.strmr.ai.data.database.MovieEntity
 import com.strmr.ai.data.database.StrmrDatabase
-import com.strmr.ai.data.database.MovieDao
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -21,11 +20,11 @@ class MoviesRemoteMediator(
     private val database: StrmrDatabase,
     private val traktApi: TraktApiService,
     private val tmdbApi: TmdbApiService,
-    private val movieRepository: MovieRepository
+    private val movieRepository: MovieRepository,
 ) : RemoteMediator<Int, MovieEntity>() {
-
     enum class ContentType {
-        TRENDING, POPULAR
+        TRENDING,
+        POPULAR,
     }
 
     override suspend fun initialize(): InitializeAction {
@@ -35,31 +34,33 @@ class MoviesRemoteMediator(
 
     override suspend fun load(
         loadType: LoadType,
-        state: PagingState<Int, MovieEntity>
+        state: PagingState<Int, MovieEntity>,
     ): MediatorResult {
         return try {
-            val page = when (loadType) {
-                LoadType.REFRESH -> 1
-                LoadType.PREPEND -> return MediatorResult.Success(endOfPaginationReached = true)
-                LoadType.APPEND -> {
-                    val lastItem = state.lastItemOrNull()
-                    if (lastItem == null) {
-                        1
-                    } else {
-                        // Calculate next page based on current data size
-                        val currentSize = when (contentType) {
-                            ContentType.TRENDING -> database.movieDao().getTrendingMoviesCount()
-                            ContentType.POPULAR -> database.movieDao().getPopularMoviesCount()
+            val page =
+                when (loadType) {
+                    LoadType.REFRESH -> 1
+                    LoadType.PREPEND -> return MediatorResult.Success(endOfPaginationReached = true)
+                    LoadType.APPEND -> {
+                        val lastItem = state.lastItemOrNull()
+                        if (lastItem == null) {
+                            1
+                        } else {
+                            // Calculate next page based on current data size
+                            val currentSize =
+                                when (contentType) {
+                                    ContentType.TRENDING -> database.movieDao().getTrendingMoviesCount()
+                                    ContentType.POPULAR -> database.movieDao().getPopularMoviesCount()
+                                }
+                            (currentSize / 20) + 1
                         }
-                        (currentSize / 20) + 1
                     }
                 }
-            }
 
             Log.d("MoviesRemoteMediator", "📄 Loading ${contentType.name} movies page $page")
 
             val movies = fetchMoviesFromApi(page)
-            
+
             database.withTransaction {
                 if (loadType == LoadType.REFRESH) {
                     // Clear existing data for refresh
@@ -68,7 +69,7 @@ class MoviesRemoteMediator(
                         ContentType.POPULAR -> database.movieDao().clearPopularOrder()
                     }
                 }
-                
+
                 // Insert new movies
                 database.movieDao().insertMovies(movies)
             }
@@ -76,7 +77,7 @@ class MoviesRemoteMediator(
             Log.d("MoviesRemoteMediator", "✅ Loaded ${movies.size} ${contentType.name} movies for page $page")
 
             MediatorResult.Success(
-                endOfPaginationReached = movies.isEmpty()
+                endOfPaginationReached = movies.isEmpty(),
             )
         } catch (e: Exception) {
             Log.e("MoviesRemoteMediator", "❌ Error loading ${contentType.name} movies", e)
@@ -92,7 +93,7 @@ class MoviesRemoteMediator(
                     trending.mapIndexedNotNull { index, trendingMovie ->
                         movieRepository.mapTraktMovieToEntity(
                             trendingMovie.movie,
-                            trendingOrder = ((page - 1) * 20) + index
+                            trendingOrder = ((page - 1) * 20) + index,
                         )
                     }
                 }
@@ -101,11 +102,11 @@ class MoviesRemoteMediator(
                     popular.mapIndexedNotNull { index, movie ->
                         movieRepository.mapTraktMovieToEntity(
                             movie,
-                            popularOrder = ((page - 1) * 20) + index
+                            popularOrder = ((page - 1) * 20) + index,
                         )
                     }
                 }
             }
         }
     }
-} 
+}

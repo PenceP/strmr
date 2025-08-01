@@ -1,7 +1,6 @@
 package com.strmr.ai.ui.components
 
 import androidx.compose.runtime.*
-import kotlinx.coroutines.delay
 
 /**
  * Centralized selection manager to prevent race conditions
@@ -10,7 +9,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun rememberSelectionManager(
     initialRowIndex: Int = 0,
-    initialItemIndex: Int = 0
+    initialItemIndex: Int = 0,
 ): SelectionManager {
     return remember {
         SelectionManager(initialRowIndex, initialItemIndex)
@@ -19,22 +18,25 @@ fun rememberSelectionManager(
 
 class SelectionManager(
     initialRowIndex: Int,
-    initialItemIndex: Int
+    initialItemIndex: Int,
 ) {
     private var _selectedRowIndex by mutableStateOf(initialRowIndex)
     private var _selectedItemIndex by mutableStateOf(initialItemIndex)
     private var _isContentFocused by mutableStateOf(false)
     private var _isUpdating by mutableStateOf(false)
-    
+
     val selectedRowIndex: Int get() = _selectedRowIndex
     val selectedItemIndex: Int get() = _selectedItemIndex
     val isContentFocused: Boolean get() = _isContentFocused
-    
+
     /**
      * Update selection without triggering navigation
      * This should be used for focus changes and keyboard navigation
      */
-    fun updateSelection(rowIndex: Int, itemIndex: Int) {
+    fun updateSelection(
+        rowIndex: Int,
+        itemIndex: Int,
+    ) {
         if (!_isUpdating) {
             _isUpdating = true
             _selectedRowIndex = rowIndex
@@ -42,28 +44,31 @@ class SelectionManager(
             _isUpdating = false
         }
     }
-    
+
     /**
      * Update content focus state
      */
     fun updateContentFocus(focused: Boolean) {
         _isContentFocused = focused
     }
-    
+
     /**
      * Check if an item is currently selected
      */
-    fun isItemSelected(rowIndex: Int, itemIndex: Int): Boolean {
+    fun isItemSelected(
+        rowIndex: Int,
+        itemIndex: Int,
+    ): Boolean {
         return _selectedRowIndex == rowIndex && _selectedItemIndex == itemIndex && _isContentFocused
     }
-    
+
     /**
      * Check if a row is currently selected
      */
     fun isRowSelected(rowIndex: Int): Boolean {
         return _selectedRowIndex == rowIndex && _isContentFocused
     }
-    
+
     /**
      * Reset selection to initial state
      */
@@ -80,7 +85,7 @@ class SelectionManager(
 @Composable
 fun SelectionState(
     selectionManager: SelectionManager,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     content()
-} 
+}

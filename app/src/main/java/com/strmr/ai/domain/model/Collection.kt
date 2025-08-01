@@ -7,7 +7,7 @@ data class Collection(
     val id: CollectionId,
     val name: String,
     val posterUrl: String? = null,
-    val backdropUrl: String? = null
+    val backdropUrl: String? = null,
 )
 
 @JvmInline

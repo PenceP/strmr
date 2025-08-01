@@ -13,20 +13,26 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 abstract class BaseMediaViewModel<T : Any>(
-    application: Application
+    application: Application,
 ) : AndroidViewModel(application) {
-    
     protected val tmdbService: TmdbApiService = RetrofitInstance.tmdb.create(TmdbApiService::class.java)
-    
+
     protected abstract val _uiState: MutableStateFlow<MediaUiState<T>>
     val uiState: StateFlow<MediaUiState<T>> = _uiState
-    
+
     protected abstract suspend fun refreshData()
+
     protected abstract suspend fun fetchLogoForItem(item: T)
-    protected abstract fun updateItemWithLogo(tmdbId: Int, logoUrl: String?)
+
+    protected abstract fun updateItemWithLogo(
+        tmdbId: Int,
+        logoUrl: String?,
+    )
+
     protected abstract fun getTmdbId(item: T): Int
+
     protected abstract fun getTitle(item: T): String
-    
+
     protected fun refreshDataWithErrorHandling() {
         viewModelScope.launch {
             try {
@@ -40,8 +46,11 @@ abstract class BaseMediaViewModel<T : Any>(
             }
         }
     }
-    
-    protected fun onItemSelected(selectedIndex: Int, items: List<T>) {
+
+    protected fun onItemSelected(
+        selectedIndex: Int,
+        items: List<T>,
+    ) {
         if (selectedIndex < items.size) {
             val selectedItem = items[selectedIndex]
             Log.d("BaseMediaViewModel", "🎯 Item selected: '${getTitle(selectedItem)}' (index: $selectedIndex)")
@@ -55,26 +64,27 @@ abstract class BaseMediaViewModel<T : Any>(
             }
         }
     }
-    
+
     protected suspend fun fetchLogoWithErrorHandling(
         tmdbId: Int,
         title: String,
         fetchImages: suspend () -> Any,
-        updateLogo: suspend (Int, String?) -> Unit
+        updateLogo: suspend (Int, String?) -> Unit,
     ) {
         try {
             Log.d("BaseMediaViewModel", "📡 Fetching logo from TMDB API for '$title' (TMDB: $tmdbId)")
-            val images = withContext(Dispatchers.IO) {
-                fetchImages()
-            }
-            
+            val images =
+                withContext(Dispatchers.IO) {
+                    fetchImages()
+                }
+
             // Extract logo URL from images response
             val logoUrl = extractLogoUrl(images)
             Log.d("BaseMediaViewModel", "🎨 Logo URL for '$title': $logoUrl")
-            
+
             // Save logo URL to database
             updateLogo(tmdbId, logoUrl)
-            
+
             // Update UI state
             updateItemWithLogo(tmdbId, logoUrl)
         } catch (e: Exception) {
@@ -83,7 +93,7 @@ abstract class BaseMediaViewModel<T : Any>(
             updateLogo(tmdbId, null)
         }
     }
-    
+
     private fun extractLogoUrl(images: Any): String? {
         // This is a simplified version - in practice, you'd need to handle the specific response types
         // For now, we'll return null and let the concrete implementations handle this
@@ -93,6 +103,8 @@ abstract class BaseMediaViewModel<T : Any>(
 
 sealed class MediaUiState<out T> {
     object Loading : MediaUiState<Nothing>()
+
     data class Success<T>(val items: List<T>) : MediaUiState<T>()
+
     data class Error(val message: String) : MediaUiState<Nothing>()
-} 
+}

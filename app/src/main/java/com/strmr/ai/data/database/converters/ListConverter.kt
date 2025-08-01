@@ -4,9 +4,9 @@ import androidx.room.TypeConverter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.strmr.ai.data.Actor
-import com.strmr.ai.data.SimilarContent
 import com.strmr.ai.data.BelongsToCollection
 import com.strmr.ai.data.CollectionMovie
+import com.strmr.ai.data.SimilarContent
 
 class ListConverter {
     @TypeConverter
@@ -77,7 +77,7 @@ class ListConverter {
         val listType = object : TypeToken<List<CollectionMovie>>() {}.type
         return Gson().fromJson(value, listType)
     }
-    
+
     @TypeConverter
     fun fromStringIntMap(map: Map<String, Int?>?): String? {
         if (map == null) return null
@@ -90,4 +90,4 @@ class ListConverter {
         val mapType = object : TypeToken<Map<String, Int?>>() {}.type
         return Gson().fromJson(value, mapType)
     }
-} 
+}

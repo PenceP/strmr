@@ -8,5 +8,5 @@ data class TraktRatingsEntity(
     @PrimaryKey val traktId: Int,
     val rating: Float,
     val votes: Int,
-    val updatedAt: Long // epoch millis for cache expiry
-) 
+    val updatedAt: Long, // epoch millis for cache expiry
+)

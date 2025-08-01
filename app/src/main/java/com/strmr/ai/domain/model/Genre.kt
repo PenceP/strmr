@@ -7,7 +7,7 @@ import androidx.compose.runtime.Immutable
  */
 @Immutable
 data class Genre(
-    val name: String
+    val name: String,
 ) {
     companion object {
         // Common genres for validation/consistency

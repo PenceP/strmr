@@ -1,11 +1,12 @@
 import java.util.Properties
 
-val secrets = Properties().apply {
-    val secretsFile = rootProject.file("secrets.properties")
-    if (secretsFile.exists()) {
-        secretsFile.inputStream().use { load(it) }
+val secrets =
+    Properties().apply {
+        val secretsFile = rootProject.file("secrets.properties")
+        if (secretsFile.exists()) {
+            secretsFile.inputStream().use { load(it) }
+        }
     }
-}
 
 plugins {
     alias(libs.plugins.androidApplication)
@@ -31,7 +32,7 @@ android {
         buildConfigField("String", "TRAKT_API_KEY", "\"${secrets.getProperty("TRAKT_API_KEY", "")}\"")
         buildConfigField("String", "OMDB_API_KEY", "\"${secrets.getProperty("OMDB_API_KEY", "")}\"")
         buildConfigField("String", "TMDB_READ_KEY", "\"${secrets.getProperty("TMDB_READ_KEY", "")}\"")
-        
+
         // Target specific resources for Android TV
         androidResources {
             localeFilters += listOf("en")
@@ -41,43 +42,45 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
-            isShrinkResources = true  // Enable resource shrinking - saves 10-20MB
+            isShrinkResources = true // Enable resource shrinking - saves 10-20MB
             isDebuggable = false
-            
+
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
             signingConfig = signingConfigs.getByName("debug")
         }
     }
-    
+
     // Target Android TV architectures only - saves 50-80MB from LibVLC
     splits {
         abi {
             isEnable = true
             reset()
-            include("arm64-v8a", "armeabi-v7a")  // Primary Android TV architectures
+            include("arm64-v8a", "armeabi-v7a") // Primary Android TV architectures
             isUniversalApk = false
         }
     }
-    
+
     // Exclude unnecessary resources and architectures
     packaging {
         jniLibs {
-            excludes += listOf(
-                "**/x86/**",
-                "**/x86_64/**"  // Exclude x86 architectures if not needed
-            )
+            excludes +=
+                listOf(
+                    "**/x86/**",
+                    "**/x86_64/**", // Exclude x86 architectures if not needed
+                )
         }
         resources {
-            excludes += listOf(
-                "META-INF/DEPENDENCIES",
-                "META-INF/LICENSE",
-                "META-INF/LICENSE.txt",
-                "META-INF/NOTICE",
-                "META-INF/NOTICE.txt"
-            )
+            excludes +=
+                listOf(
+                    "META-INF/DEPENDENCIES",
+                    "META-INF/LICENSE",
+                    "META-INF/LICENSE.txt",
+                    "META-INF/NOTICE",
+                    "META-INF/NOTICE.txt",
+                )
         }
     }
     compileOptions {
@@ -86,14 +89,15 @@ android {
     }
     kotlinOptions {
         jvmTarget = "17"
-        
+
         // Compose compiler metrics for performance analysis
-        freeCompilerArgs += listOf(
-            "-P",
-            "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=${layout.buildDirectory.get().asFile.absolutePath}/compose_compiler",
-            "-P",
-            "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=${layout.buildDirectory.get().asFile.absolutePath}/compose_compiler"
-        )
+        freeCompilerArgs +=
+            listOf(
+                "-P",
+                "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=${layout.buildDirectory.get().asFile.absolutePath}/compose_compiler",
+                "-P",
+                "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=${layout.buildDirectory.get().asFile.absolutePath}/compose_compiler",
+            )
     }
     buildFeatures {
         buildConfig = true
@@ -136,20 +140,20 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.paging)
     ksp(libs.androidx.room.compiler)
-    
+
     // Paging 3
     implementation(libs.androidx.paging.runtime)
     implementation(libs.androidx.paging.compose)
     implementation("com.squareup.okhttp3:logging-interceptor:4.9.3")
     implementation("androidx.work:work-runtime-ktx:2.9.0")
-    
+
     // Hilt Dependency Injection
     implementation("com.google.dagger:hilt-android:2.48")
     ksp("com.google.dagger:hilt-compiler:2.48")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
     implementation("androidx.hilt:hilt-work:1.2.0")
     ksp("androidx.hilt:hilt-compiler:1.2.0")
-    
+
     // ExoPlayer Media3 with explicit versions
     implementation("androidx.media3:media3-exoplayer:1.3.1")
     implementation("androidx.media3:media3-exoplayer-dash:1.3.1")
@@ -158,26 +162,26 @@ dependencies {
     implementation("androidx.media3:media3-datasource-okhttp:1.3.1")
     // Removed smoothstreaming - uncomment if needed
     // implementation("androidx.media3:media3-exoplayer-smoothstreaming")
-    
+
     // LibVLC for Android - MAJOR APK SIZE IMPACT (~80-120MB)
     // TEMPORARILY REMOVED - Network issues with maven.videolan.org
     // implementation("org.videolan.android:libvlc-all:4.0.0-eap15")
-    
+
     // OkHttp for network requests
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    
+
     // DataStore for settings
     implementation("androidx.datastore:datastore-preferences:1.0.0")
-    
+
     // Gson for JSON parsing
     implementation("com.google.code.gson:gson:2.10.1")
-    
+
     // Security for encrypted preferences
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
-    
+
     // Memory leak detection (debug only)
     debugImplementation("com.squareup.leakcanary:leakcanary-android:2.12")
-    
+
     // Test dependencies
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.mockito:mockito-core:5.1.1")
@@ -189,7 +193,7 @@ dependencies {
     testImplementation("com.google.dagger:hilt-android-testing:2.48")
     testImplementation("app.cash.turbine:turbine:1.0.0")
     kspTest("com.google.dagger:hilt-compiler:2.48")
-    
+
     // Android Test dependencies
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
@@ -226,7 +230,7 @@ ktlint {
     outputToConsole.set(true)
     outputColorName.set("RED")
     ignoreFailures.set(false)
-    
+
     filter {
         exclude("**/generated/**")
         include("**/src/**")

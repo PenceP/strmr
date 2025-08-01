@@ -1,8 +1,8 @@
 package com.strmr.ai.ui.components
 
 import android.util.Log
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 
@@ -14,7 +14,7 @@ import androidx.paging.compose.LazyPagingItems
 fun <T : MediaItem> LoadStateLogger(
     lazyPagingItems: LazyPagingItems<T>,
     title: String,
-    logTag: String
+    logTag: String,
 ) {
     LaunchedEffect(lazyPagingItems.loadState) {
         when (val refresh = lazyPagingItems.loadState.refresh) {
@@ -28,7 +28,7 @@ fun <T : MediaItem> LoadStateLogger(
                 Log.d(logTag, "✅ Initial load complete for '$title', items: ${lazyPagingItems.itemCount}")
             }
         }
-        
+
         when (val append = lazyPagingItems.loadState.append) {
             is LoadState.Loading -> {
                 Log.d(logTag, "📥 Loading next page for '$title'")

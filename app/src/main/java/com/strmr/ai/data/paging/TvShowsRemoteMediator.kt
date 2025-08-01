@@ -6,11 +6,11 @@ import androidx.paging.LoadType
 import androidx.paging.PagingState
 import androidx.paging.RemoteMediator
 import androidx.room.withTransaction
-import com.strmr.ai.data.TvShowRepository
-import com.strmr.ai.data.TraktApiService
 import com.strmr.ai.data.TmdbApiService
-import com.strmr.ai.data.database.TvShowEntity
+import com.strmr.ai.data.TraktApiService
+import com.strmr.ai.data.TvShowRepository
 import com.strmr.ai.data.database.StrmrDatabase
+import com.strmr.ai.data.database.TvShowEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -20,11 +20,11 @@ class TvShowsRemoteMediator(
     private val database: StrmrDatabase,
     private val traktApi: TraktApiService,
     private val tmdbApi: TmdbApiService,
-    private val tvShowRepository: TvShowRepository
+    private val tvShowRepository: TvShowRepository,
 ) : RemoteMediator<Int, TvShowEntity>() {
-
     enum class ContentType {
-        TRENDING, POPULAR
+        TRENDING,
+        POPULAR,
     }
 
     override suspend fun initialize(): InitializeAction {
@@ -33,30 +33,32 @@ class TvShowsRemoteMediator(
 
     override suspend fun load(
         loadType: LoadType,
-        state: PagingState<Int, TvShowEntity>
+        state: PagingState<Int, TvShowEntity>,
     ): MediatorResult {
         return try {
-            val page = when (loadType) {
-                LoadType.REFRESH -> 1
-                LoadType.PREPEND -> return MediatorResult.Success(endOfPaginationReached = true)
-                LoadType.APPEND -> {
-                    val lastItem = state.lastItemOrNull()
-                    if (lastItem == null) {
-                        1
-                    } else {
-                        val currentSize = when (contentType) {
-                            ContentType.TRENDING -> database.tvShowDao().getTrendingTvShowsCount()
-                            ContentType.POPULAR -> database.tvShowDao().getPopularTvShowsCount()
+            val page =
+                when (loadType) {
+                    LoadType.REFRESH -> 1
+                    LoadType.PREPEND -> return MediatorResult.Success(endOfPaginationReached = true)
+                    LoadType.APPEND -> {
+                        val lastItem = state.lastItemOrNull()
+                        if (lastItem == null) {
+                            1
+                        } else {
+                            val currentSize =
+                                when (contentType) {
+                                    ContentType.TRENDING -> database.tvShowDao().getTrendingTvShowsCount()
+                                    ContentType.POPULAR -> database.tvShowDao().getPopularTvShowsCount()
+                                }
+                            (currentSize / 20) + 1
                         }
-                        (currentSize / 20) + 1
                     }
                 }
-            }
 
             Log.d("TvShowsRemoteMediator", "📄 Loading ${contentType.name} TV shows page $page")
 
             val tvShows = fetchTvShowsFromApi(page)
-            
+
             database.withTransaction {
                 if (loadType == LoadType.REFRESH) {
                     when (contentType) {
@@ -64,14 +66,14 @@ class TvShowsRemoteMediator(
                         ContentType.POPULAR -> database.tvShowDao().clearPopularOrder()
                     }
                 }
-                
+
                 database.tvShowDao().insertTvShows(tvShows)
             }
 
             Log.d("TvShowsRemoteMediator", "✅ Loaded ${tvShows.size} ${contentType.name} TV shows for page $page")
 
             MediatorResult.Success(
-                endOfPaginationReached = tvShows.isEmpty()
+                endOfPaginationReached = tvShows.isEmpty(),
             )
         } catch (e: Exception) {
             Log.e("TvShowsRemoteMediator", "❌ Error loading ${contentType.name} TV shows", e)
@@ -87,7 +89,7 @@ class TvShowsRemoteMediator(
                     trending.mapIndexedNotNull { index, trendingShow ->
                         tvShowRepository.mapTraktShowToEntity(
                             trendingShow.show,
-                            trendingOrder = ((page - 1) * 20) + index
+                            trendingOrder = ((page - 1) * 20) + index,
                         )
                     }
                 }
@@ -96,11 +98,11 @@ class TvShowsRemoteMediator(
                     popular.mapIndexedNotNull { index, show ->
                         tvShowRepository.mapTraktShowToEntity(
                             show,
-                            popularOrder = ((page - 1) * 20) + index
+                            popularOrder = ((page - 1) * 20) + index,
                         )
                     }
                 }
             }
         }
     }
-} 
+}

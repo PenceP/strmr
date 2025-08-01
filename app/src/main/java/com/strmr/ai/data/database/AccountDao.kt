@@ -27,5 +27,8 @@ interface AccountDao {
     suspend fun deleteAllAccounts()
 
     @Query("UPDATE accounts SET lastSyncTimestamp = :timestamp WHERE accountType = :accountType")
-    suspend fun updateLastSync(accountType: String, timestamp: Long)
-} 
+    suspend fun updateLastSync(
+        accountType: String,
+        timestamp: Long,
+    )
+}

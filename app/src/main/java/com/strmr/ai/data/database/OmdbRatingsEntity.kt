@@ -7,5 +7,5 @@ import androidx.room.PrimaryKey
 data class OmdbRatingsEntity(
     @PrimaryKey val imdbId: String,
     val omdbJson: String,
-    val lastFetched: Long
-) 
+    val lastFetched: Long,
+)

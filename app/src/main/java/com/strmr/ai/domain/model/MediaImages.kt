@@ -6,7 +6,7 @@ package com.strmr.ai.domain.model
 data class MediaImages(
     val posterUrl: String? = null,
     val backdropUrl: String? = null,
-    val logoUrl: String? = null
+    val logoUrl: String? = null,
 ) {
     /**
      * Get the best available image for display

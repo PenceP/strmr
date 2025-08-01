@@ -12,14 +12,26 @@ interface EpisodeDao {
     suspend fun insertEpisodes(episodes: List<EpisodeEntity>)
 
     @Query("SELECT * FROM episodes WHERE showTmdbId = :showTmdbId AND seasonNumber = :seasonNumber ORDER BY episodeNumber ASC")
-    suspend fun getEpisodesForSeason(showTmdbId: Int, seasonNumber: Int): List<EpisodeEntity>
+    suspend fun getEpisodesForSeason(
+        showTmdbId: Int,
+        seasonNumber: Int,
+    ): List<EpisodeEntity>
 
-    @Query("SELECT * FROM episodes WHERE showTmdbId = :showTmdbId AND seasonNumber = :seasonNumber AND episodeNumber = :episodeNumber LIMIT 1")
-    suspend fun getEpisodeByDetails(showTmdbId: Int, seasonNumber: Int, episodeNumber: Int): EpisodeEntity?
+    @Query(
+        "SELECT * FROM episodes WHERE showTmdbId = :showTmdbId AND seasonNumber = :seasonNumber AND episodeNumber = :episodeNumber LIMIT 1",
+    )
+    suspend fun getEpisodeByDetails(
+        showTmdbId: Int,
+        seasonNumber: Int,
+        episodeNumber: Int,
+    ): EpisodeEntity?
 
     @Query("DELETE FROM episodes WHERE showTmdbId = :showTmdbId AND seasonNumber = :seasonNumber")
-    suspend fun deleteEpisodesForSeason(showTmdbId: Int, seasonNumber: Int)
+    suspend fun deleteEpisodesForSeason(
+        showTmdbId: Int,
+        seasonNumber: Int,
+    )
 
     @Update
     suspend fun updateEpisode(episode: EpisodeEntity)
-} 
+}

@@ -1,8 +1,7 @@
 package com.strmr.ai.utils
 
-import androidx.compose.runtime.*
-import androidx.compose.ui.platform.LocalContext
 import android.util.Log
+import androidx.compose.runtime.*
 import kotlinx.coroutines.CoroutineScope
 
 /**
@@ -10,30 +9,29 @@ import kotlinx.coroutines.CoroutineScope
  * Focus on proper remember usage, derivedStateOf, and expensive operation handling
  */
 object ComposeOptimizationUtils {
-    
     private const val TAG = "ComposeOptimization"
-    
+
     /**
      * Optimized way to remember expensive calculations with proper key tracking
      */
     @Composable
     fun <T> rememberExpensiveCalculation(
         vararg keys: Any?,
-        calculation: () -> T
+        calculation: () -> T,
     ): T {
         return remember(*keys) {
             Log.d(TAG, "🧮 Computing expensive calculation with keys: ${keys.contentToString()}")
             calculation()
         }
     }
-    
+
     /**
      * Remember a derived state that depends on other states but is expensive to compute
      */
     @Composable
     fun <T> rememberDerivedState(
         vararg keys: Any?,
-        calculation: () -> T
+        calculation: () -> T,
     ): State<T> {
         return remember(*keys) {
             derivedStateOf {
@@ -42,63 +40,63 @@ object ComposeOptimizationUtils {
             }
         }
     }
-    
+
     /**
      * Optimized list transformation that only recomputes when source data changes
      */
     @Composable
     fun <T, R> rememberTransformedList(
         sourceList: List<T>,
-        transform: (T) -> R
+        transform: (T) -> R,
     ): List<R> {
         return remember(sourceList) {
             Log.d(TAG, "📝 Transforming list of ${sourceList.size} items")
             sourceList.map(transform)
         }
     }
-    
+
     /**
      * Remember a grouped/filtered list that only recomputes when source changes
      */
     @Composable
     fun <T> rememberFilteredList(
         sourceList: List<T>,
-        predicate: (T) -> Boolean
+        predicate: (T) -> Boolean,
     ): List<T> {
         return remember(sourceList, predicate) {
             Log.d(TAG, "🔍 Filtering list of ${sourceList.size} items")
             sourceList.filter(predicate)
         }
     }
-    
+
     /**
      * Remember a grouped list that only recomputes when source changes
      */
     @Composable
     fun <T, K> rememberGroupedList(
         sourceList: List<T>,
-        keySelector: (T) -> K
+        keySelector: (T) -> K,
     ): Map<K, List<T>> {
         return remember(sourceList, keySelector) {
             Log.d(TAG, "📊 Grouping list of ${sourceList.size} items")
             sourceList.groupBy(keySelector)
         }
     }
-    
+
     /**
      * Remember a sorted list that only recomputes when source changes
      */
     @Composable
     fun <T> rememberSortedList(
         sourceList: List<T>,
-        comparator: Comparator<T>
+        comparator: Comparator<T>,
     ): List<T> {
         return remember(sourceList, comparator) {
             Log.d(TAG, "📈 Sorting list of ${sourceList.size} items")
             sourceList.sortedWith(comparator)
         }
     }
-    
+
     /**
      * Remember Focus requesters for a dynamic list
      */
@@ -109,20 +107,18 @@ object ComposeOptimizationUtils {
             List(count) { androidx.compose.ui.focus.FocusRequester() }
         }
     }
-    
+
     /**
      * Remember a mutable map that only recreates when keys change
      */
     @Composable
-    fun <K, V> rememberMutableMap(
-        vararg dependencies: Any?
-    ): MutableMap<K, V> {
+    fun <K, V> rememberMutableMap(vararg dependencies: Any?): MutableMap<K, V> {
         return remember(*dependencies) {
             Log.d(TAG, "🗺️ Creating new mutable map")
             mutableMapOf()
         }
     }
-    
+
     /**
      * Optimized image URL processing that only recomputes when needed
      */
@@ -130,7 +126,7 @@ object ComposeOptimizationUtils {
     fun rememberOptimizedImageUrl(
         baseUrl: String?,
         width: Int? = null,
-        height: Int? = null
+        height: Int? = null,
     ): String? {
         return remember(baseUrl, width, height) {
             if (baseUrl.isNullOrBlank()) {
@@ -138,15 +134,15 @@ object ComposeOptimizationUtils {
             } else {
                 // Process image URL with dimensions if provided
                 when {
-                    width != null && height != null -> "${baseUrl}?w=${width}&h=${height}"
-                    width != null -> "${baseUrl}?w=${width}"
-                    height != null -> "${baseUrl}?h=${height}"
+                    width != null && height != null -> "$baseUrl?w=$width&h=$height"
+                    width != null -> "$baseUrl?w=$width"
+                    height != null -> "$baseUrl?h=$height"
                     else -> baseUrl
                 }
             }
         }
     }
-    
+
     /**
      * Remember computed display text that only updates when dependencies change
      */
@@ -154,7 +150,7 @@ object ComposeOptimizationUtils {
     fun rememberDisplayText(
         title: String?,
         year: Int? = null,
-        fallback: String = "Unknown"
+        fallback: String = "Unknown",
     ): String {
         return remember(title, year, fallback) {
             when {
@@ -173,7 +169,7 @@ object ComposeOptimizationUtils {
 fun OptimizedLaunchedEffect(
     vararg keys: Any?,
     operation: String,
-    block: suspend CoroutineScope.() -> Unit
+    block: suspend CoroutineScope.() -> Unit,
 ) {
     LaunchedEffect(*keys) {
         Log.d("ComposeOptimization", "🚀 Executing LaunchedEffect: $operation")
@@ -188,7 +184,7 @@ fun OptimizedLaunchedEffect(
 fun OptimizedDisposableEffect(
     vararg keys: Any?,
     operation: String,
-    effect: DisposableEffectScope.() -> DisposableEffectResult
+    effect: DisposableEffectScope.() -> DisposableEffectResult,
 ) {
     DisposableEffect(*keys) {
         Log.d("ComposeOptimization", "📌 Creating DisposableEffect: $operation")

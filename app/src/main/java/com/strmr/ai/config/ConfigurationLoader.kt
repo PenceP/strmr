@@ -3,8 +3,8 @@ package com.strmr.ai.config
 import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-import com.strmr.ai.viewmodel.HomeMediaItem
 import com.strmr.ai.data.NetworkInfo
+import com.strmr.ai.viewmodel.HomeMediaItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.IOException
@@ -13,11 +13,11 @@ import java.io.IOException
  * Loads row configurations from JSON files in assets
  */
 class ConfigurationLoader(private val context: Context) {
-    
-    private val gson: Gson = GsonBuilder()
-        .setPrettyPrinting()
-        .create()
-    
+    private val gson: Gson =
+        GsonBuilder()
+            .setPrettyPrinting()
+            .create()
+
     /**
      * Load configuration for a specific page
      */
@@ -37,7 +37,7 @@ class ConfigurationLoader(private val context: Context) {
             }
         }
     }
-    
+
     /**
      * Get collections from configuration as HomeMediaItem.Collection objects
      */
@@ -48,7 +48,7 @@ class ConfigurationLoader(private val context: Context) {
                 name = collectionConfig.name,
                 backgroundImageUrl = collectionConfig.backgroundImageUrl,
                 nameDisplayMode = collectionConfig.nameDisplayMode,
-                dataUrl = collectionConfig.dataUrl
+                dataUrl = collectionConfig.dataUrl,
             )
         } ?: emptyList()
     }
@@ -62,7 +62,7 @@ class ConfigurationLoader(private val context: Context) {
                 id = networkConfig.id,
                 name = networkConfig.name,
                 posterUrl = networkConfig.backgroundImageUrl,
-                dataUrl = networkConfig.dataUrl
+                dataUrl = networkConfig.dataUrl,
             )
         } ?: emptyList()
     }
@@ -77,7 +77,7 @@ class ConfigurationLoader(private val context: Context) {
                 name = directorConfig.name,
                 backgroundImageUrl = directorConfig.backgroundImageUrl,
                 nameDisplayMode = directorConfig.nameDisplayMode,
-                dataUrl = directorConfig.dataUrl
+                dataUrl = directorConfig.dataUrl,
             )
         } ?: emptyList()
     }
@@ -98,11 +98,11 @@ class ConfigurationLoader(private val context: Context) {
                 id = nestedItemConfig.id,
                 name = nestedItemConfig.name,
                 posterUrl = nestedItemConfig.backgroundImageUrl,
-                dataUrl = nestedItemConfig.dataUrl
+                dataUrl = nestedItemConfig.dataUrl,
             )
         } ?: emptyList()
     }
-    
+
     /**
      * Get enabled rows sorted by order
      */
@@ -111,54 +111,75 @@ class ConfigurationLoader(private val context: Context) {
             .filter { it.enabled }
             .sortedBy { it.order }
     }
-    
+
     /**
      * Get row configuration by ID
      */
-    fun getRowConfigById(config: PageConfiguration, id: String): RowConfig? {
+    fun getRowConfigById(
+        config: PageConfiguration,
+        id: String,
+    ): RowConfig? {
         return config.rows.find { it.id == id }
     }
-    
+
     /**
      * Check if a row should show hero section
      */
-    fun shouldShowHero(config: PageConfiguration, rowId: String): Boolean {
+    fun shouldShowHero(
+        config: PageConfiguration,
+        rowId: String,
+    ): Boolean {
         return getRowConfigById(config, rowId)?.showHero == true
     }
-    
+
     /**
      * Check if a row should show loading state
      */
-    fun shouldShowLoading(config: PageConfiguration, rowId: String): Boolean {
+    fun shouldShowLoading(
+        config: PageConfiguration,
+        rowId: String,
+    ): Boolean {
         return getRowConfigById(config, rowId)?.showLoading == true
     }
-    
+
     /**
      * Get card height for a row
      */
-    fun getCardHeight(config: PageConfiguration, rowId: String): Int {
+    fun getCardHeight(
+        config: PageConfiguration,
+        rowId: String,
+    ): Int {
         return getRowConfigById(config, rowId)?.cardHeight ?: 140
     }
-    
+
     /**
      * Get card type for a row
      */
-    fun getCardType(config: PageConfiguration, rowId: String): CardType {
+    fun getCardType(
+        config: PageConfiguration,
+        rowId: String,
+    ): CardType {
         val rowConfig = getRowConfigById(config, rowId)
         return rowConfig?.let { CardType.fromString(it.cardType) } ?: CardType.PORTRAIT
     }
-    
+
     /**
      * Check if a row should show overlays
      */
-    fun shouldShowOverlays(config: PageConfiguration, rowId: String): Boolean {
+    fun shouldShowOverlays(
+        config: PageConfiguration,
+        rowId: String,
+    ): Boolean {
         return getRowConfigById(config, rowId)?.displayOptions?.showOverlays == true
     }
-    
+
     /**
      * Check if a row is clickable
      */
-    fun isRowClickable(config: PageConfiguration, rowId: String): Boolean {
+    fun isRowClickable(
+        config: PageConfiguration,
+        rowId: String,
+    ): Boolean {
         return getRowConfigById(config, rowId)?.displayOptions?.clickable == true
     }
 }

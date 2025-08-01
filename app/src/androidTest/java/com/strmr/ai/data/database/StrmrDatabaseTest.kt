@@ -12,15 +12,15 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class StrmrDatabaseTest {
-
     private lateinit var database: StrmrDatabase
 
     @Before
     fun setup() {
-        database = Room.inMemoryDatabaseBuilder(
-            ApplicationProvider.getApplicationContext(),
-            StrmrDatabase::class.java
-        ).allowMainThreadQueries().build()
+        database =
+            Room.inMemoryDatabaseBuilder(
+                ApplicationProvider.getApplicationContext(),
+                StrmrDatabase::class.java,
+            ).allowMainThreadQueries().build()
     }
 
     @After
@@ -54,101 +54,109 @@ class StrmrDatabaseTest {
     }
 
     @Test
-    fun transactionRollbackWorksCorrectly() = runTest {
-        val movieDao = database.movieDao()
-        val tvShowDao = database.tvShowDao()
+    fun transactionRollbackWorksCorrectly() =
+        runTest {
+            val movieDao = database.movieDao()
+            val tvShowDao = database.tvShowDao()
 
-        try {
+            try {
+                database.runInTransaction {
+                    // Insert a movie
+                    val movie = createTestMovieEntity(1, "Test Movie")
+                    movieDao.insertMovie(movie)
+
+                    // Insert a TV show
+                    val tvShow = createTestTvShowEntity(1, "Test Show")
+                    tvShowDao.insertTvShow(tvShow)
+
+                    // Simulate an error to trigger rollback
+                    throw RuntimeException("Simulated error")
+                }
+            } catch (e: RuntimeException) {
+                // Expected exception
+            }
+
+            // Verify that neither record was inserted due to rollback
+            val retrievedMovie = movieDao.getMovieById(1)
+            val retrievedTvShow = tvShowDao.getTvShowById(1)
+
+            assertNull(retrievedMovie)
+            assertNull(retrievedTvShow)
+        }
+
+    @Test
+    fun transactionCommitWorksCorrectly() =
+        runTest {
+            val movieDao = database.movieDao()
+            val tvShowDao = database.tvShowDao()
+
             database.runInTransaction {
                 // Insert a movie
                 val movie = createTestMovieEntity(1, "Test Movie")
                 movieDao.insertMovie(movie)
-                
+
                 // Insert a TV show
                 val tvShow = createTestTvShowEntity(1, "Test Show")
                 tvShowDao.insertTvShow(tvShow)
-                
-                // Simulate an error to trigger rollback
-                throw RuntimeException("Simulated error")
             }
-        } catch (e: RuntimeException) {
-            // Expected exception
-        }
 
-        // Verify that neither record was inserted due to rollback
-        val retrievedMovie = movieDao.getMovieById(1)
-        val retrievedTvShow = tvShowDao.getTvShowById(1)
-        
-        assertNull(retrievedMovie)
-        assertNull(retrievedTvShow)
-    }
+            // Verify that both records were inserted successfully
+            val retrievedMovie = movieDao.getMovieById(1)
+            val retrievedTvShow = tvShowDao.getTvShowById(1)
 
-    @Test
-    fun transactionCommitWorksCorrectly() = runTest {
-        val movieDao = database.movieDao()
-        val tvShowDao = database.tvShowDao()
-
-        database.runInTransaction {
-            // Insert a movie
-            val movie = createTestMovieEntity(1, "Test Movie")
-            movieDao.insertMovie(movie)
-            
-            // Insert a TV show
-            val tvShow = createTestTvShowEntity(1, "Test Show")
-            tvShowDao.insertTvShow(tvShow)
-        }
-
-        // Verify that both records were inserted successfully
-        val retrievedMovie = movieDao.getMovieById(1)
-        val retrievedTvShow = tvShowDao.getTvShowById(1)
-        
-        assertNotNull(retrievedMovie)
-        assertNotNull(retrievedTvShow)
-        assertEquals("Test Movie", retrievedMovie?.title)
-        assertEquals("Test Show", retrievedTvShow?.name)
-    }
-
-    @Test
-    fun databaseMigrationCanBeSimulated() = runTest {
-        // This test ensures the database can handle version changes
-        // In a real scenario, you would test actual migrations
-        
-        val initialMovieCount = database.movieDao().getAllMovies().size
-        assertEquals(0, initialMovieCount)
-        
-        // Add some data
-        val movie = createTestMovieEntity(1, "Migration Test Movie")
-        database.movieDao().insertMovie(movie)
-        
-        val finalMovieCount = database.movieDao().getAllMovies().size
-        assertEquals(1, finalMovieCount)
-    }
-
-    @Test
-    fun concurrentAccessHandledCorrectly() = runTest {
-        val movieDao = database.movieDao()
-        
-        // Simulate concurrent inserts
-        val movies = (1..10).map { id ->
-            createTestMovieEntity(id, "Concurrent Movie $id")
-        }
-        
-        // Insert all movies
-        movieDao.insertMovies(movies)
-        
-        // Verify all movies were inserted
-        val allMovies = movieDao.getAllMovies()
-        assertEquals(10, allMovies.size)
-        
-        // Verify data integrity
-        movies.forEach { originalMovie ->
-            val retrievedMovie = movieDao.getMovieById(originalMovie.tmdbId)
             assertNotNull(retrievedMovie)
-            assertEquals(originalMovie.title, retrievedMovie?.title)
+            assertNotNull(retrievedTvShow)
+            assertEquals("Test Movie", retrievedMovie?.title)
+            assertEquals("Test Show", retrievedTvShow?.name)
         }
-    }
 
-    private fun createTestMovieEntity(id: Int, title: String): MovieEntity {
+    @Test
+    fun databaseMigrationCanBeSimulated() =
+        runTest {
+            // This test ensures the database can handle version changes
+            // In a real scenario, you would test actual migrations
+
+            val initialMovieCount = database.movieDao().getAllMovies().size
+            assertEquals(0, initialMovieCount)
+
+            // Add some data
+            val movie = createTestMovieEntity(1, "Migration Test Movie")
+            database.movieDao().insertMovie(movie)
+
+            val finalMovieCount = database.movieDao().getAllMovies().size
+            assertEquals(1, finalMovieCount)
+        }
+
+    @Test
+    fun concurrentAccessHandledCorrectly() =
+        runTest {
+            val movieDao = database.movieDao()
+
+            // Simulate concurrent inserts
+            val movies =
+                (1..10).map { id ->
+                    createTestMovieEntity(id, "Concurrent Movie $id")
+                }
+
+            // Insert all movies
+            movieDao.insertMovies(movies)
+
+            // Verify all movies were inserted
+            val allMovies = movieDao.getAllMovies()
+            assertEquals(10, allMovies.size)
+
+            // Verify data integrity
+            movies.forEach { originalMovie ->
+                val retrievedMovie = movieDao.getMovieById(originalMovie.tmdbId)
+                assertNotNull(retrievedMovie)
+                assertEquals(originalMovie.title, retrievedMovie?.title)
+            }
+        }
+
+    private fun createTestMovieEntity(
+        id: Int,
+        title: String,
+    ): MovieEntity {
         return MovieEntity(
             tmdbId = id,
             title = title,
@@ -186,11 +194,14 @@ class StrmrDatabaseTest {
             creationTimestamp = System.currentTimeMillis(),
             popularityOrder = null,
             trendingOrder = null,
-            topRatedOrder = null
+            topRatedOrder = null,
         )
     }
 
-    private fun createTestTvShowEntity(id: Int, name: String): TvShowEntity {
+    private fun createTestTvShowEntity(
+        id: Int,
+        name: String,
+    ): TvShowEntity {
         return TvShowEntity(
             tmdbId = id,
             name = name,
@@ -231,7 +242,7 @@ class StrmrDatabaseTest {
             creationTimestamp = System.currentTimeMillis(),
             popularityOrder = null,
             trendingOrder = null,
-            topRatedOrder = null
+            topRatedOrder = null,
         )
     }
 }

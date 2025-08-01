@@ -60,6 +60,26 @@
         "clickable": true,
         "supportedTypes": ["movie"]
       }
+    },
+    {
+      "id": "recommended_movies",
+      "title": "Recommended Movies",
+      "type": "list",
+      "cardType": "portrait",
+      "cardHeight": 200,
+      "showHero": true,
+      "showLoading": true,
+      "order": 4,
+      "enabled": true,
+      "endpoint": "users/garycrawfordgc/lists/recommended-movies/items",
+      "mediaType": "movie",
+      "cacheKey": "recommended_movies",
+      "displayOptions": {
+        "showOverlays": false,
+        "showProgress": false,
+        "clickable": true,
+        "supportedTypes": ["movie"]
+      }
     }
   ]
 }

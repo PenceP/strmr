@@ -15,22 +15,23 @@ import com.strmr.ai.viewmodel.UpdateViewModel
 @Composable
 fun UpdateScreen(
     modifier: Modifier = Modifier,
-    viewModel: UpdateViewModel = hiltViewModel()
+    viewModel: UpdateViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(24.dp),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .padding(24.dp),
         verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = "App Updates",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -41,45 +42,46 @@ fun UpdateScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = "Checking for updates...",
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
 
             uiState.error != null -> {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    )
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                        ),
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp)
+                        modifier = Modifier.padding(16.dp),
                     ) {
                         Text(
                             text = "Error",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onErrorContainer
+                            color = MaterialTheme.colorScheme.onErrorContainer,
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = uiState.error ?: "Unknown error",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onErrorContainer
+                            color = MaterialTheme.colorScheme.onErrorContainer,
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
+                            horizontalArrangement = Arrangement.End,
                         ) {
                             TextButton(
-                                onClick = { viewModel.dismissError() }
+                                onClick = { viewModel.dismissError() },
                             ) {
                                 Text("Dismiss")
                             }
                             Spacer(modifier = Modifier.width(8.dp))
                             TextButton(
-                                onClick = { viewModel.checkForUpdates() }
+                                onClick = { viewModel.checkForUpdates() },
                             ) {
                                 Text("Retry")
                             }
@@ -90,47 +92,47 @@ fun UpdateScreen(
 
             uiState.isDownloading -> {
                 Card(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp)
+                        modifier = Modifier.padding(16.dp),
                     ) {
                         Text(
                             text = "Downloading Update",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        
+
                         LinearProgressIndicator(
                             progress = { uiState.downloadProgress / 100f },
                             modifier = Modifier.fillMaxWidth(),
                         )
-                        
+
                         Spacer(modifier = Modifier.height(8.dp))
-                        
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
                             Text(
                                 text = uiState.downloadStatus ?: "Preparing...",
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.bodyMedium,
                             )
                             Text(
                                 text = "${uiState.downloadProgress}%",
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.bodyMedium,
                             )
                         }
-                        
+
                         Spacer(modifier = Modifier.height(16.dp))
-                        
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
+                            horizontalArrangement = Arrangement.End,
                         ) {
                             TextButton(
-                                onClick = { viewModel.cancelDownload() }
+                                onClick = { viewModel.cancelDownload() },
                             ) {
                                 Text("Cancel")
                             }
@@ -143,31 +145,32 @@ fun UpdateScreen(
                 uiState.updateInfo?.let { updateInfo ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                        )
+                        colors =
+                            CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            ),
                     ) {
                         Column(
-                            modifier = Modifier.padding(16.dp)
+                            modifier = Modifier.padding(16.dp),
                         ) {
                             Text(
                                 text = "Update Available",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Version ${updateInfo.latestVersion} is available",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
                             )
                             Text(
                                 text = "Current: ${updateInfo.currentVersion}",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
                             )
-                            
+
                             updateInfo.releaseNotes?.let { releaseNotes ->
                                 if (releaseNotes.isNotEmpty()) {
                                     Spacer(modifier = Modifier.height(12.dp))
@@ -175,33 +178,33 @@ fun UpdateScreen(
                                         text = "What's New:",
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
                                         text = releaseNotes,
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        maxLines = 10
+                                        maxLines = 10,
                                     )
                                 }
                             }
-                            
+
                             Spacer(modifier = Modifier.height(16.dp))
-                            
+
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.End
+                                horizontalArrangement = Arrangement.End,
                             ) {
                                 TextButton(
-                                    onClick = { viewModel.checkForUpdates() }
+                                    onClick = { viewModel.checkForUpdates() },
                                 ) {
                                     Text("Check Again")
                                 }
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Button(
                                     onClick = { viewModel.downloadAndInstallUpdate() },
-                                    enabled = !updateInfo.downloadUrl.isNullOrEmpty()
+                                    enabled = !updateInfo.downloadUrl.isNullOrEmpty(),
                                 ) {
                                     Text("Download & Install")
                                 }
@@ -213,26 +216,26 @@ fun UpdateScreen(
 
             else -> {
                 Card(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text(
                             text = "✅ You're up to date",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "Current version: ${uiState.updateInfo?.currentVersion ?: "Unknown"}",
                             style = MaterialTheme.typography.bodyMedium,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Button(
-                            onClick = { viewModel.checkForUpdates() }
+                            onClick = { viewModel.checkForUpdates() },
                         ) {
                             Text("Check for Updates")
                         }

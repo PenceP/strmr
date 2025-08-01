@@ -4,15 +4,15 @@ import android.content.Context
 import com.strmr.ai.data.*
 import com.strmr.ai.data.database.*
 import com.strmr.ai.data.database.TraktRatingsDao
-import com.strmr.ai.data.repository.MovieRepositoryImpl
-import com.strmr.ai.data.repository.TvShowRepositoryImpl
-import com.strmr.ai.data.repository.AccountRepositoryImpl
+import com.strmr.ai.data.mapper.AccountMapper
 import com.strmr.ai.data.mapper.MovieMapper
 import com.strmr.ai.data.mapper.TvShowMapper
-import com.strmr.ai.data.mapper.AccountMapper
+import com.strmr.ai.data.repository.AccountRepositoryImpl
+import com.strmr.ai.data.repository.MovieRepositoryImpl
+import com.strmr.ai.data.repository.TvShowRepositoryImpl
 import com.strmr.ai.domain.usecase.FetchLogoUseCase
-import com.strmr.ai.utils.RemoteResourceLoader
 import com.strmr.ai.utils.ImageUtils
+import com.strmr.ai.utils.RemoteResourceLoader
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -23,7 +23,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object RepositoryModule {
-    
     // Legacy repository providers (will be gradually phased out)
     @Provides
     @Singleton
@@ -35,11 +34,11 @@ object RepositoryModule {
         database: StrmrDatabase,
         traktRatingsDao: TraktRatingsDao,
         trailerService: TrailerService,
-        tmdbEnrichmentService: TmdbEnrichmentService
+        tmdbEnrichmentService: TmdbEnrichmentService,
     ): MovieRepository {
         return MovieRepository(movieDao, collectionDao, traktApi, tmdbApi, database, traktRatingsDao, trailerService, tmdbEnrichmentService)
     }
-    
+
     @Provides
     @Singleton
     fun provideTvShowRepository(
@@ -51,20 +50,20 @@ object RepositoryModule {
         database: StrmrDatabase,
         traktRatingsDao: TraktRatingsDao,
         trailerService: TrailerService,
-        tmdbEnrichmentService: TmdbEnrichmentService
+        tmdbEnrichmentService: TmdbEnrichmentService,
     ): TvShowRepository {
         return TvShowRepository(tvShowDao, traktApiService, tmdbApiService, seasonDao, episodeDao, database, traktRatingsDao, trailerService, tmdbEnrichmentService)
     }
-    
+
     @Provides
     @Singleton
     fun provideAccountRepository(
         accountDao: AccountDao,
-        traktApiService: TraktApiService
+        traktApiService: TraktApiService,
     ): AccountRepository {
         return AccountRepository(accountDao, traktApiService)
     }
-    
+
     @Provides
     @Singleton
     fun provideHomeRepository(
@@ -72,54 +71,50 @@ object RepositoryModule {
         playbackDao: PlaybackDao,
         continueWatchingDao: ContinueWatchingDao,
         traktUserProfileDao: TraktUserProfileDao,
-        traktUserStatsDao: TraktUserStatsDao
+        traktUserStatsDao: TraktUserStatsDao,
     ): HomeRepository {
         return HomeRepository(context, playbackDao, continueWatchingDao, traktUserProfileDao, traktUserStatsDao)
     }
-    
+
     @Provides
     @Singleton
     fun provideOmdbRepository(
         omdbRatingsDao: OmdbRatingsDao,
-        omdbApiService: OmdbApiService
+        omdbApiService: OmdbApiService,
     ): OmdbRepository {
         return OmdbRepository(omdbRatingsDao, omdbApiService)
     }
-    
+
     @Provides
     @Singleton
-    fun provideFetchLogoUseCase(
-        tmdbApiService: TmdbApiService
-    ): FetchLogoUseCase {
+    fun provideFetchLogoUseCase(tmdbApiService: TmdbApiService): FetchLogoUseCase {
         return FetchLogoUseCase(tmdbApiService)
     }
-    
+
     @Provides
     @Singleton
     fun provideSearchRepository(
         traktApiService: TraktApiService,
-        tmdbApiService: TmdbApiService
+        tmdbApiService: TmdbApiService,
     ): SearchRepository {
         return SearchRepository(traktApiService, tmdbApiService)
     }
-    
+
     @Provides
     @Singleton
-    fun provideDataSourceService(
-        database: StrmrDatabase
-    ): DataSourceService {
+    fun provideDataSourceService(database: StrmrDatabase): DataSourceService {
         return DataSourceService(database)
     }
-    
+
     @Provides
     @Singleton
     fun provideTmdbEnrichmentService(
         tmdbApiService: TmdbApiService,
-        database: StrmrDatabase
+        database: StrmrDatabase,
     ): TmdbEnrichmentService {
         return TmdbEnrichmentService(tmdbApiService, database)
     }
-    
+
     @Provides
     @Singleton
     fun provideGenericTraktRepository(
@@ -127,25 +122,23 @@ object RepositoryModule {
         traktApiService: TraktApiService,
         dataSourceService: DataSourceService,
         tmdbEnrichmentService: TmdbEnrichmentService,
-        fetchLogoUseCase: FetchLogoUseCase
+        fetchLogoUseCase: FetchLogoUseCase,
     ): GenericTraktRepository {
         return GenericTraktRepository(database, traktApiService, dataSourceService, tmdbEnrichmentService, fetchLogoUseCase)
     }
-    
+
     @Provides
     @Singleton
-    fun provideTrailerService(
-        tmdbApiService: TmdbApiService
-    ): TrailerService {
+    fun provideTrailerService(tmdbApiService: TmdbApiService): TrailerService {
         return TrailerService(tmdbApiService)
     }
-    
+
     @Provides
     @Singleton
     fun provideOnboardingService(
         @ApplicationContext context: Context,
         database: StrmrDatabase,
-        genericRepository: GenericTraktRepository
+        genericRepository: GenericTraktRepository,
     ): OnboardingService {
         return OnboardingService(context, database, genericRepository)
     }
@@ -158,7 +151,7 @@ object RepositoryModule {
     @Singleton
     fun provideDomainMovieRepository(
         legacyRepository: MovieRepository,
-        movieMapper: MovieMapper
+        movieMapper: MovieMapper,
     ): com.strmr.ai.domain.repository.MovieRepository {
         return MovieRepositoryImpl(legacyRepository, movieMapper)
     }
@@ -167,7 +160,7 @@ object RepositoryModule {
     @Singleton
     fun provideDomainTvShowRepository(
         legacyRepository: TvShowRepository,
-        tvShowMapper: TvShowMapper
+        tvShowMapper: TvShowMapper,
     ): com.strmr.ai.domain.repository.TvShowRepository {
         return TvShowRepositoryImpl(legacyRepository, tvShowMapper)
     }
@@ -176,29 +169,29 @@ object RepositoryModule {
     @Singleton
     fun provideDomainAccountRepository(
         legacyRepository: AccountRepository,
-        accountMapper: AccountMapper
+        accountMapper: AccountMapper,
     ): com.strmr.ai.domain.repository.AccountRepository {
         return AccountRepositoryImpl(legacyRepository, accountMapper)
     }
-    
+
     // =================
     // REMOTE RESOURCE LOADING (APK SIZE OPTIMIZATION)
     // =================
-    
+
     @Provides
     @Singleton
     fun provideRemoteResourceLoader(
-        @ApplicationContext context: Context
+        @ApplicationContext context: Context,
     ): RemoteResourceLoader {
         return RemoteResourceLoader(context)
     }
-    
+
     @Provides
     @Singleton
     fun provideImageUtils(
         @ApplicationContext context: Context,
-        remoteResourceLoader: RemoteResourceLoader
+        remoteResourceLoader: RemoteResourceLoader,
     ): ImageUtils {
         return ImageUtils(context, remoteResourceLoader)
     }
-} 
+}

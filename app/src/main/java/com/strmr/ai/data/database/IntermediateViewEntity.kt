@@ -18,7 +18,7 @@ data class IntermediateViewEntity(
     val lastUpdated: Long, // Timestamp for cache expiry
     val totalItems: Int = 0, // Total number of items available
     val page: Int = 1, // Current cached page
-    val pageSize: Int = 20 // Items per page
+    val pageSize: Int = 20, // Items per page
 )
 
 /**
@@ -27,12 +27,12 @@ data class IntermediateViewEntity(
  */
 @Entity(
     tableName = "intermediate_view_items",
-    primaryKeys = ["intermediateViewId", "mediaType", "tmdbId"]
+    primaryKeys = ["intermediateViewId", "mediaType", "tmdbId"],
 )
 data class IntermediateViewItemEntity(
     val intermediateViewId: String, // Foreign key to IntermediateViewEntity.id
     val mediaType: String, // "movie" or "show"
     val tmdbId: Int, // Foreign key to MovieEntity.tmdbId or TvShowEntity.tmdbId
     val orderIndex: Int, // Position in the list (for maintaining order)
-    val addedAt: Long = System.currentTimeMillis() // When this item was cached
+    val addedAt: Long = System.currentTimeMillis(), // When this item was cached
 )

@@ -7,5 +7,5 @@ data class SimilarContent(
     val backdropUrl: String?,
     val rating: Float?,
     val year: Int?,
-    val mediaType: String // "movie" or "tv"
-) 
+    val mediaType: String, // "movie" or "tv"
+)

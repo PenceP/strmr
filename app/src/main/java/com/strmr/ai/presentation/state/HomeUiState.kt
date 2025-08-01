@@ -14,13 +14,14 @@ data class HomeUiState(
     val continueWatching: ContinueWatchingState = ContinueWatchingState.Loading,
     val networks: NetworksState = NetworksState.Loading,
     val traktLists: TraktListsState = TraktListsState.NotLoaded,
-    val traktAuthorization: TraktAuthState = TraktAuthState.Unknown
+    val traktAuthorization: TraktAuthState = TraktAuthState.Unknown,
 ) {
     /**
      * Check if any section is currently loading
      */
     val isAnyLoading: Boolean
-        get() = continueWatching is ContinueWatchingState.Loading ||
+        get() =
+            continueWatching is ContinueWatchingState.Loading ||
                 networks is NetworksState.Loading ||
                 traktLists is TraktListsState.Loading
 
@@ -28,11 +29,12 @@ data class HomeUiState(
      * Get all error messages for display
      */
     val errorMessages: List<String>
-        get() = listOfNotNull(
-            (continueWatching as? ContinueWatchingState.Error)?.message,
-            (networks as? NetworksState.Error)?.message,
-            (traktLists as? TraktListsState.Error)?.message
-        )
+        get() =
+            listOfNotNull(
+                (continueWatching as? ContinueWatchingState.Error)?.message,
+                (networks as? NetworksState.Error)?.message,
+                (traktLists as? TraktListsState.Error)?.message,
+            )
 }
 
 /**
@@ -42,10 +44,10 @@ data class HomeUiState(
 sealed class ContinueWatchingState {
     @Immutable
     object Loading : ContinueWatchingState()
-    
+
     @Immutable
     data class Success(val items: List<ContinueWatchingItem>) : ContinueWatchingState()
-    
+
     @Immutable
     data class Error(val message: String) : ContinueWatchingState()
 }
@@ -57,10 +59,10 @@ sealed class ContinueWatchingState {
 sealed class NetworksState {
     @Immutable
     object Loading : NetworksState()
-    
+
     @Immutable
     data class Success(val networks: List<NetworkInfoState>) : NetworksState()
-    
+
     @Immutable
     data class Error(val message: String) : NetworksState()
 }
@@ -72,13 +74,13 @@ sealed class NetworksState {
 sealed class TraktListsState {
     @Immutable
     object NotLoaded : TraktListsState()
-    
+
     @Immutable
     object Loading : TraktListsState()
-    
+
     @Immutable
     data class Success(val lists: List<HomeMediaItem.Collection>) : TraktListsState()
-    
+
     @Immutable
     data class Error(val message: String) : TraktListsState()
 }
@@ -90,13 +92,13 @@ sealed class TraktListsState {
 sealed class TraktAuthState {
     @Immutable
     object Unknown : TraktAuthState()
-    
+
     @Immutable
     object Authorized : TraktAuthState()
-    
+
     @Immutable
     object NotAuthorized : TraktAuthState()
-    
+
     @Immutable
     object Checking : TraktAuthState()
 }
@@ -109,5 +111,5 @@ sealed class TraktAuthState {
 data class NetworkInfoState(
     val id: String,
     val name: String,
-    val logoUrl: String? = null
+    val logoUrl: String? = null,
 )

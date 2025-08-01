@@ -13,4 +13,4 @@ interface TraktUserProfileDao {
 
     @Query("SELECT * FROM trakt_user_profile WHERE username = :username LIMIT 1")
     fun getUserProfile(username: String): Flow<TraktUserProfileEntity?>
-} 
+}

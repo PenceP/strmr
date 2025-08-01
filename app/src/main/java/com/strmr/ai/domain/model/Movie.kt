@@ -22,7 +22,7 @@ data class Movie(
     val cast: List<CastMember> = emptyList(),
     val collection: Collection? = null,
     val similarMovies: List<SimilarMovie> = emptyList(),
-    val lastUpdated: Long = 0L
+    val lastUpdated: Long = 0L,
 ) {
     /**
      * Get display title with year if available
@@ -40,9 +40,10 @@ data class Movie(
      * Get short overview for preview text
      */
     val shortOverview: String?
-        get() = overview?.let { 
-            if (it.length > 150) "${it.take(147)}..." else it 
-        }
+        get() =
+            overview?.let {
+                if (it.length > 150) "${it.take(147)}..." else it
+            }
 }
 
 /**
@@ -55,5 +56,5 @@ data class SimilarMovie(
     val title: String,
     val year: Int? = null,
     val posterUrl: String? = null,
-    val rating: Float? = null
+    val rating: Float? = null,
 )

@@ -10,5 +10,5 @@ data class AccountEntity(
     val refreshToken: String,
     val expiresAt: Long, // Timestamp when token expires
     val username: String? = null,
-    val lastSyncTimestamp: Long = 0L
-) 
+    val lastSyncTimestamp: Long = 0L,
+)

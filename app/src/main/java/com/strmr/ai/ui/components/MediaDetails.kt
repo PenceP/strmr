@@ -1,22 +1,21 @@
 package com.strmr.ai.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import androidx.compose.ui.res.painterResource
-import androidx.compose.foundation.Image
 import com.strmr.ai.R
-import com.strmr.ai.utils.DateFormatter
-import androidx.compose.runtime.LaunchedEffect
 import com.strmr.ai.utils.resolveImageSource
 
 @Composable
@@ -33,7 +32,7 @@ fun MediaDetails(
     omdbRatings: com.strmr.ai.data.OmdbResponse? = null,
     modifier: Modifier = Modifier,
     extraContent: @Composable (() -> Unit)? = null,
-    onFetchLogo: (() -> Unit)? = null // Callback to fetch logo when missing
+    onFetchLogo: (() -> Unit)? = null, // Callback to fetch logo when missing
 ) {
     // Trigger logo fetching when logo is missing
     LaunchedEffect(logoUrl, title) {
@@ -41,27 +40,30 @@ fun MediaDetails(
             onFetchLogo?.invoke()
         }
     }
-    
+
     Column(
-        modifier = modifier
-            .padding(8.dp)
-            .width(400.dp)
+        modifier =
+            modifier
+                .padding(8.dp)
+                .width(400.dp),
     ) {
         // Title/Logo area - always reserve space for consistent layout
         Box(
-            modifier = Modifier
-                .height(72.dp)
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            contentAlignment = Alignment.TopStart
+            modifier =
+                Modifier
+                    .height(72.dp)
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+            contentAlignment = Alignment.TopStart,
         ) {
             val resolvedLogoSource = resolveImageSource(logoUrl)
             if (resolvedLogoSource != null) {
                 AsyncImage(
                     model = resolvedLogoSource,
                     contentDescription = title,
-                    modifier = Modifier
-                        .height(72.dp)
+                    modifier =
+                        Modifier
+                            .height(72.dp),
                 )
             } else {
                 // Show title text as placeholder when logo is not available
@@ -69,25 +71,25 @@ fun MediaDetails(
                     text = title ?: "",
                     color = Color.White,
                     style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }
         // Extra content (e.g., season/episode)
-        
+
         // Year and runtime
         Row(
             modifier = Modifier.padding(bottom = 1.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             if (runtime != null) {
-            runtime?.let { runtimeValue ->
-                if (runtimeValue > 0) {
-                    Text(
-                        text = runtimeValue.toString() + " min",
-                        color = Color.White.copy(alpha = 0.8f),
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                runtime?.let { runtimeValue ->
+                    if (runtimeValue > 0) {
+                        Text(
+                            text = runtimeValue.toString() + " min",
+                            color = Color.White.copy(alpha = 0.8f),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.width(20.dp))
@@ -97,7 +99,7 @@ fun MediaDetails(
                 Text(
                     text = dateValue,
                     color = Color.White.copy(alpha = 0.8f),
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
                 )
             }
             Spacer(modifier = Modifier.width(20.dp))
@@ -110,13 +112,13 @@ fun MediaDetails(
                 color = Color.White.copy(alpha = 0.8f),
                 style = MaterialTheme.typography.bodyLarge,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
-        
+
         // Overview
-        
+
         overview?.let { overviewText ->
             Text(
                 text = overviewText,
@@ -124,10 +126,10 @@ fun MediaDetails(
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Light),
                 lineHeight = 20.sp,
                 maxLines = 3,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
-        
+
         Spacer(modifier = Modifier.height(8.dp))
         // Cast/Credits
         cast?.let { castList ->
@@ -138,7 +140,7 @@ fun MediaDetails(
                         color = Color.White.copy(alpha = 0.8f),
                         style = MaterialTheme.typography.bodyMedium,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
@@ -154,7 +156,7 @@ fun MediaDetails(
                     Image(
                         painter = painterResource(id = R.drawable.imdb_logo),
                         contentDescription = "IMDb",
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(28.dp),
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
@@ -168,7 +170,7 @@ fun MediaDetails(
                     Image(
                         painter = painterResource(id = R.drawable.rotten_tomatoes),
                         contentDescription = "Rotten Tomatoes",
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(22.dp),
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
@@ -182,7 +184,7 @@ fun MediaDetails(
                     Image(
                         painter = painterResource(id = R.drawable.metacritic_logo),
                         contentDescription = "Metacritic",
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(22.dp),
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
@@ -197,7 +199,7 @@ fun MediaDetails(
                     Image(
                         painter = painterResource(id = R.drawable.trakt1),
                         contentDescription = "Trakt",
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(22.dp),
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
@@ -214,7 +216,7 @@ fun MediaDetails(
                     Image(
                         painter = painterResource(id = R.drawable.trakt1),
                         contentDescription = "Trakt",
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(22.dp),
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
@@ -225,6 +227,5 @@ fun MediaDetails(
                 }
             }
         }
-        
     }
-} 
+}

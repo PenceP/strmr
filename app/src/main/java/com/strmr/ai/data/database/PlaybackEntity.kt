@@ -19,5 +19,5 @@ data class PlaybackEntity(
     val episodeTitle: String? = null,
     val episodeSeason: Int? = null,
     val episodeNumber: Int? = null,
-    val episodeTmdbId: Int? = null
-) 
+    val episodeTmdbId: Int? = null,
+)

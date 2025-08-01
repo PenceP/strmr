@@ -17,31 +17,36 @@ import androidx.compose.ui.unit.dp
  */
 @Composable
 fun Modifier.shimmer(): Modifier {
-    val shimmerColors = listOf(
-        Color.Gray.copy(alpha = 0.3f),
-        Color.Gray.copy(alpha = 0.1f),
-        Color.Gray.copy(alpha = 0.3f)
-    )
+    val shimmerColors =
+        listOf(
+            Color.Gray.copy(alpha = 0.3f),
+            Color.Gray.copy(alpha = 0.1f),
+            Color.Gray.copy(alpha = 0.3f),
+        )
 
     val transition = rememberInfiniteTransition(label = "shimmer")
     val translateAnimation by transition.animateFloat(
         initialValue = 0f,
         targetValue = 1000f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = 1200,
-                easing = FastOutSlowInEasing
+        animationSpec =
+            infiniteRepeatable(
+                animation =
+                    tween(
+                        durationMillis = 1200,
+                        easing = FastOutSlowInEasing,
+                    ),
+                repeatMode = RepeatMode.Restart,
             ),
-            repeatMode = RepeatMode.Restart
-        ), label = "shimmer_translate"
+        label = "shimmer_translate",
     )
 
     return this.background(
-        brush = Brush.linearGradient(
-            colors = shimmerColors,
-            start = Offset(x = translateAnimation - 200f, y = translateAnimation - 200f),
-            end = Offset(x = translateAnimation, y = translateAnimation)
-        )
+        brush =
+            Brush.linearGradient(
+                colors = shimmerColors,
+                start = Offset(x = translateAnimation - 200f, y = translateAnimation - 200f),
+                end = Offset(x = translateAnimation, y = translateAnimation),
+            ),
     )
 }
 
@@ -51,12 +56,13 @@ fun Modifier.shimmer(): Modifier {
 @Composable
 fun ShimmerBox(
     modifier: Modifier = Modifier,
-    cornerRadius: Int = 8
+    cornerRadius: Int = 8,
 ) {
     Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(cornerRadius.dp))
-            .shimmer()
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(cornerRadius.dp))
+                .shimmer(),
     )
 }
 
@@ -67,10 +73,10 @@ fun ShimmerBox(
 fun ShimmerText(
     modifier: Modifier = Modifier,
     height: Int = 16,
-    cornerRadius: Int = 4
+    cornerRadius: Int = 4,
 ) {
     ShimmerBox(
         modifier = modifier.height(height.dp),
-        cornerRadius = cornerRadius
+        cornerRadius = cornerRadius,
     )
 }

@@ -22,7 +22,7 @@ data class TvShow(
     val images: MediaImages = MediaImages(),
     val cast: List<CastMember> = emptyList(),
     val similarShows: List<SimilarTvShow> = emptyList(),
-    val lastUpdated: Long = 0L
+    val lastUpdated: Long = 0L,
 ) {
     /**
      * Get display title with year if available
@@ -40,9 +40,10 @@ data class TvShow(
      * Get short overview for preview text
      */
     val shortOverview: String?
-        get() = overview?.let { 
-            if (it.length > 150) "${it.take(147)}..." else it 
-        }
+        get() =
+            overview?.let {
+                if (it.length > 150) "${it.take(147)}..." else it
+            }
 
     /**
      * Determine if show is currently airing
@@ -54,12 +55,13 @@ data class TvShow(
      * Get air date range text
      */
     val airDateRange: String?
-        get() = when {
-            firstAirDate == null -> null
-            lastAirDate == null -> "${firstAirDate.year} - Present"
-            firstAirDate.year == lastAirDate.year -> firstAirDate.year.toString()
-            else -> "${firstAirDate.year} - ${lastAirDate.year}"
-        }
+        get() =
+            when {
+                firstAirDate == null -> null
+                lastAirDate == null -> "${firstAirDate.year} - Present"
+                firstAirDate.year == lastAirDate.year -> firstAirDate.year.toString()
+                else -> "${firstAirDate.year} - ${lastAirDate.year}"
+            }
 }
 
 /**
@@ -72,5 +74,5 @@ data class SimilarTvShow(
     val title: String,
     val year: Int? = null,
     val posterUrl: String? = null,
-    val rating: Float? = null
+    val rating: Float? = null,
 )

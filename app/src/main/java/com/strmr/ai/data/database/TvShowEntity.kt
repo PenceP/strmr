@@ -3,9 +3,9 @@ package com.strmr.ai.data.database
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
-import com.strmr.ai.data.database.converters.ListConverter
 import com.strmr.ai.data.Actor
 import com.strmr.ai.data.SimilarContent
+import com.strmr.ai.data.database.converters.ListConverter
 import com.strmr.ai.ui.components.MediaItem
 
 @Entity(tableName = "tv_shows")
@@ -23,7 +23,7 @@ data class TvShowEntity(
     val traktVotes: Int? = null,
     val year: Int?,
     val firstAirDate: String? = null, // Full first air date string (yyyy-MM-dd)
-    val lastAirDate: String? = null,  // Full last air date string (yyyy-MM-dd)
+    val lastAirDate: String? = null, // Full last air date string (yyyy-MM-dd)
     val runtime: Int?,
     val genres: List<String> = emptyList(),
     val cast: List<Actor> = emptyList(),
@@ -34,5 +34,5 @@ data class TvShowEntity(
     val airingTodayOrder: Int? = null,
     val onTheAirOrder: Int? = null,
     val dataSourceOrders: Map<String, Int?> = emptyMap(), // Generic data source ordering (future use)
-    val lastUpdated: Long = 0L // for cache expiry
-) : MediaItem 
+    val lastUpdated: Long = 0L, // for cache expiry
+) : MediaItem
