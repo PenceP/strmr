@@ -38,6 +38,7 @@ import com.strmr.ai.ui.components.MediaDetails
 import com.strmr.ai.ui.components.MediaHero
 import com.strmr.ai.ui.components.MediaRowConfig
 import com.strmr.ai.ui.components.MediaRowSkeleton
+import com.strmr.ai.ui.utils.navigationSafeFocusRequest
 import com.strmr.ai.ui.components.SkeletonCardType
 import com.strmr.ai.ui.components.UnifiedMediaRow
 import com.strmr.ai.ui.theme.StrmrConstants
@@ -360,14 +361,33 @@ fun HomePage(
     // Focus management for when content is focused
     val focusRequester = remember { FocusRequester() }
     val lazyColumnState = rememberLazyListState()
+    
+    // Track navigation state to prevent focus conflicts
+    var isNavigating by remember { mutableStateOf(false) }
+    
+    // Detect navigation state changes
+    LaunchedEffect(Unit) {
+        // Reset navigation state after initial composition
+        delay(300)
+        isNavigating = false
+    }
 
-    // Request focus when isContentFocused changes to true
-    LaunchedEffect(isContentFocused) {
-        if (isContentFocused) {
-            Log.d("HomePage", "🎯 Content focused, requesting focus on first item")
-            // Small delay to ensure UI is ready
-            delay(100)
-            focusRequester.requestFocus()
+    // Safe focus request when content is focused (navigation-aware)
+    LaunchedEffect(isContentFocused, isNavigating) {
+        if (isContentFocused && !isNavigating) {
+            Log.d("HomePage", "🎯 Content focused, requesting safe focus on first item")
+            
+            // Use navigation-safe focus request with proper error handling
+            val success = focusRequester.navigationSafeFocusRequest(
+                tag = "HomePage",
+                initialDelayMs = 200
+            )
+            
+            if (!success) {
+                Log.w("HomePage", "⚠️ Focus request failed, resetting content focus state")
+                // Gracefully handle focus failure by resetting state
+                onContentFocusChanged?.invoke(false)
+            }
         }
     }
 

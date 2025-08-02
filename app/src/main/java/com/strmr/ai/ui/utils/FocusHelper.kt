@@ -197,8 +197,16 @@ fun Modifier.focusOnMount(
 
                 if (isTargetRoute && !isIntermediatePage) {
                     //Log.d("FocusDebug", "🔥 REQUESTING FOCUS for itemKey: $itemKey in route: $currentRoute")
-                    focusRequester.requestFocus()
-                    isInitialFocusTransferred.value = true
+                    try {
+                        focusRequester.requestFocus()
+                        isInitialFocusTransferred.value = true
+                        //Log.d("FocusHelper", "✅ Focus request successful for itemKey: $itemKey")
+                    } catch (e: IllegalStateException) {
+                        Log.w("FocusHelper", "⚠️ Focus request failed for itemKey: $itemKey - FocusRequester not initialized: ${e.message}")
+                        // Don't set isInitialFocusTransferred to true if focus failed
+                    } catch (e: Exception) {
+                        Log.e("FocusHelper", "❌ Unexpected error during focus request for itemKey: $itemKey", e)
+                    }
                 } else {
                     //Log.d(
                     //    "FocusDebug",

@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import android.util.Log
 import coil.compose.AsyncImage
 import com.strmr.ai.ui.components.CardType
 import com.strmr.ai.ui.components.DataSource
@@ -68,6 +69,7 @@ fun IntermediateViewPage(
                     .background(Color.Black)
                     .onKeyEvent { keyEvent ->
                         if (keyEvent.type == KeyEventType.KeyUp && keyEvent.key == Key.Back) {
+                            Log.d("IntermediateViewPage", "🔙 Back key pressed, navigating back to previous screen")
                             onNavigateBack()
                             true
                         } else {

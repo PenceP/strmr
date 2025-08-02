@@ -280,11 +280,21 @@ fun MainScreen(
         }
     }
 
-    // Reset content focus when route changes with debouncing
+    // Track navigation state to prevent focus conflicts
+    var isNavigating by remember { mutableStateOf(false) }
+    
+    // Reset content focus when route changes with improved debouncing
     LaunchedEffect(currentRoute) {
+        isNavigating = true
         isContentFocused = false
-        // Add a small delay to prevent focus conflicts during navigation
-        kotlinx.coroutines.delay(50)
+        
+        Log.d("MainActivity", "🚀 Navigation to route: $currentRoute")
+        
+        // Longer delay for navigation transitions, especially back navigation
+        kotlinx.coroutines.delay(200)
+        isNavigating = false
+        
+        Log.d("MainActivity", "✅ Navigation completed to route: $currentRoute")
     }
 
     Box(
