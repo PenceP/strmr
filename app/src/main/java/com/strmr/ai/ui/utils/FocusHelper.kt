@@ -20,6 +20,7 @@ import android.util.Log
 object GlobalFocusState {
     private val _lastFocusedItemPerDestination = mutableMapOf<String, String>()
     private val _focusTransferredOnLaunch = mutableStateOf(false)
+    var lastRoute: String? = null
     
     val lastFocusedItemPerDestination: MutableMap<String, String> get() = _lastFocusedItemPerDestination
     val focusTransferredOnLaunch: MutableState<Boolean> get() = _focusTransferredOnLaunch
@@ -55,21 +56,25 @@ fun LocalCurrentRouteProvider(currentRoute: String, content: @Composable () -> U
     remember(currentRoute) {
         //Log.d("FocusDebug", "🔄 Route changed to: $currentRoute")
         
-        // Only reset focus transfer state for non-details routes that aren't focus restoration scenarios
-        // If we're going TO details, always reset (so details starts fresh)
-        // If we're going FROM details to a content page, DON'T reset (preserve focus memory)
-        if (currentRoute == "details") {
-            //Log.d("FocusDebug", "🆕 Navigating to details - resetting focus transfer state")
+        // Only reset focus transfer state for non-content routes that aren't focus restoration scenarios
+        // If we're going TO a sub-page (details/intermediate), always reset (so sub-page starts fresh)
+        // If we're going FROM a sub-page to a content page, DON'T reset (preserve focus memory)
+        val isSubPage = currentRoute == "details" || currentRoute.startsWith("intermediate_view_")
+        
+        if (isSubPage) {
+            //Log.d("FocusDebug", "🆕 Navigating to sub-page ($currentRoute) - resetting focus transfer state")
+            //Log.d("FocusDebug", "🔓 Setting isInitialFocusTransferred=false for sub-page")
             isInitialFocusTransferred.value = false
         } else {
-            // Check if we have saved focus for this route - if yes, we're likely returning from details
+            // Check if we have saved focus for this route - if yes, we're likely returning from a sub-page
             val hasSavedFocus = lastFocusedItemPerDestination[currentRoute] != null
-            //Log.d("FocusDebug", "📋 Checking route $currentRoute - hasSavedFocus: $hasSavedFocus, isInitialFocusTransferred: ${isInitialFocusTransferred.value}")
+            Log.d("FocusDebug", "📋 Checking route $currentRoute - hasSavedFocus: $hasSavedFocus, isInitialFocusTransferred: ${isInitialFocusTransferred.value}")
             
             if (hasSavedFocus) {
-                // We have saved focus for this route, so we're returning from details
+                // We have saved focus for this route, so we're returning from a sub-page
                 // Reset the focus transfer state so focus restoration can work
                 //Log.d("FocusDebug", "🔙 Returning to $currentRoute with saved focus - enabling restoration")
+                //Log.d("FocusDebug", "🔓 Setting isInitialFocusTransferred=false for restoration")
                 isInitialFocusTransferred.value = false
             } else if (!isInitialFocusTransferred.value) {
                 // No saved focus and no transfer yet - this is initial load
@@ -165,19 +170,29 @@ fun Modifier.focusOnMount(
         .focusRequester(focusRequester)
         .onGloballyPositioned {
             val lastFocusedKey = lastFocusedItemPerDestination[currentRoute]
-            ////Log.d("FocusDebug", "🎯 onGloballyPositioned - route: $currentRoute, itemKey: $itemKey, lastFocusedKey: $lastFocusedKey, isInitialFocusTransferred: ${isInitialFocusTransferred.value}")
+            Log.d("FocusDebug", "🎯 onGloballyPositioned - route: $currentRoute, itemKey: $itemKey, lastFocusedKey: $lastFocusedKey, isInitialFocusTransferred: ${isInitialFocusTransferred.value}")
 
-            if (!isInitialFocusTransferred.value && lastFocusedKey == itemKey) {
-                ////Log.d("FocusDebug", "🔥 REQUESTING FOCUS for itemKey: $itemKey in route: $currentRoute")
-                focusRequester.requestFocus()
-                isInitialFocusTransferred.value = true
+            // Route-aware focus restoration: only restore focus if this item is for the target route
+            if (lastFocusedKey == itemKey && !isInitialFocusTransferred.value) {
+                // Only restore focus for the destination route (home, movies, etc), not intermediate pages
+                val isTargetRoute = currentRoute in listOf("home", "movies", "tvshows", "search")
+                val isIntermediatePage = currentRoute.startsWith("intermediate_view_")
+                
+                if (isTargetRoute && !isIntermediatePage) {
+                    Log.d("FocusDebug", "🔥 REQUESTING FOCUS for itemKey: $itemKey in route: $currentRoute")
+                    focusRequester.requestFocus()
+                    isInitialFocusTransferred.value = true
+                } else {
+                    Log.d("FocusDebug", "🚫 Skipping focus request - not target route: $currentRoute (isTarget=$isTargetRoute, isIntermediate=$isIntermediatePage)")
+                }
             }
         }
         .onFocusChanged {
             if (it.isFocused) {
-                ////Log.d("FocusDebug", "📍 FOCUS GAINED by itemKey: $itemKey in route: $currentRoute")
+                Log.d("FocusDebug", "📍 FOCUS GAINED by itemKey: $itemKey in route: $currentRoute")
                 onFocus?.invoke()
                 lastFocusedItemPerDestination[currentRoute] = itemKey
+                Log.d("FocusDebug", "🔒 Setting isInitialFocusTransferred=true from onFocusChanged for $itemKey")
                 isInitialFocusTransferred.value = true
             }
         }
