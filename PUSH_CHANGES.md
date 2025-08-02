@@ -12,7 +12,7 @@ This file tracks all changes pushed to GitHub with commit hashes and description
     - Right settings content (level 3): Content items blue when focused, dark otherwise
     - Fixed focus transition from nav bar to left panel (grey → blue)
 
-- **[PENDING]** - feat(settings): Implement individual row focus and create push log
+- **a58228c** - feat(settings): Implement individual row focus and create push log
   - Remove focus logic from ModernSettingsCard - serves only as visual container
   - Add self-contained focus logic to SettingsToggleRow with blue background when focused
   - Add self-contained focus logic to SettingsRadioGroup options with blue background when focused

@@ -38,7 +38,6 @@ import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.Tv
@@ -559,79 +558,38 @@ fun TraktSettingsContent(
             }
         }
 
-        // Sync Settings Card (only if authorized)
+        // Sync Settings - Individual Toggle Cards (only if authorized)
         if (traktAuthState.isAuthorized) {
-            ModernSettingsCard(
-                title = "Sync Settings",
-                subtitle = "Control when and how your data syncs with Trakt",
-                icon = Icons.Default.Sync,
-                showArrow = false,
+            // Individual card for "Sync on app launch"
+            ModernSettingsToggleCard(
+                label = "Sync on app launch",
+                subtitle = "Automatically sync when opening the app",
+                checked = syncOnLaunch,
+                onCheckedChange = onSyncOnLaunchChanged,
                 isRightPanelFocused = isRightPanelFocused,
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = StrmrConstants.Dimensions.SPACING_STANDARD),
-                ) {
-                    SettingsToggleRow(
-                        label = "Sync on app launch",
-                        subtitle = "Automatically sync when opening the app",
-                        checked = syncOnLaunch,
-                        onCheckedChange = onSyncOnLaunchChanged,
-                        isRightPanelFocused = isRightPanelFocused,
-                    )
+            )
 
-                    Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_MEDIUM))
+            // Individual card for "Sync after playback"
+            ModernSettingsToggleCard(
+                label = "Sync after playback",
+                subtitle = "Update watch status after finishing content",
+                checked = syncAfterPlayback,
+                onCheckedChange = onSyncAfterPlaybackChanged,
+                isRightPanelFocused = isRightPanelFocused,
+            )
 
-                    SettingsToggleRow(
-                        label = "Sync after playback",
-                        subtitle = "Update watch status after finishing content",
-                        checked = syncAfterPlayback,
-                        onCheckedChange = onSyncAfterPlaybackChanged,
-                        isRightPanelFocused = isRightPanelFocused,
-                    )
+            // Last sync timestamp card (if available)
+            if (traktSettingsState.lastSyncTimestamp > 0) {
+                val dateFormat = java.text.SimpleDateFormat("MMMM dd, yyyy 'at' hh:mm a", java.util.Locale.getDefault())
+                val lastSync = dateFormat.format(java.util.Date(traktSettingsState.lastSyncTimestamp))
 
-                    if (traktSettingsState.lastSyncTimestamp > 0) {
-                        Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
-                        
-                        val dateFormat = java.text.SimpleDateFormat("MMMM dd, yyyy 'at' hh:mm a", java.util.Locale.getDefault())
-                        val lastSync = dateFormat.format(java.util.Date(traktSettingsState.lastSyncTimestamp))
-
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    StrmrConstants.Colors.CONTAINER_DARK,
-                                    StrmrConstants.Shapes.CORNER_RADIUS_STANDARD,
-                                )
-                                .padding(StrmrConstants.Dimensions.SPACING_STANDARD),
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Schedule,
-                                    contentDescription = null,
-                                    tint = StrmrConstants.Colors.TEXT_SECONDARY,
-                                    modifier = Modifier.size(StrmrConstants.Dimensions.Icons.SMALL),
-                                )
-                                Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_SMALL))
-                                Text(
-                                    text = "Last sync:",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = StrmrConstants.Colors.TEXT_SECONDARY,
-                                )
-                            }
-
-                            Text(
-                                text = lastSync,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = StrmrConstants.Colors.TEXT_PRIMARY,
-                                modifier = Modifier.padding(top = StrmrConstants.Dimensions.SPACING_TINY),
-                            )
-                        }
-                    }
-                }
+                ModernSettingsCard(
+                    title = "Last Sync",
+                    subtitle = lastSync,
+                    icon = Icons.Default.Schedule,
+                    showArrow = false,
+                    isRightPanelFocused = isRightPanelFocused,
+                )
             }
         }
 
@@ -966,43 +924,48 @@ fun PlaybackSettingsContent(
     onNextEpisodeTimeChanged: (String) -> Unit,
     isRightPanelFocused: Boolean,
 ) {
-    ModernSettingsCard(
-        title = "Auto Play",
-        subtitle = "Automatically play next episode",
-        icon = Icons.Default.PlayArrow,
-        showArrow = false,
-        isRightPanelFocused = isRightPanelFocused,
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(StrmrConstants.Dimensions.SPACING_LARGE)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp),
-        ) {
-            SettingsToggleRow(
-                label = "Enable Auto Play",
-                subtitle = "Automatically play the next episode",
-                checked = autoPlay,
-                onCheckedChange = onAutoPlayChanged,
+        // Individual card for Auto Play toggle
+        ModernSettingsToggleCard(
+            label = "Enable Auto Play",
+            subtitle = "Automatically play the next episode",
+            checked = autoPlay,
+            onCheckedChange = onAutoPlayChanged,
+            isRightPanelFocused = isRightPanelFocused,
+        )
+
+        // Next Episode Countdown card (only if autoPlay is enabled)
+        if (autoPlay) {
+            ModernSettingsCard(
+                title = "Next Episode Countdown",
+                subtitle = "Choose countdown time before next episode",
+                icon = Icons.Default.Schedule,
+                showArrow = false,
                 isRightPanelFocused = isRightPanelFocused,
-            )
-
-            if (autoPlay) {
-                Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
-
-                SettingsRadioGroup(
-                    title = "Next Episode Countdown",
-                    options = listOf("3", "5", "10", "15"),
-                    selectedOption = nextEpisodeTime,
-                    onOptionSelected = onNextEpisodeTimeChanged,
-                    descriptions =
-                        mapOf(
-                            "3" to "3 seconds",
-                            "5" to "5 seconds",
-                            "10" to "10 seconds",
-                            "15" to "15 seconds",
-                        ),
-                    isRightPanelFocused = isRightPanelFocused,
-                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp),
+                ) {
+                    SettingsRadioGroup(
+                        title = "Countdown Duration",
+                        options = listOf("3", "5", "10", "15"),
+                        selectedOption = nextEpisodeTime,
+                        onOptionSelected = onNextEpisodeTimeChanged,
+                        descriptions =
+                            mapOf(
+                                "3" to "3 seconds",
+                                "5" to "5 seconds",
+                                "10" to "10 seconds",
+                                "15" to "15 seconds",
+                            ),
+                        isRightPanelFocused = isRightPanelFocused,
+                    )
+                }
             }
         }
     }
@@ -1329,6 +1292,72 @@ fun SettingsToggleRow(
                 uncheckedTrackColor = StrmrConstants.Colors.BORDER_DARK,
             ),
         )
+    }
+}
+
+@Composable
+fun ModernSettingsToggleCard(
+    label: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    isRightPanelFocused: Boolean,
+) {
+    var isFocused by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .focusable()
+            .onFocusChanged { focusState ->
+                isFocused = focusState.isFocused
+            },
+        colors = CardDefaults.cardColors(
+            containerColor = if (isFocused)
+                StrmrConstants.Colors.PRIMARY_BLUE.copy(alpha = 0.3f)
+            else
+                StrmrConstants.Colors.SURFACE_DARK
+        ),
+        shape = StrmrConstants.Shapes.CORNER_RADIUS_MEDIUM,
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = StrmrConstants.Dimensions.Elevation.STANDARD
+        ),
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(StrmrConstants.Dimensions.SPACING_LARGE)
+                .fillMaxWidth()
+                .clickable { onCheckedChange(!checked) },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isFocused)
+                        StrmrConstants.Colors.PRIMARY_BLUE
+                    else
+                        StrmrConstants.Colors.TEXT_PRIMARY,
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = StrmrConstants.Colors.TEXT_SECONDARY,
+                    modifier = Modifier.padding(top = StrmrConstants.Dimensions.Components.BORDER_WIDTH * 2),
+                )
+            }
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = StrmrConstants.Colors.TEXT_PRIMARY,
+                    checkedTrackColor = StrmrConstants.Colors.PRIMARY_BLUE,
+                    uncheckedThumbColor = Color.Gray,
+                    uncheckedTrackColor = StrmrConstants.Colors.BORDER_DARK,
+                ),
+            )
+        }
     }
 }
 
