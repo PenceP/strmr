@@ -18,6 +18,7 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.strmr.ai.ui.utils.safeRequestFocus
 
 @Composable
 fun NavigationBar(
@@ -36,7 +37,7 @@ fun NavigationBar(
 
     // Auto-focus the NavigationBar on app start
     LaunchedEffect(Unit) {
-        navFocusRequester.requestFocus()
+        navFocusRequester.safeRequestFocus("NavigationBar-AppStart")
         hasNavBarFocus = true // Ensure navbar focus state is set on app start
     }
 
@@ -63,7 +64,7 @@ fun NavigationBar(
         // Only auto-focus when route changes if this is the initial load or a major navigation
         // Don't auto-focus for every route change to prevent conflicts with manual focus requests
         if (initialLoad) {
-            navFocusRequester.requestFocus()
+            navFocusRequester.safeRequestFocus("NavigationBar-RouteChange")
             initialLoad = false
         }
     }
@@ -90,7 +91,7 @@ fun NavigationBar(
             }
             // Add a small delay to ensure navigation completes before requesting focus
             kotlinx.coroutines.delay(100)
-            navFocusRequester.requestFocus()
+            navFocusRequester.safeRequestFocus("NavigationBar-FocusChange")
         }
     }
 

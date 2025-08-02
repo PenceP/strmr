@@ -66,6 +66,7 @@ import com.strmr.ai.ui.screens.TraktSettingsPage
 import com.strmr.ai.ui.screens.TvShowsPage
 import com.strmr.ai.ui.screens.VideoPlayerScreen
 import com.strmr.ai.ui.theme.StrmrTheme
+import com.strmr.ai.ui.utils.safeRequestFocus
 import com.strmr.ai.viewmodel.HomeViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
@@ -271,8 +272,8 @@ fun MainScreen(
             android.util.Log.d("MainActivity", "🎯 Returning focus to navigation bar")
             // Immediately set content focus to false for instant navbar color update
             isContentFocused = false
-            // Request focus on navigation bar
-            navFocusRequester.requestFocus()
+            // Request focus on navigation bar safely
+            navFocusRequester.safeRequestFocus("MainActivity-NavBar")
         } catch (e: Exception) {
             android.util.Log.e("MainActivity", "❌ Error in handleReturnToNavigation", e)
             // Fallback: set content focus to false

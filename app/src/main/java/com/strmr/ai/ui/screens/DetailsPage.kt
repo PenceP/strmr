@@ -60,6 +60,7 @@ import com.strmr.ai.ui.components.UnifiedMediaRow
 import com.strmr.ai.ui.components.rememberSelectionManager
 import com.strmr.ai.ui.theme.StrmrConstants
 import com.strmr.ai.ui.utils.WithFocusProviders
+import com.strmr.ai.ui.utils.safeRequestFocus
 import com.strmr.ai.utils.DateFormatter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -179,7 +180,7 @@ fun MovieDetailsView(
         if (index >= 0 && index < focusRequesters.size && index < rows.size) {
             try {
                 kotlinx.coroutines.delay(100)
-                focusRequesters[index].requestFocus()
+                focusRequesters[index].safeRequestFocus("DetailsPage-Row$index")
                 Log.d("MovieDetailsView", "🎯 Successfully requested focus on row $index (${rows[index]})")
             } catch (e: Exception) {
                 Log.w("MovieDetailsView", "🚨 Failed to request focus on row $index: ${e.message}")
@@ -862,7 +863,7 @@ fun TvShowDetailsView(
         if (index >= 0 && index < focusRequesters.size && index < rows.size) {
             try {
                 kotlinx.coroutines.delay(100)
-                focusRequesters[index].requestFocus()
+                focusRequesters[index].safeRequestFocus("DetailsPage-Row$index")
                 Log.d("TvShowDetailsView", "🎯 Successfully requested focus on row $index (${rows[index]})")
             } catch (e: Exception) {
                 Log.w("TvShowDetailsView", "🚨 Failed to request focus on row $index: ${e.message}")
@@ -877,7 +878,7 @@ fun TvShowDetailsView(
             focusMemory?.let { memory ->
                 // Use the unified focus system instead of individual requesters
                 Log.d("TvShowDetailsView", "Restoring focus from memory: ${memory.lastFocusedItem}")
-                focusRequesters.getOrNull(0)?.requestFocus() // Default to buttons row
+                focusRequesters.getOrNull(0)?.safeRequestFocus("DetailsPage-DefaultRow") // Default to buttons row
                 // Clear the memory after restoring focus
                 focusMemoryManager.clearFocus(screenKey)
             }

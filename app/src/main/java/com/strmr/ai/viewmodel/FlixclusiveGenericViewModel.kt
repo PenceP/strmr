@@ -206,7 +206,7 @@ class FlixclusiveGenericViewModel
                                         else -> false // Lists are static
                                     },
                                 pagingState = PagingState.IDLE,
-                                currentPage = if (dataSourceId in listOf("trending", "popular")) 1 else 1,
+                                currentPage = if (dataSourceId in listOf("trending", "popular")) 2 else 1,
                             )
 
                         Log.d("FlixclusiveGenericViewModel", "✅ $dataSourceId: Load complete: ${updatedMovies.size} total movies")
@@ -275,7 +275,7 @@ class FlixclusiveGenericViewModel
                             PaginationStateInfo(
                                 canPaginate = true,
                                 pagingState = PagingState.IDLE,
-                                currentPage = page,
+                                currentPage = page + 1,
                             )
 
                         Log.d("FlixclusiveGenericViewModel", "✅ $dataSourceId: Pagination complete: ${updatedMovies.size} total movies")
@@ -339,7 +339,7 @@ class FlixclusiveGenericViewModel
                                         else -> false // Lists are static
                                     },
                                 pagingState = PagingState.IDLE,
-                                currentPage = if (dataSourceId in listOf("trending", "popular")) 1 else 1,
+                                currentPage = if (dataSourceId in listOf("trending", "popular")) 2 else 1,
                             )
 
                         Log.d("FlixclusiveGenericViewModel", "✅ $dataSourceId: Load complete: ${updatedTvShows.size} total TV shows")
@@ -408,7 +408,7 @@ class FlixclusiveGenericViewModel
                             PaginationStateInfo(
                                 canPaginate = true,
                                 pagingState = PagingState.IDLE,
-                                currentPage = page,
+                                currentPage = page + 1,
                             )
 
                         Log.d("FlixclusiveGenericViewModel", "✅ $dataSourceId: Pagination complete: ${updatedTvShows.size} total TV shows")

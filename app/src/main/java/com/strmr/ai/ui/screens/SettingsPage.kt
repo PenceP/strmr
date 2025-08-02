@@ -87,6 +87,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.strmr.ai.ui.utils.safeRequestFocus
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.strmr.ai.ui.components.ModernErrorDialog
@@ -160,10 +161,10 @@ fun SettingsPage(
     LaunchedEffect(focusLevel) {
         if (focusLevel == 3) {
             kotlinx.coroutines.delay(50) // Delay to ensure UI is ready
-            rightPanelFocusRequester.requestFocus()
+            rightPanelFocusRequester.safeRequestFocus("SettingsPage-RightPanel")
         } else if (focusLevel == 2) {
             kotlinx.coroutines.delay(50)
-            leftPanelFocusRequester.requestFocus()
+            leftPanelFocusRequester.safeRequestFocus("SettingsPage-LeftPanel")
         }
     }
 
@@ -244,7 +245,7 @@ fun LeftSettingsPanel(
 ) {
     androidx.compose.runtime.LaunchedEffect(focusLevel) {
         if (focusLevel == 2) {
-            focusRequester.requestFocus()
+            focusRequester.safeRequestFocus("SettingsPage-Generic")
         }
     }
 
