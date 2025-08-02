@@ -249,7 +249,7 @@ data class GenericRowConfiguration(
     // Enhanced pagination settings
     val isPaginated: Boolean = true,
     val pageSize: Int = StrmrConstants.Paging.PAGE_SIZE,
-    val maxPages: Int = 10,
+    val maxPages: Int = 50, // Increased from 10 to allow more pages
     val bufferThreshold: Int = 6,
     // Cache configuration
     val cacheExpirationMinutes: Int = 60,
@@ -284,7 +284,7 @@ fun RowConfig.toGenericRowConfiguration(): GenericRowConfiguration? {
         displayOptions = displayOptions,
         isPaginated = type == "paging",
         pageSize = StrmrConstants.Paging.PAGE_SIZE, // Default, could be configurable in JSON
-        maxPages = 10, // Default, could be configurable in JSON
-        bufferThreshold = 6, // Default buffer for pagination trigger
+        maxPages = 50, // Increased from 10 to allow more pages
+        bufferThreshold = 8, // Default buffer for pagination trigger
     )
 }

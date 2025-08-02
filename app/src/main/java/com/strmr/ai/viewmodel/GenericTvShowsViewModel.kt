@@ -50,10 +50,12 @@ class GenericTvShowsViewModel
             return Pager(
                 config =
                     PagingConfig(
-                        pageSize = StrmrConstants.Paging.PAGE_SIZE_SMALL,
+                        pageSize = StrmrConstants.Paging.PAGE_SIZE_STANDARD, // Align with movies and RemoteMediator
                         enablePlaceholders = false,
                         prefetchDistance = StrmrConstants.Paging.PREFETCH_DISTANCE_STANDARD, // Prefetch when within 10 items of the end
-                        initialLoadSize = StrmrConstants.Paging.PAGE_SIZE_SMALL, // Load same size for initial load
+                        initialLoadSize = StrmrConstants.Paging.PAGE_SIZE_STANDARD, // Load same size for initial load
+                        maxSize = StrmrConstants.Paging.MAX_CACHE_SIZE, // Limit memory usage to prevent excessive caching
+                        jumpThreshold = Int.MAX_VALUE, // Disable jump threshold to prevent unnecessary loads
                     ),
                 remoteMediator =
                     com.strmr.ai.data.paging.ConfigurableRemoteMediator(

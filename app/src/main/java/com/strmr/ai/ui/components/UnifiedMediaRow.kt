@@ -78,7 +78,7 @@ fun <T : Any> UnifiedMediaRow(
         derivedStateOf {
             // Trigger pagination if list is empty OR if we're near the end
             val items = (config.dataSource as? DataSource.RegularList)?.items ?: emptyList()
-            items.isEmpty() || listState.shouldPaginate(toDeduct = 6)
+            items.isEmpty() || listState.shouldPaginate(toDeduct = 8)
         }
     }
 
@@ -88,6 +88,17 @@ fun <T : Any> UnifiedMediaRow(
         val paginationState = config.dataSource.paginationState
 
         LaunchedEffect(shouldStartPaginate, paginationState.currentPage) {
+            // Debug logging
+            if (shouldStartPaginate) {
+                Log.d("UnifiedMediaRow", "🔍 Pagination check for '${config.title}':")
+                Log.d("UnifiedMediaRow", "  - shouldStartPaginate: true")
+                Log.d("UnifiedMediaRow", "  - canPaginate: ${paginationState.canPaginate}")
+                Log.d("UnifiedMediaRow", "  - pagingState: ${paginationState.pagingState}")
+                Log.d("UnifiedMediaRow", "  - currentPage: ${paginationState.currentPage}")
+                Log.d("UnifiedMediaRow", "  - lastPaginationPage: $lastPaginationPage")
+                Log.d("UnifiedMediaRow", "  - items count: ${(config.dataSource as? DataSource.RegularList)?.items?.size ?: 0}")
+            }
+            
             if (shouldStartPaginate &&
                 paginationState.canPaginate &&
                 (

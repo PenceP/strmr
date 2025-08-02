@@ -342,7 +342,7 @@ fun TvShowsPage(
                                             val config = dataSourceConfigs.find { it.title == row.title }
                                             if (config != null) {
                                                 when (config.id) {
-                                                    "trending", "popular" -> tvShowsViewModel.paginateTvShows(config, page)
+                                                    "trending", "popular" -> tvShowsViewModel.paginateTvShows(config, page + 1)
                                                     else -> tvShowsViewModel.loadTvShows(config)
                                                 }
                                             }

@@ -35,7 +35,7 @@ data class PaginationStateInfo(
 /**
  * TV version - triggers pagination when within buffer distance of end
  */
-fun TvLazyListState.shouldPaginate(toDeduct: Int = 6): Boolean =
+fun TvLazyListState.shouldPaginate(toDeduct: Int = 8): Boolean =
     (layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -9) >=
         (layoutInfo.totalItemsCount - toDeduct)
 

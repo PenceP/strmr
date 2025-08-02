@@ -184,10 +184,10 @@ fun Modifier.focusOnMount(
         .focusRequester(focusRequester)
         .onGloballyPositioned {
             val lastFocusedKey = lastFocusedItemPerDestination[currentRoute]
-            Log.d(
-                "FocusDebug",
-                "🎯 onGloballyPositioned - route: $currentRoute, itemKey: $itemKey, lastFocusedKey: $lastFocusedKey, isInitialFocusTransferred: ${isInitialFocusTransferred.value}",
-            )
+            //Log.d(
+            //    "FocusDebug",
+            //    "🎯 onGloballyPositioned - route: $currentRoute, itemKey: $itemKey, lastFocusedKey: $lastFocusedKey, isInitialFocusTransferred: ${isInitialFocusTransferred.value}",
+            //)
 
             // Route-aware focus restoration: only restore focus if this item is for the target route
             if (lastFocusedKey == itemKey && !isInitialFocusTransferred.value) {
@@ -196,14 +196,14 @@ fun Modifier.focusOnMount(
                 val isIntermediatePage = currentRoute.startsWith("intermediate_view_")
 
                 if (isTargetRoute && !isIntermediatePage) {
-                    Log.d("FocusDebug", "🔥 REQUESTING FOCUS for itemKey: $itemKey in route: $currentRoute")
+                    //Log.d("FocusDebug", "🔥 REQUESTING FOCUS for itemKey: $itemKey in route: $currentRoute")
                     focusRequester.requestFocus()
                     isInitialFocusTransferred.value = true
                 } else {
-                    Log.d(
-                        "FocusDebug",
-                        "🚫 Skipping focus request - not target route: $currentRoute (isTarget=$isTargetRoute, isIntermediate=$isIntermediatePage)",
-                    )
+                    //Log.d(
+                    //    "FocusDebug",
+                    //    "🚫 Skipping focus request - not target route: $currentRoute (isTarget=$isTargetRoute, isIntermediate=$isIntermediatePage)",
+                    //)
                 }
             }
         }
