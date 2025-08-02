@@ -3,6 +3,7 @@ package com.strmr.ai.ui.components
 import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -27,6 +28,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.EaseInOut
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
+import com.strmr.ai.ui.utils.FocusRequesterModifiers
+import com.strmr.ai.ui.utils.createInitialFocusRestorerModifiers
+import com.strmr.ai.ui.utils.focusOnMount
 
 /**
  * Unified MediaRow component based on Flixclusive patterns
@@ -44,9 +48,13 @@ fun <T : Any> UnifiedMediaRow(
     config: MediaRowConfig<T>,
     modifier: Modifier = Modifier,
     onPositionChanged: ((Int, Int) -> Unit)? = null, // ✅ NEW: Callback to report scroll position
+    rowIndex: Int = 0, // ✅ NEW: Row index for focus key generation
 ) {
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+
+    // Create focus restoration modifiers (Flixclusive pattern)
+    val focusRestorers = createInitialFocusRestorerModifiers()
 
     // Use throttled scroll behavior for better TV remote control (80ms intervals)
     val throttledFlingBehavior = rememberThrottledFlingBehavior()
@@ -157,7 +165,7 @@ fun <T : Any> UnifiedMediaRow(
             }
         }
 
-        // Use regular LazyRow with an immediate-stop FlingBehavior for better DPAD/TV responsiveness
+        // Use regular LazyRow with focus restoration (Flixclusive pattern)
         LazyRow(
             state = listState,
             horizontalArrangement = Arrangement.spacedBy(config.itemSpacing),
@@ -167,6 +175,8 @@ fun <T : Any> UnifiedMediaRow(
                 Modifier
                     .fillMaxWidth()
                     .height(config.getRowHeight())
+                    .focusGroup()
+                    .then(focusRestorers.parentModifier)
                     .then(
                         if (config.focusRequester != null) {
                             Modifier.focusRequester(config.focusRequester)
@@ -198,10 +208,15 @@ fun <T : Any> UnifiedMediaRow(
                             },
                         ) { index ->
                             val item = config.dataSource.items[index]
+                            val itemKey = "row_${rowIndex}_item_${index}"
+                            
                             MediaRowItem(
                                 item = item,
                                 config = config,
                                 index = index,
+                                itemKey = itemKey,
+                                isFirstItem = index == 0,
+                                focusRestorers = focusRestorers,
                                 onItemClick = { config.onItemClick?.invoke(item) },
                                 onItemLongPress = {
                                     Log.d(
@@ -262,10 +277,15 @@ fun <T : Any> UnifiedMediaRow(
                     ) { index ->
                         val item = config.dataSource.pagingItems[index]
                         if (item != null) {
+                            val itemKey = "row_${rowIndex}_paging_item_${index}"
+                            
                             MediaRowItem(
                                 item = item,
                                 config = config,
                                 index = index,
+                                itemKey = itemKey,
+                                isFirstItem = index == 0,
+                                focusRestorers = focusRestorers,
                                 onItemClick = { config.onItemClick?.invoke(item) },
                                 onItemLongPress = {
                                     Log.d(
@@ -319,6 +339,9 @@ private fun <T : Any> MediaRowItem(
     item: T,
     config: MediaRowConfig<T>,
     index: Int,
+    itemKey: String,
+    isFirstItem: Boolean,
+    focusRestorers: FocusRequesterModifiers,
     onItemClick: () -> Unit,
     onItemLongPress: () -> Unit,
     onItemFocused: (Int) -> Unit,
@@ -330,6 +353,20 @@ private fun <T : Any> MediaRowItem(
             Modifier
                 .width(config.itemWidth)
                 .fillMaxHeight()
+                .then(
+                    if (isFirstItem) {
+                        focusRestorers.childModifier
+                    } else {
+                        Modifier
+                    }
+                )
+                .focusOnMount(
+                    itemKey = itemKey,
+                    onFocus = {
+                        Log.d("MediaRowItem", "🎯 Focus restored to itemKey: $itemKey (index: $index)")
+                        onItemFocused(index)
+                    }
+                )
                 .onFocusChanged { focusState ->
                     isFocused = focusState.isFocused
                     if (focusState.isFocused) {

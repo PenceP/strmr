@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.strmr.ai.ui.utils.WithFocusProviders
 import com.strmr.ai.ui.components.CardType
 import com.strmr.ai.ui.components.DataSource
 import com.strmr.ai.ui.components.MediaCard
@@ -59,20 +60,21 @@ fun IntermediateViewPage(
     val navBarWidth = 56.dp
     val navBarWidthPx = with(LocalDensity.current) { navBarWidth.toPx() }
 
-    Box(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .background(Color.Black)
-                .onKeyEvent { keyEvent ->
-                    if (keyEvent.type == KeyEventType.KeyUp && keyEvent.key == Key.Back) {
-                        onNavigateBack()
-                        true
-                    } else {
-                        false
-                    }
-                },
-    ) {
+    WithFocusProviders("intermediate_view_${viewType}_${itemId}") {
+        Box(
+            modifier =
+                modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+                    .onKeyEvent { keyEvent ->
+                        if (keyEvent.type == KeyEventType.KeyUp && keyEvent.key == Key.Back) {
+                            onNavigateBack()
+                            true
+                        } else {
+                            false
+                        }
+                    },
+        ) {
         when {
             uiState.isLoading -> {
                 Box(
@@ -319,10 +321,12 @@ fun IntermediateViewPage(
                                         )
                                     },
                                 ),
+                            rowIndex = 0,
                         )
                     }
                 }
             }
+        }
         }
     }
 }

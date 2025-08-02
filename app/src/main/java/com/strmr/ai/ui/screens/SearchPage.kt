@@ -46,6 +46,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.strmr.ai.ui.utils.WithFocusProviders
+import com.strmr.ai.ui.utils.LocalCurrentRouteProvider
+import com.strmr.ai.ui.utils.LocalFocusTransferredOnLaunchProvider
+import com.strmr.ai.ui.utils.LocalLastFocusedItemPerDestinationProvider
 import com.strmr.ai.R
 import com.strmr.ai.data.SearchResultItem
 import com.strmr.ai.ui.components.CardType
@@ -101,11 +105,12 @@ fun SearchPage(
     var localContentFocused by remember { mutableStateOf(false) }
     val searchBarFocusRequester = remember { FocusRequester() }
 
-    Box(
-        modifier =
-            modifier
-                .fillMaxSize(),
-    ) {
+    WithFocusProviders("search") {
+        Box(
+            modifier =
+                modifier
+                    .fillMaxSize(),
+        ) {
         // Wallpaper background (fills entire screen)
         Image(
             painter = painterResource(id = R.drawable.wallpaper),
@@ -218,7 +223,7 @@ fun SearchPage(
                                     }
                                 }
 
-                            sections.forEach { (title, items) ->
+                            sections.forEachIndexed { rowIndex, (title, items) ->
                                 item(key = title) {
                                     UnifiedMediaRow(
                                         config =
@@ -262,6 +267,7 @@ fun SearchPage(
                                                     )
                                                 },
                                             ),
+                                        rowIndex = rowIndex,
                                     )
                                 }
                             }
@@ -288,6 +294,7 @@ fun SearchPage(
                     }
                 }
             }
+        }
         }
     }
 }

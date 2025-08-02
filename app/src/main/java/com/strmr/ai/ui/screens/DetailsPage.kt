@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewModelScope
 import coil.compose.AsyncImage
+import com.strmr.ai.ui.utils.WithFocusProviders
 import com.strmr.ai.R
 import com.strmr.ai.data.Actor
 import com.strmr.ai.data.OmdbResponse
@@ -93,36 +94,38 @@ fun DetailsPage(
         }}",
     )
 
-    if (mediaDetails == null) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
+    WithFocusProviders("details") {
+        if (mediaDetails == null) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+            return@WithFocusProviders
         }
-        return
-    }
-    when (mediaDetails) {
-        is MediaDetailsType.Movie ->
-            MovieDetailsView(
-                mediaDetails.movie,
-                viewModel,
-                onPlay,
-                onAddToCollection,
-                onNavigateToSimilar,
-                onTrailer,
-            )
-        is MediaDetailsType.TvShow -> {
-            TvShowDetailsView(
-                mediaDetails.show,
-                viewModel,
-                onPlay,
-                onAddToCollection,
-                onNavigateToSimilar,
-                onTrailer,
-                onMoreEpisodes,
-                cachedSeason,
-                cachedEpisode,
-                focusMemoryManager,
-                screenKey,
-            )
+        when (mediaDetails) {
+            is MediaDetailsType.Movie ->
+                MovieDetailsView(
+                    mediaDetails.movie,
+                    viewModel,
+                    onPlay,
+                    onAddToCollection,
+                    onNavigateToSimilar,
+                    onTrailer,
+                )
+            is MediaDetailsType.TvShow -> {
+                TvShowDetailsView(
+                    mediaDetails.show,
+                    viewModel,
+                    onPlay,
+                    onAddToCollection,
+                    onNavigateToSimilar,
+                    onTrailer,
+                    onMoreEpisodes,
+                    cachedSeason,
+                    cachedEpisode,
+                    focusMemoryManager,
+                    screenKey,
+                )
+            }
         }
     }
 }
@@ -1350,6 +1353,7 @@ fun ActorsRow(
                     ActorCard(actor = actor, isSelected = isSelected)
                 },
             ),
+        rowIndex = 0, // Actors row is typically the first row in details
         modifier = modifier,
     )
 }
@@ -1443,29 +1447,29 @@ private fun RatingsRow(
     traktRating: Float?,
 ) {
     // Add comprehensive logging for debugging
-    Log.d("RatingsRow", "⭐ RatingsRow composable called")
-    Log.d("RatingsRow", "⭐ omdbRatings: $omdbRatings")
-    Log.d("RatingsRow", "⭐ traktRating: $traktRating")
+    //Log.d("RatingsRow", "⭐ RatingsRow composable called")
+    //Log.d("RatingsRow", "⭐ omdbRatings: $omdbRatings")
+    //Log.d("RatingsRow", "⭐ traktRating: $traktRating")
 
     val rt = omdbRatings?.Ratings?.find { it.Source == "Rotten Tomatoes" }?.Value
     val meta = omdbRatings?.Metascore?.takeIf { !it.isNullOrBlank() && it != "N/A" }
 
-    Log.d("RatingsRow", "⭐ IMDb rating: ${omdbRatings?.imdbRating}")
-    Log.d("RatingsRow", "⭐ Rotten Tomatoes rating: $rt")
-    Log.d("RatingsRow", "⭐ Metacritic rating: $meta")
+    //Log.d("RatingsRow", "⭐ IMDb rating: ${omdbRatings?.imdbRating}")
+    //Log.d("RatingsRow", "⭐ Rotten Tomatoes rating: $rt")
+    //Log.d("RatingsRow", "⭐ Metacritic rating: $meta")
 
     Row(verticalAlignment = Alignment.CenterVertically) {
         if (omdbRatings?.imdbRating != null) {
-            Log.d("RatingsRow", "⭐ Rendering IMDb rating: ${omdbRatings.imdbRating}")
+            //Log.d("RatingsRow", "⭐ Rendering IMDb rating: ${omdbRatings.imdbRating}")
             Image(painter = painterResource(id = R.drawable.imdb_logo), contentDescription = "IMDb", modifier = Modifier.size(32.dp))
             Spacer(Modifier.width(4.dp))
             Text(omdbRatings.imdbRating, color = StrmrConstants.Colors.TEXT_PRIMARY, fontSize = 18.sp)
             Spacer(Modifier.width(StrmrConstants.Dimensions.SPACING_STANDARD))
         } else {
-            Log.d("RatingsRow", "⭐ IMDb rating is null, not rendering")
+            //Log.d("RatingsRow", "⭐ IMDb rating is null, not rendering")
         }
         if (!meta.isNullOrBlank()) {
-            Log.d("RatingsRow", "⭐ Rendering Metacritic rating: $meta")
+            //Log.d("RatingsRow", "⭐ Rendering Metacritic rating: $meta")
             Image(
                 painter = painterResource(id = R.drawable.metacritic_logo),
                 contentDescription = "Metacritic",
@@ -1475,10 +1479,10 @@ private fun RatingsRow(
             Text("$meta%", color = StrmrConstants.Colors.TEXT_PRIMARY, fontSize = 18.sp)
             Spacer(Modifier.width(StrmrConstants.Dimensions.SPACING_STANDARD))
         } else {
-            Log.d("RatingsRow", "⭐ Metacritic rating is null/blank, not rendering")
+            //Log.d("RatingsRow", "⭐ Metacritic rating is null/blank, not rendering")
         }
         if (!rt.isNullOrBlank()) {
-            Log.d("RatingsRow", "⭐ Rendering Rotten Tomatoes rating: $rt")
+            //Log.d("RatingsRow", "⭐ Rendering Rotten Tomatoes rating: $rt")
             Image(
                 painter = painterResource(id = R.drawable.rotten_tomatoes),
                 contentDescription = "Rotten Tomatoes",
@@ -1488,9 +1492,9 @@ private fun RatingsRow(
             Text(rt, color = StrmrConstants.Colors.TEXT_PRIMARY, fontSize = 18.sp)
             Spacer(Modifier.width(StrmrConstants.Dimensions.SPACING_STANDARD))
         } else {
-            Log.d("RatingsRow", "⭐ Rotten Tomatoes rating is null/blank, not rendering")
+            //Log.d("RatingsRow", "⭐ Rotten Tomatoes rating is null/blank, not rendering")
         }
-        Log.d("RatingsRow", "⭐ Rendering Trakt rating: $traktRating")
+        //Log.d("RatingsRow", "⭐ Rendering Trakt rating: $traktRating")
         Image(painter = painterResource(id = R.drawable.trakt1), contentDescription = "Trakt", modifier = Modifier.size(32.dp))
         Spacer(Modifier.width(4.dp))
         Text(traktRating?.let { String.format("%.1f", it) } ?: "-", color = StrmrConstants.Colors.TEXT_PRIMARY, fontSize = 18.sp)

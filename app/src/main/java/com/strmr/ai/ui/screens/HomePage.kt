@@ -19,6 +19,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.strmr.ai.ui.utils.WithFocusProviders
 import com.strmr.ai.R
 import com.strmr.ai.config.ConfigurationLoader
 import com.strmr.ai.config.PageConfiguration
@@ -353,8 +354,10 @@ fun HomePage(
         }
     }
 
-    // Unified layout: wallpaper is always the base background
-    Box(modifier = modifier.fillMaxSize()) {
+    // Wrap with focus providers (Flixclusive pattern)
+    WithFocusProviders("home") {
+        // Unified layout: wallpaper is always the base background
+        Box(modifier = modifier.fillMaxSize()) {
         // Wallpaper background (fills entire screen)
         Image(
             painter = painterResource(id = R.drawable.wallpaper),
@@ -645,10 +648,12 @@ fun HomePage(
                                         }
                                     },
                                 ),
+                            rowIndex = rowIndex,
                         )
                     }
                 }
             }
+        }
         }
     }
 }

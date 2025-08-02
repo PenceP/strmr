@@ -50,7 +50,7 @@ private val encryptedPrefs = EncryptedSharedPreferences.create(
 ### 4. Logging and Debug Information ⚠️ MINOR CONCERN
 **Status: NEEDS ATTENTION**
 - Some API key fragments logged in debug mode
-- Example: `Log.d("OmdbRepository", "📡 API Key: ${BuildConfig.OMDB_API_KEY.take(5)}...")`
+- Example: `//Log.d("OmdbRepository", "📡 API Key: ${BuildConfig.OMDB_API_KEY.take(5)}...")`
 - While only first 5 characters are shown, this could be problematic in production
 
 **Recommendation:** Remove or gate behind DEBUG build type checks
@@ -108,11 +108,11 @@ None - No critical security issues found.
 1. **Debug Logging** - Remove API key logging in production builds
    ```kotlin
    // Replace this:
-   Log.d("OmdbRepository", "📡 API Key: ${BuildConfig.OMDB_API_KEY.take(5)}...")
+   //Log.d("OmdbRepository", "📡 API Key: ${BuildConfig.OMDB_API_KEY.take(5)}...")
    
    // With this:
    if (BuildConfig.DEBUG) {
-       Log.d("OmdbRepository", "📡 API Key: ${BuildConfig.OMDB_API_KEY.take(5)}...")
+       //Log.d("OmdbRepository", "📡 API Key: ${BuildConfig.OMDB_API_KEY.take(5)}...")
    }
    ```
 

@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil.compose.AsyncImage
+import com.strmr.ai.ui.utils.WithFocusProviders
 import com.strmr.ai.data.OmdbResponse
 import com.strmr.ai.ui.components.CardType
 import com.strmr.ai.ui.components.DataSource
@@ -91,9 +92,10 @@ fun <T : Any> MediaPagingPage(
             }
         }
 
-    Box(
-        modifier = modifier.fillMaxSize(),
-    ) {
+    WithFocusProviders("media_paging") {
+        Box(
+            modifier = modifier.fillMaxSize(),
+        ) {
         // Backdrop image as the main background
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -228,6 +230,7 @@ fun <T : Any> MediaPagingPage(
                                                 )
                                             },
                                         ),
+                                    rowIndex = rowIndex,
                                 )
                             } else {
                                 MediaRowSkeleton(
@@ -240,6 +243,7 @@ fun <T : Any> MediaPagingPage(
                     }
                 }
             }
+        }
         }
     }
 }

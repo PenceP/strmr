@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.strmr.ai.ui.utils.WithFocusProviders
 import com.strmr.ai.config.ConfigurationLoader
 import com.strmr.ai.config.PageConfiguration
 import com.strmr.ai.config.toGenericRowConfiguration
@@ -219,9 +220,11 @@ fun MoviesPage(
         }
     }
 
-    Box(
-        modifier = Modifier.fillMaxSize(),
-    ) {
+    // Wrap with focus providers (Flixclusive pattern)
+    WithFocusProviders("movies") {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+        ) {
         // Only render content after initialization is complete
         if (!isInitialized) {
             // Show loading state while initializing
@@ -398,6 +401,7 @@ fun MoviesPage(
                                         Log.d("MoviesPage", "🎯 Selection changed: row=$rowIndex, item=$itemIndex")
                                     },
                                 ),
+                            rowIndex = rowIndex,
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
@@ -437,6 +441,7 @@ fun MoviesPage(
                     modifier = Modifier.size(32.dp),
                 )
             }
+        }
         }
     }
 }

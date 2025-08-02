@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.strmr.ai.ui.utils.WithFocusProviders
 import com.strmr.ai.data.OmdbResponse
 import com.strmr.ai.ui.components.CardType
 import com.strmr.ai.ui.components.DataSource
@@ -75,9 +76,10 @@ fun <T> MediaPage(
     val navBarWidth = 56.dp
     val navBarWidthPx = with(LocalDensity.current) { navBarWidth.toPx() }
 
-    Box(
-        modifier = modifier.fillMaxSize(),
-    ) {
+    WithFocusProviders("media") {
+        Box(
+            modifier = modifier.fillMaxSize(),
+        ) {
         when {
             uiState.isLoading -> {
                 Box(
@@ -277,6 +279,7 @@ fun <T> MediaPage(
                                                     )
                                                 },
                                             ),
+                                        rowIndex = rowIndex,
                                     )
                                 }
                             }
@@ -284,6 +287,7 @@ fun <T> MediaPage(
                     }
                 }
             }
+        }
         }
     }
 }

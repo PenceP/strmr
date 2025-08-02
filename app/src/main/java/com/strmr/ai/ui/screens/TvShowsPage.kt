@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.strmr.ai.ui.utils.WithFocusProviders
 import com.strmr.ai.config.ConfigurationLoader
 import com.strmr.ai.config.PageConfiguration
 import com.strmr.ai.data.DataSourceConfig
@@ -187,9 +188,11 @@ fun TvShowsPage(
         }
     }
 
-    Box(
-        modifier = Modifier.fillMaxSize(),
-    ) {
+    // Wrap with focus providers (Flixclusive pattern)
+    WithFocusProviders("tvshows") {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+        ) {
         // Only render content after initialization is complete
         if (!isInitialized) {
             // Show loading state while initializing
@@ -366,6 +369,7 @@ fun TvShowsPage(
                                         Log.d("TvShowsPage", "🎯 Selection changed: row=$rowIndex, item=$itemIndex")
                                     },
                                 ),
+                            rowIndex = rowIndex,
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
@@ -405,6 +409,7 @@ fun TvShowsPage(
                     modifier = Modifier.size(32.dp),
                 )
             }
+        }
         }
     }
 }
