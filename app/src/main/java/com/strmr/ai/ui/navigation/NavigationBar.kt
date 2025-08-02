@@ -130,18 +130,16 @@ fun NavigationBar(
                             android.view.KeyEvent.KEYCODE_DPAD_UP -> {
                                 if (focusedIndex > 0) {
                                     focusedIndex--
-                                } else {
-                                    focusedIndex = 5 // Wrap to bottom
                                 }
+                                // Don't wrap to bottom - do nothing if already at top
                                 true // Consume the event
                             }
 
                             android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
                                 if (focusedIndex < 5) {
                                     focusedIndex++
-                                } else {
-                                    focusedIndex = 0 // Wrap to top
                                 }
+                                // Don't wrap to top - do nothing if already at bottom
                                 true // Consume the event
                             }
 
