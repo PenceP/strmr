@@ -40,6 +40,7 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -84,22 +85,61 @@ fun SettingsPage(
     onNavigateToRealDebridSettings: () -> Unit,
     onLeftBoundary: () -> Unit,
     modifier: Modifier = Modifier,
+    onContentFocusChanged: (Boolean) -> Unit = {},
+    isContentFocused: Boolean = false,
 ) {
     val viewModel: SettingsViewModel = hiltViewModel()
     val traktAuthState by viewModel.traktAuthState.collectAsState()
     val traktUserState by viewModel.traktUserState.collectAsState()
 
     var selectedCategory by remember { mutableStateOf(SettingsCategory.TRAKT) }
-    var isLeftPanelFocused by remember { mutableStateOf(true) }
+    var focusLevel by remember { mutableStateOf(1) } // Start at level 1 (nav bar focused) when entering settings
 
     val rightPanelFocusRequester = remember { FocusRequester() }
+    val leftPanelFocusRequester = remember { FocusRequester() }
 
-    // When the selected category changes, and the right panel should be focused,
-    // request focus on the right panel after a short delay to allow recomposition.
-    androidx.compose.runtime.LaunchedEffect(selectedCategory, isLeftPanelFocused) {
-        if (!isLeftPanelFocused) {
+    // Handle when content is focused from navigation bar
+    LaunchedEffect(isContentFocused) {
+        if (isContentFocused && focusLevel == 1) {
+            android.util.Log.d(
+                "SettingsPage",
+                "🎯 Content focused from nav bar, setting focus level to 2"
+            )
+            focusLevel = 2
+        }
+    }
+
+    // Initialize focus when page loads
+    LaunchedEffect(Unit) {
+        // Start with navigation bar focused, will transition to content when nav bar sends right press
+        android.util.Log.d("SettingsPage", "🎯 Settings page initialized, starting at focus level 1")
+        onContentFocusChanged(false) // Navigation bar should be red initially
+    }
+
+    // Notify MainActivity when focus level changes
+    LaunchedEffect(focusLevel) {
+        android.util.Log.d("SettingsPage", "🎯 Focus level changed to: $focusLevel")
+        when (focusLevel) {
+            1 -> {
+                // Navigation bar focused - settings icon should be red
+                onContentFocusChanged(false)
+            }
+
+            2, 3 -> {
+                // Content focused - settings icon should be white
+                onContentFocusChanged(true)
+            }
+        }
+    }
+
+    // When focus level changes and right panel should be focused
+    LaunchedEffect(focusLevel) {
+        if (focusLevel == 3) {
             kotlinx.coroutines.delay(50) // Delay to ensure UI is ready
             rightPanelFocusRequester.requestFocus()
+        } else if (focusLevel == 2) {
+            kotlinx.coroutines.delay(50) 
+            leftPanelFocusRequester.requestFocus()
         }
     }
 
@@ -125,19 +165,28 @@ fun SettingsPage(
                 onCategorySelected = { category ->
                     selectedCategory = category
                 },
-                isLeftPanelFocused = isLeftPanelFocused,
+                focusLevel = focusLevel,
+                focusRequester = leftPanelFocusRequester,
                 onRightPressed = {
-                    isLeftPanelFocused = false
-                    rightPanelFocusRequester.requestFocus()
+                    android.util.Log.d("SettingsPage", "🎯 Left panel right pressed, moving to focus level 3")
+                    focusLevel = 3
                 },
-                onLeftBoundary = onLeftBoundary,
+                onLeftBoundary = {
+                    android.util.Log.d("SettingsPage", "🎯 Left panel left pressed, moving to focus level 1 (nav bar)")
+                    focusLevel = 1
+                    onLeftBoundary()
+                },
                 traktAuthState = traktAuthState
             )
 
             RightSettingsPanel(
                 selectedCategory = selectedCategory,
                 focusRequester = rightPanelFocusRequester,
-                onLeftPressed = { isLeftPanelFocused = true },
+                onLeftPressed = { 
+                    android.util.Log.d("SettingsPage", "🎯 Right panel left pressed, moving to focus level 2")
+                    focusLevel = 2
+                },
+                focusLevel = focusLevel,
                 // Pass all the state and callbacks
                 traktAuthState = traktAuthState,
                 traktUserState = traktUserState,
@@ -163,16 +212,15 @@ fun SettingsPage(
 fun LeftSettingsPanel(
     selectedCategory: SettingsCategory,
     onCategorySelected: (SettingsCategory) -> Unit,
-    isLeftPanelFocused: Boolean,
+    focusLevel: Int,
+    focusRequester: FocusRequester,
     onRightPressed: () -> Unit,
     onLeftBoundary: () -> Unit,
     traktAuthState: com.strmr.ai.viewmodel.TraktAuthState,
     modifier: Modifier = Modifier
 ) {
-    val focusRequester = remember { FocusRequester() }
-
-    androidx.compose.runtime.LaunchedEffect(isLeftPanelFocused) {
-        if (isLeftPanelFocused) {
+    androidx.compose.runtime.LaunchedEffect(focusLevel) {
+        if (focusLevel == 2) {
             focusRequester.requestFocus()
         }
     }
@@ -232,7 +280,7 @@ fun LeftSettingsPanel(
             CategoryItem(
                 category = category,
                 isSelected = category == selectedCategory,
-                isLeftPanelFocused = isLeftPanelFocused,
+                isLeftPanelFocused = focusLevel == 2,
                 isConnected = when (category) {
                     SettingsCategory.TRAKT -> traktAuthState.isAuthorized
                     // ... other cases
@@ -253,17 +301,34 @@ fun CategoryItem(
     isConnected: Boolean? = null,
     onClick: () -> Unit
 ) {
+    // Debug logging for focus states
+    android.util.Log.d(
+        "CategoryItem",
+        "🎯 ${category.displayName} - isSelected: $isSelected, isLeftPanelFocused: $isLeftPanelFocused"
+    )
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(StrmrConstants.Shapes.CORNER_RADIUS_STANDARD)
             .background(
                 when {
-                    isSelected && isLeftPanelFocused -> StrmrConstants.Colors.PRIMARY_BLUE.copy(
-                        alpha = 0.3f
-                    )
+                    isSelected && isLeftPanelFocused -> {
+                        android.util.Log.d(
+                            "CategoryItem",
+                            "🟦 ${category.displayName} - Blue background (left panel focused - level 2)"
+                        )
+                        StrmrConstants.Colors.PRIMARY_BLUE.copy(alpha = 0.3f)
+                    }
 
-                    isSelected && !isLeftPanelFocused -> Color.Gray.copy(alpha = 0.3f)
+                    isSelected && !isLeftPanelFocused -> {
+                        android.util.Log.d(
+                            "CategoryItem",
+                            "🔵 ${category.displayName} - Gray background (nav bar focused level 1 or right panel focused level 3)"
+                        )
+                        Color.Gray.copy(alpha = 0.5f)
+                    }
+
                     else -> StrmrConstants.Colors.CONTAINER_DARK.copy(alpha = 0.5f)
                 }
             )
@@ -317,6 +382,7 @@ fun RightSettingsPanel(
     selectedCategory: SettingsCategory,
     focusRequester: FocusRequester,
     onLeftPressed: () -> Unit,
+    focusLevel: Int,
     // All the state parameters
     traktAuthState: com.strmr.ai.viewmodel.TraktAuthState,
     traktUserState: com.strmr.ai.viewmodel.TraktUserState,
@@ -360,13 +426,32 @@ fun RightSettingsPanel(
         when (selectedCategory) {
             SettingsCategory.TRAKT -> TraktSettingsContent(
                 traktAuthState, traktUserState, syncOnLaunch, onSyncOnLaunchChanged,
-                syncAfterPlayback, onSyncAfterPlaybackChanged, onNavigateToTraktSettings
+                syncAfterPlayback, onSyncAfterPlaybackChanged, onNavigateToTraktSettings,
+                isRightPanelFocused = focusLevel == 3
             )
-            SettingsCategory.PREMIUMIZE -> PremiumizeSettingsContent(onNavigateToPremiumizeSettings)
-            SettingsCategory.REALDEBRID -> RealDebridSettingsContent(onNavigateToRealDebridSettings)
-            SettingsCategory.USER_INTERFACE -> UserInterfaceSettingsContent(scrollStyle, onScrollStyleChanged)
-            SettingsCategory.PLAYBACK -> PlaybackSettingsContent(autoPlay, onAutoPlayChanged, nextEpisodeTime, onNextEpisodeTimeChanged)
-            SettingsCategory.SYSTEM -> SystemSettingsContent()
+            SettingsCategory.PREMIUMIZE -> PremiumizeSettingsContent(
+                onNavigateToPremiumizeSettings,
+                isRightPanelFocused = focusLevel == 3
+            )
+
+            SettingsCategory.REALDEBRID -> RealDebridSettingsContent(
+                onNavigateToRealDebridSettings,
+                isRightPanelFocused = focusLevel == 3
+            )
+
+            SettingsCategory.USER_INTERFACE -> UserInterfaceSettingsContent(
+                scrollStyle, onScrollStyleChanged,
+                isRightPanelFocused = focusLevel == 3
+            )
+
+            SettingsCategory.PLAYBACK -> PlaybackSettingsContent(
+                autoPlay, onAutoPlayChanged, nextEpisodeTime, onNextEpisodeTimeChanged,
+                isRightPanelFocused = focusLevel == 3
+            )
+
+            SettingsCategory.SYSTEM -> SystemSettingsContent(
+                isRightPanelFocused = focusLevel == 3
+            )
         }
     }
 }
@@ -379,7 +464,8 @@ fun TraktSettingsContent(
     onSyncOnLaunchChanged: (Boolean) -> Unit,
     syncAfterPlayback: Boolean,
     onSyncAfterPlaybackChanged: (Boolean) -> Unit,
-    onNavigateToTraktSettings: () -> Unit
+    onNavigateToTraktSettings: () -> Unit,
+    isRightPanelFocused: Boolean,
 ) {
     ModernSettingsCard(
         title = "Trakt",
@@ -391,6 +477,7 @@ fun TraktSettingsContent(
         icon = Icons.Default.AccountCircle,
         isConnected = traktAuthState.isAuthorized,
         onClick = onNavigateToTraktSettings,
+        isRightPanelFocused = isRightPanelFocused,
     ) {
         if (traktAuthState.isAuthorized) {
             Column(
@@ -403,6 +490,7 @@ fun TraktSettingsContent(
                     subtitle = "Automatically sync when opening the app",
                     checked = syncOnLaunch,
                     onCheckedChange = onSyncOnLaunchChanged,
+                    isRightPanelFocused = isRightPanelFocused,
                 )
 
                 Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_MEDIUM))
@@ -412,6 +500,7 @@ fun TraktSettingsContent(
                     subtitle = "Update watch status after finishing content",
                     checked = syncAfterPlayback,
                     onCheckedChange = onSyncAfterPlaybackChanged,
+                    isRightPanelFocused = isRightPanelFocused,
                 )
 
                 if (traktUserState.stats != null) {
@@ -428,32 +517,45 @@ fun TraktSettingsContent(
 }
 
 @Composable
-fun PremiumizeSettingsContent(onNavigateToPremiumizeSettings: () -> Unit) {
+fun PremiumizeSettingsContent(
+    onNavigateToPremiumizeSettings: () -> Unit,
+    isRightPanelFocused: Boolean,
+) {
     ModernSettingsCard(
         title = "Premiumize",
         subtitle = "Connect to access your cloud storage",
         icon = Icons.Default.Cloud,
         onClick = onNavigateToPremiumizeSettings,
+        isRightPanelFocused = isRightPanelFocused,
     )
 }
 
 @Composable
-fun RealDebridSettingsContent(onNavigateToRealDebridSettings: () -> Unit) {
+fun RealDebridSettingsContent(
+    onNavigateToRealDebridSettings: () -> Unit,
+    isRightPanelFocused: Boolean,
+) {
     ModernSettingsCard(
         title = "RealDebrid",
         subtitle = "Connect to access your cloud storage",
         icon = Icons.Default.Link,
         onClick = onNavigateToRealDebridSettings,
+        isRightPanelFocused = isRightPanelFocused,
     )
 }
 
 @Composable
-fun UserInterfaceSettingsContent(scrollStyle: String, onScrollStyleChanged: (String) -> Unit) {
+fun UserInterfaceSettingsContent(
+    scrollStyle: String,
+    onScrollStyleChanged: (String) -> Unit,
+    isRightPanelFocused: Boolean,
+) {
     ModernSettingsCard(
         title = "Scroll Style",
         subtitle = "Choose how content scrolls",
         icon = Icons.Default.TouchApp,
         showArrow = false,
+        isRightPanelFocused = isRightPanelFocused,
     ) {
         Column(
             modifier = Modifier
@@ -470,18 +572,26 @@ fun UserInterfaceSettingsContent(scrollStyle: String, onScrollStyleChanged: (Str
                         "Middle" to "Center content on screen",
                         "Left" to "Align content to the left",
                     ),
+                isRightPanelFocused = isRightPanelFocused,
             )
         }
     }
 }
 
 @Composable
-fun PlaybackSettingsContent(autoPlay: Boolean, onAutoPlayChanged: (Boolean) -> Unit, nextEpisodeTime: String, onNextEpisodeTimeChanged: (String) -> Unit) {
+fun PlaybackSettingsContent(
+    autoPlay: Boolean,
+    onAutoPlayChanged: (Boolean) -> Unit,
+    nextEpisodeTime: String,
+    onNextEpisodeTimeChanged: (String) -> Unit,
+    isRightPanelFocused: Boolean,
+) {
     ModernSettingsCard(
         title = "Auto Play",
         subtitle = "Automatically play next episode",
         icon = Icons.Default.PlayArrow,
         showArrow = false,
+        isRightPanelFocused = isRightPanelFocused,
     ) {
         Column(
             modifier = Modifier
@@ -493,10 +603,12 @@ fun PlaybackSettingsContent(autoPlay: Boolean, onAutoPlayChanged: (Boolean) -> U
                 subtitle = "Automatically play the next episode",
                 checked = autoPlay,
                 onCheckedChange = onAutoPlayChanged,
+                isRightPanelFocused = isRightPanelFocused,
             )
 
             if (autoPlay) {
                 Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
+
                 SettingsRadioGroup(
                     title = "Next Episode Countdown",
                     options = listOf("3", "5", "10", "15"),
@@ -509,6 +621,7 @@ fun PlaybackSettingsContent(autoPlay: Boolean, onAutoPlayChanged: (Boolean) -> U
                             "10" to "10 seconds",
                             "15" to "15 seconds",
                         ),
+                    isRightPanelFocused = isRightPanelFocused,
                 )
             }
         }
@@ -516,7 +629,9 @@ fun PlaybackSettingsContent(autoPlay: Boolean, onAutoPlayChanged: (Boolean) -> U
 }
 
 @Composable
-fun SystemSettingsContent() {
+fun SystemSettingsContent(
+    isRightPanelFocused: Boolean,
+) {
     val updateViewModel: UpdateViewModel = hiltViewModel()
     val updateState by updateViewModel.uiState.collectAsStateWithLifecycle()
 
@@ -533,6 +648,7 @@ fun SystemSettingsContent() {
         icon = Icons.Default.SystemUpdate,
         isConnected = updateState.updateInfo?.hasUpdate,
         showArrow = false,
+        isRightPanelFocused = isRightPanelFocused,
     ) {
         Column(
             modifier = Modifier
@@ -703,6 +819,7 @@ fun ModernSettingsCard(
     isConnected: Boolean? = null,
     showArrow: Boolean = true,
     onClick: (() -> Unit)? = null,
+    isRightPanelFocused: Boolean = false,
     content: (@Composable () -> Unit)? = null,
 ) {
     var isFocused by remember { mutableStateOf(false) }
@@ -715,15 +832,14 @@ fun ModernSettingsCard(
             }
             .focusTarget(),
         colors = CardDefaults.cardColors(
-            containerColor = if (isFocused) {
+            containerColor = if (isFocused || isRightPanelFocused)
                 StrmrConstants.Colors.PRIMARY_BLUE.copy(alpha = 0.3f)
-            } else {
+            else
                 StrmrConstants.Colors.SURFACE_DARK
-            },
         ),
         shape = StrmrConstants.Shapes.CORNER_RADIUS_MEDIUM,
         elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isFocused) {
+            defaultElevation = if (isFocused || isRightPanelFocused) {
                 StrmrConstants.Dimensions.Elevation.STANDARD * 2
             } else {
                 StrmrConstants.Dimensions.Elevation.STANDARD
@@ -797,6 +913,7 @@ fun SettingsToggleRow(
     subtitle: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
+    isRightPanelFocused: Boolean,
 ) {
     var isFocused by remember { mutableStateOf(false) }
 
@@ -808,7 +925,7 @@ fun SettingsToggleRow(
                 isFocused = focusState.isFocused
             }
             .background(
-                if (isFocused)
+                if (isFocused || isRightPanelFocused)
                     StrmrConstants.Colors.PRIMARY_BLUE.copy(alpha = 0.2f)
                 else
                     Color.Transparent,
@@ -823,7 +940,7 @@ fun SettingsToggleRow(
                 text = label,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
-                color = if (isFocused)
+                color = if (isFocused || isRightPanelFocused)
                     StrmrConstants.Colors.PRIMARY_BLUE
                 else
                     Color.White,
@@ -856,6 +973,7 @@ fun SettingsRadioGroup(
     selectedOption: String,
     onOptionSelected: (String) -> Unit,
     descriptions: Map<String, String> = emptyMap(),
+    isRightPanelFocused: Boolean,
 ) {
     Column {
         Text(
@@ -877,7 +995,7 @@ fun SettingsRadioGroup(
                         isFocused = focusState.isFocused
                     }
                     .background(
-                        if (isFocused)
+                        if (isFocused || isRightPanelFocused)
                             StrmrConstants.Colors.PRIMARY_BLUE.copy(alpha = 0.2f)
                         else
                             Color.Transparent,
@@ -904,7 +1022,7 @@ fun SettingsRadioGroup(
                         text = option,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
-                        color = if (isFocused)
+                        color = if (isFocused || isRightPanelFocused)
                             StrmrConstants.Colors.PRIMARY_BLUE
                         else
                             StrmrConstants.Colors.TEXT_PRIMARY,

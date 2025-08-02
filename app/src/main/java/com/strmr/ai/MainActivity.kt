@@ -376,6 +376,10 @@ fun MainScreen(
                         onNavigateToPremiumizeSettings = { navController.navigate("premiumize_settings") },
                         onNavigateToRealDebridSettings = { navController.navigate("realdebrid_settings") },
                         onLeftBoundary = handleReturnToNavigation,
+                        onContentFocusChanged = { focused ->
+                            isContentFocused = focused
+                        },
+                        isContentFocused = isContentFocused,
                     )
                 }
                 composable("trakt_settings") {
