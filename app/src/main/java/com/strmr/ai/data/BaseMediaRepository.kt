@@ -9,10 +9,10 @@ import androidx.paging.PagingSource
 import com.strmr.ai.data.database.StrmrDatabase
 import com.strmr.ai.data.database.TraktRatingsDao
 import com.strmr.ai.data.database.TraktRatingsEntity
+import com.strmr.ai.ui.theme.StrmrConstants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
-import com.strmr.ai.ui.theme.StrmrConstants
 
 /**
  * Base repository class that provides common functionality for media repositories

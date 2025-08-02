@@ -56,7 +56,7 @@ fun <T : Any> SimpleMediaRow(
     hasMorePages: Boolean = false,
     onLoadMore: (() -> Unit)? = null,
     itemContent: @Composable (item: T, isSelected: Boolean) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -96,7 +96,7 @@ fun <T : Any> SimpleMediaRow(
             Text(
                 text = title,
                 color = Color.White,
-                modifier = Modifier.padding(start = 56.dp, bottom = 4.dp)
+                modifier = Modifier.padding(start = 56.dp, bottom = 4.dp),
             )
         }
 
@@ -105,72 +105,77 @@ fun <T : Any> SimpleMediaRow(
             state = listState,
             horizontalArrangement = Arrangement.spacedBy(itemSpacing),
             contentPadding = contentPadding,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(210.dp) // Standard TV row height
-                .then(
-                    if (isRowSelected && focusRequester != null) {
-                        Modifier.focusRequester(focusRequester)
-                    } else {
-                        Modifier
-                    }
-                )
-                .focusable(enabled = isRowSelected)
-                .onKeyEvent { event ->
-                    if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
-                        isRowSelected &&
-                        !isPaginationInProgress // Prevent navigation during pagination
-                    ) {
-                        when (event.nativeKeyEvent.keyCode) {
-                            android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
-                                if (selectedIndex > 0) {
-                                    onSelectionChanged(selectedIndex - 1)
-                                } else {
-                                    onLeftBoundary?.invoke()
-                                }
-                                true
-                            }
-
-                            android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                                // Don't navigate past current items during loading
-                                val maxIndex = if (isPaginationInProgress) {
-                                    items.size - 1 // Stop at last available item
-                                } else {
-                                    items.size - 1
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(210.dp) // Standard TV row height
+                    .then(
+                        if (isRowSelected && focusRequester != null) {
+                            Modifier.focusRequester(focusRequester)
+                        } else {
+                            Modifier
+                        },
+                    )
+                    .focusable(enabled = isRowSelected)
+                    .onKeyEvent { event ->
+                        if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
+                            isRowSelected &&
+                            !isPaginationInProgress // Prevent navigation during pagination
+                        ) {
+                            when (event.nativeKeyEvent.keyCode) {
+                                android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
+                                    if (selectedIndex > 0) {
+                                        onSelectionChanged(selectedIndex - 1)
+                                    } else {
+                                        onLeftBoundary?.invoke()
+                                    }
+                                    true
                                 }
 
-                                if (selectedIndex < maxIndex) {
-                                    onSelectionChanged(selectedIndex + 1)
+                                android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                                    // Don't navigate past current items during loading
+                                    val maxIndex =
+                                        if (isPaginationInProgress) {
+                                            items.size - 1 // Stop at last available item
+                                        } else {
+                                            items.size - 1
+                                        }
+
+                                    if (selectedIndex < maxIndex) {
+                                        onSelectionChanged(selectedIndex + 1)
+                                    }
+                                    true
                                 }
-                                true
-                            }
 
-                            android.view.KeyEvent.KEYCODE_DPAD_UP -> {
-                                onUpDown?.invoke(-1)
-                                true
-                            }
-
-                            android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
-                                onUpDown?.invoke(1)
-                                true
-                            }
-
-                            android.view.KeyEvent.KEYCODE_DPAD_CENTER,
-                            android.view.KeyEvent.KEYCODE_ENTER -> {
-                                items.getOrNull(selectedIndex)?.let { item ->
-                                    onItemClick?.invoke(item)
+                                android.view.KeyEvent.KEYCODE_DPAD_UP -> {
+                                    onUpDown?.invoke(-1)
+                                    true
                                 }
-                                true
-                            }
 
-                            else -> false
+                                android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
+                                    onUpDown?.invoke(1)
+                                    true
+                                }
+
+                                android.view.KeyEvent.KEYCODE_DPAD_CENTER,
+                                android.view.KeyEvent.KEYCODE_ENTER,
+                                -> {
+                                    items.getOrNull(selectedIndex)?.let { item ->
+                                        onItemClick?.invoke(item)
+                                    }
+                                    true
+                                }
+
+                                else -> false
+                            }
+                        } else {
+                            false
                         }
-                    } else false
-                }
+                    },
         ) {
             itemsIndexed(
                 items = items,
-                key = { index, _ -> "item_$index" }
+                key = { index, _ -> "item_$index" },
             ) { index, item ->
                 SimpleMediaRowItem(
                     item = item,
@@ -182,7 +187,7 @@ fun <T : Any> SimpleMediaRow(
                             onSelectionChanged(index)
                         }
                     },
-                    itemContent = itemContent
+                    itemContent = itemContent,
                 )
             }
 
@@ -190,25 +195,26 @@ fun <T : Any> SimpleMediaRow(
             if (hasMorePages && (isLoading || isPaginationInProgress)) {
                 item(key = "loading_indicator") {
                     Box(
-                        modifier = Modifier
-                            .width(itemWidth)
-                            .fillMaxHeight(),
-                        contentAlignment = Alignment.Center
+                        modifier =
+                            Modifier
+                                .width(itemWidth)
+                                .fillMaxHeight(),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
+                            verticalArrangement = Arrangement.Center,
                         ) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(32.dp),
                                 color = Color.White,
-                                strokeWidth = 3.dp
+                                strokeWidth = 3.dp,
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Loading...",
                                 color = Color.White.copy(alpha = 0.7f),
-                                style = MaterialTheme.typography.bodySmall
+                                style = MaterialTheme.typography.bodySmall,
                             )
                         }
                     }
@@ -234,21 +240,23 @@ private fun <T : Any> SimpleMediaRowItem(
     isSelected: Boolean,
     itemWidth: androidx.compose.ui.unit.Dp,
     onFocusChanged: (Boolean) -> Unit,
-    itemContent: @Composable (item: T, isSelected: Boolean) -> Unit
+    itemContent: @Composable (item: T, isSelected: Boolean) -> Unit,
 ) {
     Box(
-        modifier = Modifier
-            .width(itemWidth)
-            .fillMaxHeight(),
-        contentAlignment = Alignment.BottomCenter
+        modifier =
+            Modifier
+                .width(itemWidth)
+                .fillMaxHeight(),
+        contentAlignment = Alignment.BottomCenter,
     ) {
         Box(
-            modifier = Modifier
-                .onFocusChanged { focusState ->
-                    onFocusChanged(focusState.isFocused)
-                }
-                .focusable(),
-            contentAlignment = Alignment.BottomCenter
+            modifier =
+                Modifier
+                    .onFocusChanged { focusState ->
+                        onFocusChanged(focusState.isFocused)
+                    }
+                    .focusable(),
+            contentAlignment = Alignment.BottomCenter,
         ) {
             itemContent(item, isSelected)
         }

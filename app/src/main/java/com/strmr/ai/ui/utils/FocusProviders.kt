@@ -9,7 +9,7 @@ import androidx.compose.runtime.Composable
 @Composable
 fun WithFocusProviders(
     route: String,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     LocalLastFocusedItemPerDestinationProvider {
         LocalFocusTransferredOnLaunchProvider {

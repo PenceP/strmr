@@ -102,7 +102,7 @@ enum class SettingsCategory(val displayName: String, val icon: ImageVector) {
     REALDEBRID("RealDebrid", Icons.Default.Link),
     USER_INTERFACE("User Interface", Icons.Default.TouchApp),
     PLAYBACK("Playback", Icons.Default.PlayArrow),
-    SYSTEM("System", Icons.Default.SystemUpdate)
+    SYSTEM("System", Icons.Default.SystemUpdate),
 }
 
 @Composable
@@ -127,7 +127,7 @@ fun SettingsPage(
         if (isContentFocused && focusLevel == 1) {
             android.util.Log.d(
                 "SettingsPage",
-                "🎯 Content focused from nav bar, setting focus level to 2"
+                "🎯 Content focused from nav bar, setting focus level to 2",
             )
             focusLevel = 2
         }
@@ -162,7 +162,7 @@ fun SettingsPage(
             kotlinx.coroutines.delay(50) // Delay to ensure UI is ready
             rightPanelFocusRequester.requestFocus()
         } else if (focusLevel == 2) {
-            kotlinx.coroutines.delay(50) 
+            kotlinx.coroutines.delay(50)
             leftPanelFocusRequester.requestFocus()
         }
     }
@@ -170,18 +170,20 @@ fun SettingsPage(
     val navBarWidth = StrmrConstants.Dimensions.Components.NAV_BAR_WIDTH
 
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        StrmrConstants.Colors.BACKGROUND_DARKER,
-                        StrmrConstants.Colors.SURFACE_DARK,
-                        StrmrConstants.Colors.BACKGROUND_DARK,
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors =
+                            listOf(
+                                StrmrConstants.Colors.BACKGROUND_DARKER,
+                                StrmrConstants.Colors.SURFACE_DARK,
+                                StrmrConstants.Colors.BACKGROUND_DARK,
+                            ),
                     ),
-                ),
-            )
-            .padding(start = navBarWidth),
+                )
+                .padding(start = navBarWidth),
     ) {
         Row(modifier = Modifier.fillMaxSize()) {
             LeftSettingsPanel(
@@ -200,13 +202,13 @@ fun SettingsPage(
                     focusLevel = 1
                     onLeftBoundary()
                 },
-                traktAuthState = traktAuthState
+                traktAuthState = traktAuthState,
             )
 
             RightSettingsPanel(
                 selectedCategory = selectedCategory,
                 focusRequester = rightPanelFocusRequester,
-                onLeftPressed = { 
+                onLeftPressed = {
                     android.util.Log.d("SettingsPage", "🎯 Right panel left pressed, moving to focus level 2")
                     focusLevel = 2
                 },
@@ -238,7 +240,7 @@ fun LeftSettingsPanel(
     onRightPressed: () -> Unit,
     onLeftBoundary: () -> Unit,
     traktAuthState: com.strmr.ai.viewmodel.TraktAuthState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     androidx.compose.runtime.LaunchedEffect(focusLevel) {
         if (focusLevel == 2) {
@@ -247,54 +249,55 @@ fun LeftSettingsPanel(
     }
 
     Column(
-        modifier = modifier
-            .width(320.dp)
-            .fillMaxHeight()
-            .focusRequester(focusRequester)
-            .focusable()
-            .background(
-                StrmrConstants.Colors.SURFACE_DARK.copy(alpha = 0.8f)
-            )
-            .padding(24.dp)
-            .onKeyEvent { keyEvent ->
-                if (keyEvent.type == androidx.compose.ui.input.key.KeyEventType.KeyDown) {
-                    when (keyEvent.key) {
-                        Key.DirectionRight -> {
-                            onRightPressed()
-                            return@onKeyEvent true
-                        }
+        modifier =
+            modifier
+                .width(320.dp)
+                .fillMaxHeight()
+                .focusRequester(focusRequester)
+                .focusable()
+                .background(
+                    StrmrConstants.Colors.SURFACE_DARK.copy(alpha = 0.8f),
+                )
+                .padding(24.dp)
+                .onKeyEvent { keyEvent ->
+                    if (keyEvent.type == androidx.compose.ui.input.key.KeyEventType.KeyDown) {
+                        when (keyEvent.key) {
+                            Key.DirectionRight -> {
+                                onRightPressed()
+                                return@onKeyEvent true
+                            }
 
-                        Key.DirectionDown -> {
-                            val currentIndex = SettingsCategory.values().indexOf(selectedCategory)
-                            val nextIndex =
-                                (currentIndex + 1).coerceAtMost(SettingsCategory.values().lastIndex)
-                            onCategorySelected(SettingsCategory.values()[nextIndex])
-                            return@onKeyEvent true
-                        }
+                            Key.DirectionDown -> {
+                                val currentIndex = SettingsCategory.values().indexOf(selectedCategory)
+                                val nextIndex =
+                                    (currentIndex + 1).coerceAtMost(SettingsCategory.values().lastIndex)
+                                onCategorySelected(SettingsCategory.values()[nextIndex])
+                                return@onKeyEvent true
+                            }
 
-                        Key.DirectionUp -> {
-                            val currentIndex = SettingsCategory.values().indexOf(selectedCategory)
-                            val prevIndex = (currentIndex - 1).coerceAtLeast(0)
-                            onCategorySelected(SettingsCategory.values()[prevIndex])
-                            return@onKeyEvent true
-                        }
+                            Key.DirectionUp -> {
+                                val currentIndex = SettingsCategory.values().indexOf(selectedCategory)
+                                val prevIndex = (currentIndex - 1).coerceAtLeast(0)
+                                onCategorySelected(SettingsCategory.values()[prevIndex])
+                                return@onKeyEvent true
+                            }
 
-                        Key.DirectionLeft -> {
-                            onLeftBoundary()
-                            return@onKeyEvent true
+                            Key.DirectionLeft -> {
+                                onLeftBoundary()
+                                return@onKeyEvent true
+                            }
                         }
                     }
+                    false
                 }
-                false
-            }
-            .verticalScroll(rememberScrollState())
+                .verticalScroll(rememberScrollState()),
     ) {
         Text(
             text = "Settings",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = StrmrConstants.Colors.TEXT_PRIMARY,
-            modifier = Modifier.padding(bottom = 32.dp)
+            modifier = Modifier.padding(bottom = 32.dp),
         )
 
         SettingsCategory.values().forEach { category ->
@@ -302,12 +305,13 @@ fun LeftSettingsPanel(
                 category = category,
                 isSelected = category == selectedCategory,
                 isLeftPanelFocused = focusLevel == 2,
-                isConnected = when (category) {
-                    SettingsCategory.TRAKT -> traktAuthState.isAuthorized
-                    // ... other cases
-                    else -> null
-                },
-                onClick = { onCategorySelected(category) }
+                isConnected =
+                    when (category) {
+                        SettingsCategory.TRAKT -> traktAuthState.isAuthorized
+                        // ... other cases
+                        else -> null
+                    },
+                onClick = { onCategorySelected(category) },
             )
             Spacer(modifier = Modifier.height(8.dp))
         }
@@ -320,79 +324,85 @@ fun CategoryItem(
     isSelected: Boolean,
     isLeftPanelFocused: Boolean,
     isConnected: Boolean? = null,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     // Debug logging for focus states
     android.util.Log.d(
         "CategoryItem",
-        "🎯 ${category.displayName} - isSelected: $isSelected, isLeftPanelFocused: $isLeftPanelFocused"
+        "🎯 ${category.displayName} - isSelected: $isSelected, isLeftPanelFocused: $isLeftPanelFocused",
     )
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(StrmrConstants.Shapes.CORNER_RADIUS_STANDARD)
-            .background(
-                when {
-                    isSelected && isLeftPanelFocused -> {
-                        android.util.Log.d(
-                            "CategoryItem",
-                            "🟦 ${category.displayName} - Blue background (left panel focused - level 2)"
-                        )
-                        StrmrConstants.Colors.PRIMARY_BLUE.copy(alpha = 0.3f)
-                    }
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(StrmrConstants.Shapes.CORNER_RADIUS_STANDARD)
+                .background(
+                    when {
+                        isSelected && isLeftPanelFocused -> {
+                            android.util.Log.d(
+                                "CategoryItem",
+                                "🟦 ${category.displayName} - Blue background (left panel focused - level 2)",
+                            )
+                            StrmrConstants.Colors.PRIMARY_BLUE.copy(alpha = 0.3f)
+                        }
 
-                    isSelected && !isLeftPanelFocused -> {
-                        android.util.Log.d(
-                            "CategoryItem",
-                            "🔵 ${category.displayName} - Gray background (nav bar focused level 1 or right panel focused level 3)"
-                        )
-                        Color.Gray.copy(alpha = 0.5f)
-                    }
+                        isSelected && !isLeftPanelFocused -> {
+                            android.util.Log.d(
+                                "CategoryItem",
+                                "🔵 ${category.displayName} - Gray background (nav bar focused level 1 or right panel focused level 3)",
+                            )
+                            Color.Gray.copy(alpha = 0.5f)
+                        }
 
-                    else -> StrmrConstants.Colors.CONTAINER_DARK.copy(alpha = 0.5f)
-                }
-            )
-            .clickable { onClick() }
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+                        else -> StrmrConstants.Colors.CONTAINER_DARK.copy(alpha = 0.5f)
+                    },
+                )
+                .clickable { onClick() }
+                .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
             imageVector = category.icon,
             contentDescription = null,
-            tint = when {
-                isSelected && isLeftPanelFocused -> StrmrConstants.Colors.PRIMARY_BLUE
-                isSelected && !isLeftPanelFocused -> Color.Gray
-                else -> StrmrConstants.Colors.TEXT_PRIMARY
-            },
-            modifier = Modifier.size(24.dp)
+            tint =
+                when {
+                    isSelected && isLeftPanelFocused -> StrmrConstants.Colors.PRIMARY_BLUE
+                    isSelected && !isLeftPanelFocused -> Color.Gray
+                    else -> StrmrConstants.Colors.TEXT_PRIMARY
+                },
+            modifier = Modifier.size(24.dp),
         )
 
         Spacer(modifier = Modifier.width(12.dp))
 
         Text(
             text = category.displayName,
-            color = when {
-                isSelected && isLeftPanelFocused -> StrmrConstants.Colors.PRIMARY_BLUE
-                isSelected && !isLeftPanelFocused -> Color.Gray
-                else -> StrmrConstants.Colors.TEXT_PRIMARY
-            },
+            color =
+                when {
+                    isSelected && isLeftPanelFocused -> StrmrConstants.Colors.PRIMARY_BLUE
+                    isSelected && !isLeftPanelFocused -> Color.Gray
+                    else -> StrmrConstants.Colors.TEXT_PRIMARY
+                },
             fontSize = StrmrConstants.Typography.TEXT_SIZE_BODY,
             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
         )
 
         isConnected?.let { connected ->
             Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .background(
-                        color = if (connected)
-                            StrmrConstants.Colors.SUCCESS_GREEN
-                        else
-                            Color.Gray,
-                        shape = androidx.compose.foundation.shape.CircleShape
-                    )
+                modifier =
+                    Modifier
+                        .size(8.dp)
+                        .background(
+                            color =
+                                if (connected) {
+                                    StrmrConstants.Colors.SUCCESS_GREEN
+                                } else {
+                                    Color.Gray
+                                },
+                            shape = androidx.compose.foundation.shape.CircleShape,
+                        ),
             )
         }
     }
@@ -419,18 +429,19 @@ fun RightSettingsPanel(
     onNextEpisodeTimeChanged: (String) -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .focusRequester(focusRequester)
-            .padding(32.dp)
-            .onKeyEvent { keyEvent ->
-                if (keyEvent.key == Key.DirectionLeft) {
-                    onLeftPressed()
-                    return@onKeyEvent true
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .focusRequester(focusRequester)
+                .padding(32.dp)
+                .onKeyEvent { keyEvent ->
+                    if (keyEvent.key == Key.DirectionLeft) {
+                        onLeftPressed()
+                        return@onKeyEvent true
+                    }
+                    false
                 }
-                false
-            }
-            .verticalScroll(rememberScrollState())
+                .verticalScroll(rememberScrollState()),
     ) {
         // Add category title at the top of right panel
         Text(
@@ -438,36 +449,50 @@ fun RightSettingsPanel(
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = StrmrConstants.Colors.TEXT_PRIMARY,
-            modifier = Modifier.padding(bottom = 24.dp)
+            modifier = Modifier.padding(bottom = 24.dp),
         )
-        
+
         when (selectedCategory) {
-            SettingsCategory.TRAKT -> TraktSettingsContent(
-                traktAuthState, traktUserState, syncOnLaunch, onSyncOnLaunchChanged,
-                syncAfterPlayback, onSyncAfterPlaybackChanged,
-                isRightPanelFocused = focusLevel == 3
-            )
-            SettingsCategory.PREMIUMIZE -> PremiumizeSettingsContent(
-                isRightPanelFocused = focusLevel == 3
-            )
+            SettingsCategory.TRAKT ->
+                TraktSettingsContent(
+                    traktAuthState,
+                    traktUserState,
+                    syncOnLaunch,
+                    onSyncOnLaunchChanged,
+                    syncAfterPlayback,
+                    onSyncAfterPlaybackChanged,
+                    isRightPanelFocused = focusLevel == 3,
+                )
+            SettingsCategory.PREMIUMIZE ->
+                PremiumizeSettingsContent(
+                    isRightPanelFocused = focusLevel == 3,
+                )
 
-            SettingsCategory.REALDEBRID -> RealDebridSettingsContent(
-                isRightPanelFocused = focusLevel == 3
-            )
+            SettingsCategory.REALDEBRID ->
+                RealDebridSettingsContent(
+                    isRightPanelFocused = focusLevel == 3,
+                )
 
-            SettingsCategory.USER_INTERFACE -> UserInterfaceSettingsContent(
-                scrollStyle, onScrollStyleChanged,
-                isRightPanelFocused = focusLevel == 3
-            )
+            SettingsCategory.USER_INTERFACE ->
+                UserInterfaceSettingsContent(
+                    scrollStyle,
+                    onScrollStyleChanged,
+                    isRightPanelFocused = focusLevel == 3,
+                )
 
-            SettingsCategory.PLAYBACK -> PlaybackSettingsContent(
-                autoPlay, onAutoPlayChanged, nextEpisodeTime, onNextEpisodeTimeChanged,
-                isRightPanelFocused = focusLevel == 3
-            )
+            SettingsCategory.PLAYBACK ->
+                PlaybackSettingsContent(
+                    autoPlay,
+                    onAutoPlayChanged,
+                    nextEpisodeTime,
+                    onNextEpisodeTimeChanged,
+                    isRightPanelFocused = focusLevel == 3,
+                )
 
-            SettingsCategory.SYSTEM -> SystemSettingsContent(
-                isRightPanelFocused = focusLevel == 3
-            )
+            SettingsCategory.SYSTEM ->
+                SystemSettingsContent(
+                    isRightPanelFocused = focusLevel == 3,
+                )
         }
     }
 }
@@ -484,32 +509,37 @@ fun TraktSettingsContent(
 ) {
     val viewModel: SettingsViewModel = hiltViewModel()
     val traktSettingsState by viewModel.traktSettingsState.collectAsState()
-    
+
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(StrmrConstants.Dimensions.SPACING_LARGE)
+        verticalArrangement = Arrangement.spacedBy(StrmrConstants.Dimensions.SPACING_LARGE),
     ) {
         // Connection Status Card
         ModernSettingsCard(
             title = "Trakt Account",
-            subtitle = if (traktAuthState.isAuthorized) {
-                "Connected as ${traktUserState.profile?.username ?: "User"}"
-            } else {
-                "Not connected - Click to authorize"
-            },
+            subtitle =
+                if (traktAuthState.isAuthorized) {
+                    "Connected as ${traktUserState.profile?.username ?: "User"}"
+                } else {
+                    "Not connected - Click to authorize"
+                },
             icon = Icons.Default.AccountCircle,
             isConnected = traktAuthState.isAuthorized,
-            onClick = if (!traktAuthState.isAuthorized) {
-                { viewModel.startTraktAuth() }
-            } else null,
+            onClick =
+                if (!traktAuthState.isAuthorized) {
+                    { viewModel.startTraktAuth() }
+                } else {
+                    null
+                },
             isRightPanelFocused = isRightPanelFocused,
             showArrow = !traktAuthState.isAuthorized,
         ) {
             if (traktAuthState.isAuthorized) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = StrmrConstants.Dimensions.SPACING_STANDARD),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = StrmrConstants.Dimensions.SPACING_STANDARD),
                 ) {
                     traktUserState.profile?.let { profile ->
                         TraktInfoRow(
@@ -538,9 +568,10 @@ fun TraktSettingsContent(
 
                     Button(
                         onClick = { viewModel.logout() },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = StrmrConstants.Colors.ERROR_RED,
-                        ),
+                        colors =
+                            ButtonDefaults.buttonColors(
+                                containerColor = StrmrConstants.Colors.ERROR_RED,
+                            ),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Icon(
@@ -604,19 +635,21 @@ fun TraktSettingsContent(
             ) {
                 traktUserState.stats?.let { stats ->
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = StrmrConstants.Dimensions.SPACING_STANDARD),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(top = StrmrConstants.Dimensions.SPACING_STANDARD),
                     ) {
                         // Stats Grid
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    StrmrConstants.Colors.CONTAINER_DARK,
-                                    StrmrConstants.Shapes.CORNER_RADIUS_MEDIUM,
-                                )
-                                .padding(StrmrConstants.Dimensions.SPACING_LARGE),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        StrmrConstants.Colors.CONTAINER_DARK,
+                                        StrmrConstants.Shapes.CORNER_RADIUS_MEDIUM,
+                                    )
+                                    .padding(StrmrConstants.Dimensions.SPACING_LARGE),
                             horizontalArrangement = Arrangement.SpaceEvenly,
                         ) {
                             TraktStatItem(
@@ -686,9 +719,7 @@ fun TraktSettingsContent(
 }
 
 @Composable
-fun PremiumizeSettingsContent(
-    isRightPanelFocused: Boolean,
-) {
+fun PremiumizeSettingsContent(isRightPanelFocused: Boolean) {
     val viewModel: com.strmr.ai.viewmodel.PremiumizeSettingsViewModel = hiltViewModel()
     val coroutineScope = rememberCoroutineScope()
 
@@ -701,7 +732,7 @@ fun PremiumizeSettingsContent(
 
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(StrmrConstants.Dimensions.SPACING_LARGE)
+        verticalArrangement = Arrangement.spacedBy(StrmrConstants.Dimensions.SPACING_LARGE),
     ) {
         // Status Card
         ModernSettingsCard(
@@ -722,9 +753,10 @@ fun PremiumizeSettingsContent(
             isRightPanelFocused = isRightPanelFocused,
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = StrmrConstants.Dimensions.SPACING_STANDARD),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = StrmrConstants.Dimensions.SPACING_STANDARD),
             ) {
                 // API Key Input
                 OutlinedTextField(
@@ -746,15 +778,16 @@ fun PremiumizeSettingsContent(
                         }
                     },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = StrmrConstants.Colors.PRIMARY_BLUE,
-                        unfocusedBorderColor = StrmrConstants.Colors.BORDER_DARK,
-                        focusedLabelColor = StrmrConstants.Colors.PRIMARY_BLUE,
-                        unfocusedLabelColor = StrmrConstants.Colors.TEXT_SECONDARY,
-                        focusedTextColor = StrmrConstants.Colors.TEXT_PRIMARY,
-                        unfocusedTextColor = StrmrConstants.Colors.TEXT_PRIMARY,
-                        cursorColor = StrmrConstants.Colors.PRIMARY_BLUE,
-                    ),
+                    colors =
+                        OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = StrmrConstants.Colors.PRIMARY_BLUE,
+                            unfocusedBorderColor = StrmrConstants.Colors.BORDER_DARK,
+                            focusedLabelColor = StrmrConstants.Colors.PRIMARY_BLUE,
+                            unfocusedLabelColor = StrmrConstants.Colors.TEXT_SECONDARY,
+                            focusedTextColor = StrmrConstants.Colors.TEXT_PRIMARY,
+                            unfocusedTextColor = StrmrConstants.Colors.TEXT_PRIMARY,
+                            cursorColor = StrmrConstants.Colors.PRIMARY_BLUE,
+                        ),
                     modifier = Modifier.fillMaxWidth(),
                 )
 
@@ -794,10 +827,11 @@ fun PremiumizeSettingsContent(
                         }
                     },
                     enabled = !isValidating && apiKey.isNotBlank(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = StrmrConstants.Colors.PRIMARY_BLUE,
-                        disabledContainerColor = StrmrConstants.Colors.BORDER_DARK,
-                    ),
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = StrmrConstants.Colors.PRIMARY_BLUE,
+                            disabledContainerColor = StrmrConstants.Colors.BORDER_DARK,
+                        ),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     if (isValidating) {
@@ -830,9 +864,10 @@ fun PremiumizeSettingsContent(
                             isConfigured = false
                             validationError = null
                         },
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = StrmrConstants.Colors.ERROR_RED,
-                        ),
+                        colors =
+                            ButtonDefaults.outlinedButtonColors(
+                                contentColor = StrmrConstants.Colors.ERROR_RED,
+                            ),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Icon(
@@ -850,9 +885,7 @@ fun PremiumizeSettingsContent(
 }
 
 @Composable
-fun RealDebridSettingsContent(
-    isRightPanelFocused: Boolean,
-) {
+fun RealDebridSettingsContent(isRightPanelFocused: Boolean) {
     ModernSettingsCard(
         title = "RealDebrid Integration",
         subtitle = "RealDebrid integration coming soon!",
@@ -861,9 +894,10 @@ fun RealDebridSettingsContent(
         isRightPanelFocused = isRightPanelFocused,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = StrmrConstants.Dimensions.SPACING_STANDARD),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = StrmrConstants.Dimensions.SPACING_STANDARD),
         ) {
             Text(
                 text = "🚧 Under Development",
@@ -872,7 +906,7 @@ fun RealDebridSettingsContent(
                 color = StrmrConstants.Colors.TEXT_PRIMARY,
                 modifier = Modifier.padding(bottom = StrmrConstants.Dimensions.SPACING_SMALL),
             )
-            
+
             Text(
                 text = "RealDebrid support is currently being developed and will be available in a future update.",
                 style = MaterialTheme.typography.bodyMedium,
@@ -896,9 +930,10 @@ fun UserInterfaceSettingsContent(
         isRightPanelFocused = isRightPanelFocused,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
         ) {
             SettingsRadioGroup(
                 title = "Content Alignment",
@@ -926,7 +961,7 @@ fun PlaybackSettingsContent(
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(StrmrConstants.Dimensions.SPACING_LARGE)
+        verticalArrangement = Arrangement.spacedBy(StrmrConstants.Dimensions.SPACING_LARGE),
     ) {
         // Individual card for Auto Play toggle
         ModernSettingsToggleCard(
@@ -947,9 +982,10 @@ fun PlaybackSettingsContent(
                 isRightPanelFocused = isRightPanelFocused,
             ) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp),
                 ) {
                     SettingsRadioGroup(
                         title = "Countdown Duration",
@@ -972,9 +1008,7 @@ fun PlaybackSettingsContent(
 }
 
 @Composable
-fun SystemSettingsContent(
-    isRightPanelFocused: Boolean,
-) {
+fun SystemSettingsContent(isRightPanelFocused: Boolean) {
     val updateViewModel: UpdateViewModel = hiltViewModel()
     val updateState by updateViewModel.uiState.collectAsStateWithLifecycle()
 
@@ -994,9 +1028,10 @@ fun SystemSettingsContent(
         isRightPanelFocused = isRightPanelFocused,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
         ) {
             when {
                 updateState.isLoading -> {
@@ -1167,18 +1202,21 @@ fun ModernSettingsCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = StrmrConstants.Colors.SURFACE_DARK
-        ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = StrmrConstants.Colors.SURFACE_DARK,
+            ),
         shape = StrmrConstants.Shapes.CORNER_RADIUS_MEDIUM,
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = StrmrConstants.Dimensions.Elevation.STANDARD
-        ),
+        elevation =
+            CardDefaults.cardElevation(
+                defaultElevation = StrmrConstants.Dimensions.Elevation.STANDARD,
+            ),
     ) {
         Column(
-            modifier = Modifier
-                .clickable { onClick?.invoke() }
-                .padding(StrmrConstants.Dimensions.SPACING_LARGE),
+            modifier =
+                Modifier
+                    .clickable { onClick?.invoke() }
+                    .padding(StrmrConstants.Dimensions.SPACING_LARGE),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1211,12 +1249,13 @@ fun ModernSettingsCard(
 
                 isConnected?.let { connected ->
                     Box(
-                        modifier = Modifier
-                            .size(StrmrConstants.Dimensions.SPACING_MEDIUM)
-                            .background(
-                                color = if (connected) StrmrConstants.Colors.PRIMARY_BLUE else Color.Gray,
-                                shape = androidx.compose.foundation.shape.CircleShape,
-                            ),
+                        modifier =
+                            Modifier
+                                .size(StrmrConstants.Dimensions.SPACING_MEDIUM)
+                                .background(
+                                    color = if (connected) StrmrConstants.Colors.PRIMARY_BLUE else Color.Gray,
+                                    shape = androidx.compose.foundation.shape.CircleShape,
+                                ),
                     )
                     Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_MEDIUM))
                 }
@@ -1247,21 +1286,23 @@ fun SettingsToggleRow(
     var isFocused by remember { mutableStateOf(false) }
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .focusable()
-            .onFocusChanged { focusState ->
-                isFocused = focusState.isFocused
-            }
-            .background(
-                if (isFocused)
-                    StrmrConstants.Colors.PRIMARY_BLUE.copy(alpha = 0.3f)
-                else
-                    Color.Transparent,
-                StrmrConstants.Shapes.CORNER_RADIUS_STANDARD
-            )
-            .padding(12.dp)
-            .clickable { onCheckedChange(!checked) },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .focusable()
+                .onFocusChanged { focusState ->
+                    isFocused = focusState.isFocused
+                }
+                .background(
+                    if (isFocused) {
+                        StrmrConstants.Colors.PRIMARY_BLUE.copy(alpha = 0.3f)
+                    } else {
+                        Color.Transparent
+                    },
+                    StrmrConstants.Shapes.CORNER_RADIUS_STANDARD,
+                )
+                .padding(12.dp)
+                .clickable { onCheckedChange(!checked) },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -1269,10 +1310,12 @@ fun SettingsToggleRow(
                 text = label,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
-                color = if (isFocused)
-                    StrmrConstants.Colors.PRIMARY_BLUE
-                else
-                    Color.White,
+                color =
+                    if (isFocused) {
+                        StrmrConstants.Colors.PRIMARY_BLUE
+                    } else {
+                        Color.White
+                    },
             )
             Text(
                 text = subtitle,
@@ -1285,12 +1328,13 @@ fun SettingsToggleRow(
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = StrmrConstants.Colors.TEXT_PRIMARY,
-                checkedTrackColor = StrmrConstants.Colors.PRIMARY_BLUE,
-                uncheckedThumbColor = Color.Gray,
-                uncheckedTrackColor = StrmrConstants.Colors.BORDER_DARK,
-            ),
+            colors =
+                SwitchDefaults.colors(
+                    checkedThumbColor = StrmrConstants.Colors.TEXT_PRIMARY,
+                    checkedTrackColor = StrmrConstants.Colors.PRIMARY_BLUE,
+                    uncheckedThumbColor = Color.Gray,
+                    uncheckedTrackColor = StrmrConstants.Colors.BORDER_DARK,
+                ),
         )
     }
 }
@@ -1306,28 +1350,34 @@ fun ModernSettingsToggleCard(
     var isFocused by remember { mutableStateOf(false) }
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .focusable()
-            .onFocusChanged { focusState ->
-                isFocused = focusState.isFocused
-            },
-        colors = CardDefaults.cardColors(
-            containerColor = if (isFocused)
-                StrmrConstants.Colors.PRIMARY_BLUE.copy(alpha = 0.3f)
-            else
-                StrmrConstants.Colors.SURFACE_DARK
-        ),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .focusable()
+                .onFocusChanged { focusState ->
+                    isFocused = focusState.isFocused
+                },
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    if (isFocused) {
+                        StrmrConstants.Colors.PRIMARY_BLUE.copy(alpha = 0.3f)
+                    } else {
+                        StrmrConstants.Colors.SURFACE_DARK
+                    },
+            ),
         shape = StrmrConstants.Shapes.CORNER_RADIUS_MEDIUM,
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = StrmrConstants.Dimensions.Elevation.STANDARD
-        ),
+        elevation =
+            CardDefaults.cardElevation(
+                defaultElevation = StrmrConstants.Dimensions.Elevation.STANDARD,
+            ),
     ) {
         Row(
-            modifier = Modifier
-                .padding(StrmrConstants.Dimensions.SPACING_LARGE)
-                .fillMaxWidth()
-                .clickable { onCheckedChange(!checked) },
+            modifier =
+                Modifier
+                    .padding(StrmrConstants.Dimensions.SPACING_LARGE)
+                    .fillMaxWidth()
+                    .clickable { onCheckedChange(!checked) },
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -1335,10 +1385,12 @@ fun ModernSettingsToggleCard(
                     text = label,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = if (isFocused)
-                        StrmrConstants.Colors.PRIMARY_BLUE
-                    else
-                        StrmrConstants.Colors.TEXT_PRIMARY,
+                    color =
+                        if (isFocused) {
+                            StrmrConstants.Colors.PRIMARY_BLUE
+                        } else {
+                            StrmrConstants.Colors.TEXT_PRIMARY
+                        },
                 )
                 Text(
                     text = subtitle,
@@ -1350,12 +1402,13 @@ fun ModernSettingsToggleCard(
             Switch(
                 checked = checked,
                 onCheckedChange = onCheckedChange,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = StrmrConstants.Colors.TEXT_PRIMARY,
-                    checkedTrackColor = StrmrConstants.Colors.PRIMARY_BLUE,
-                    uncheckedThumbColor = Color.Gray,
-                    uncheckedTrackColor = StrmrConstants.Colors.BORDER_DARK,
-                ),
+                colors =
+                    SwitchDefaults.colors(
+                        checkedThumbColor = StrmrConstants.Colors.TEXT_PRIMARY,
+                        checkedTrackColor = StrmrConstants.Colors.PRIMARY_BLUE,
+                        uncheckedThumbColor = Color.Gray,
+                        uncheckedTrackColor = StrmrConstants.Colors.BORDER_DARK,
+                    ),
             )
         }
     }
@@ -1383,31 +1436,34 @@ fun SettingsRadioGroup(
             var isFocused by remember { mutableStateOf(false) }
 
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .focusable()
-                    .onFocusChanged { focusState ->
-                        isFocused = focusState.isFocused
-                    }
-                    .background(
-                        if (isFocused)
-                            StrmrConstants.Colors.PRIMARY_BLUE.copy(alpha = 0.3f)
-                        else
-                            Color.Transparent,
-                        StrmrConstants.Shapes.CORNER_RADIUS_STANDARD
-                    )
-                    .clip(StrmrConstants.Shapes.CORNER_RADIUS_STANDARD)
-                    .clickable { onOptionSelected(option) }
-                    .padding(StrmrConstants.Dimensions.SPACING_MEDIUM),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .focusable()
+                        .onFocusChanged { focusState ->
+                            isFocused = focusState.isFocused
+                        }
+                        .background(
+                            if (isFocused) {
+                                StrmrConstants.Colors.PRIMARY_BLUE.copy(alpha = 0.3f)
+                            } else {
+                                Color.Transparent
+                            },
+                            StrmrConstants.Shapes.CORNER_RADIUS_STANDARD,
+                        )
+                        .clip(StrmrConstants.Shapes.CORNER_RADIUS_STANDARD)
+                        .clickable { onOptionSelected(option) }
+                        .padding(StrmrConstants.Dimensions.SPACING_MEDIUM),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 RadioButton(
                     selected = option == selectedOption,
                     onClick = { onOptionSelected(option) },
-                    colors = RadioButtonDefaults.colors(
-                        selectedColor = StrmrConstants.Colors.PRIMARY_BLUE,
-                        unselectedColor = Color.Gray,
-                    ),
+                    colors =
+                        RadioButtonDefaults.colors(
+                            selectedColor = StrmrConstants.Colors.PRIMARY_BLUE,
+                            unselectedColor = Color.Gray,
+                        ),
                 )
 
                 Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_MEDIUM))
@@ -1417,10 +1473,12 @@ fun SettingsRadioGroup(
                         text = option,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
-                        color = if (isFocused)
-                            StrmrConstants.Colors.PRIMARY_BLUE
-                        else
-                            StrmrConstants.Colors.TEXT_PRIMARY,
+                        color =
+                            if (isFocused) {
+                                StrmrConstants.Colors.PRIMARY_BLUE
+                            } else {
+                                StrmrConstants.Colors.TEXT_PRIMARY
+                            },
                     )
 
                     descriptions[option]?.let { description ->
@@ -1498,6 +1556,3 @@ fun StatItem(
         )
     }
 }
-
-
-

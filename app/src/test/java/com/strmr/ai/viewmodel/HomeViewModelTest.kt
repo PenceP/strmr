@@ -4,7 +4,6 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import app.cash.turbine.test
 import com.strmr.ai.data.MovieRepository
 import com.strmr.ai.data.OmdbRepository
-import com.strmr.ai.data.TraktRepository
 import com.strmr.ai.domain.repository.ContinueWatchingItem
 import com.strmr.ai.domain.usecase.CheckTraktAuthorizationUseCase
 import com.strmr.ai.domain.usecase.ConvertContinueWatchingToHomeMediaItemsUseCase

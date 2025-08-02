@@ -23,7 +23,7 @@ fun SimpleMediaRowExample(
     isLoading: Boolean = false,
     hasMorePages: Boolean = true,
     onLoadMore: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     // Simple selection management
     val selectionManager = rememberSelectionManager()
@@ -61,7 +61,7 @@ fun SimpleMediaRowExample(
             itemContent = { movie, isSelected ->
                 // Your movie card composable
                 MovieCard(movie = movie, isSelected = isSelected)
-            }
+            },
         )
 
         SimpleMediaRow(
@@ -84,7 +84,7 @@ fun SimpleMediaRowExample(
             onLoadMore = onLoadMore,
             itemContent = { movie, isSelected ->
                 MovieCard(movie = movie, isSelected = isSelected)
-            }
+            },
         )
     }
 }
@@ -93,17 +93,18 @@ fun SimpleMediaRowExample(
 private fun MovieCard(
     movie: Any,
     isSelected: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = modifier
-            .size(120.dp, 180.dp)
-            .padding(if (isSelected) 2.dp else 4.dp)
+        modifier =
+            modifier
+                .size(120.dp, 180.dp)
+                .padding(if (isSelected) 2.dp else 4.dp),
     ) {
         // Your movie card content here
         Text(
             text = "Movie Card",
-            color = if (isSelected) Color.Yellow else Color.White
+            color = if (isSelected) Color.Yellow else Color.White,
         )
     }
 }

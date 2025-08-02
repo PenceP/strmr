@@ -18,7 +18,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.strmr.ai.ui.utils.WithFocusProviders
 import com.strmr.ai.data.OmdbResponse
 import com.strmr.ai.ui.components.CardType
 import com.strmr.ai.ui.components.DataSource
@@ -30,6 +29,7 @@ import com.strmr.ai.ui.components.UnifiedMediaRow
 import com.strmr.ai.ui.components.getPosterUrl
 import com.strmr.ai.ui.components.getTitle
 import com.strmr.ai.ui.theme.StrmrConstants
+import com.strmr.ai.ui.utils.WithFocusProviders
 import com.strmr.ai.utils.DateFormatter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -80,75 +80,94 @@ fun <T> MediaPage(
         Box(
             modifier = modifier.fillMaxSize(),
         ) {
-        when {
-            uiState.isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
+            when {
+                uiState.isLoading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
                     ) {
-                        CircularProgressIndicator(
-                            color = Color.White,
-                            modifier = Modifier.size(48.dp),
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                        ) {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                modifier = Modifier.size(48.dp),
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "Loading...",
+                                color = Color.White,
+                                fontSize = 16.sp,
+                            )
+                        }
+                    }
+                }
+                uiState.isError -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
                         Text(
-                            text = "Loading...",
+                            text = uiState.errorMessage ?: "Unknown error",
+                            color = Color.Red,
+                            fontSize = 16.sp,
+                        )
+                    }
+                }
+                !uiState.isLoading && !uiState.isError && (rows.isEmpty() || rows.all { (it as? List<*>)?.isEmpty() != false }) -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "No items found",
                             color = Color.White,
                             fontSize = 16.sp,
                         )
                     }
                 }
-            }
-            uiState.isError -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = uiState.errorMessage ?: "Unknown error",
-                        color = Color.Red,
-                        fontSize = 16.sp,
-                    )
-                }
-            }
-            !uiState.isLoading && !uiState.isError && (rows.isEmpty() || rows.all { (it as? List<*>)?.isEmpty() != false }) -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = "No items found",
-                        color = Color.White,
-                        fontSize = 16.sp,
-                    )
-                }
-            }
-            else -> {
-                // Backdrop image as the main background
-                val backdropUrl = selectedItem?.getBackdropUrl()
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.TopStart,
-                ) {
-                    // Minimal test: only backdrop and gradient overlay
-                    AsyncImage(
-                        model = backdropUrl,
-                        contentDescription = null,
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .graphicsLayer {
-                                    scaleX = 1.1f
-                                    scaleY = 1.1f
-                                }
-                                .blur(radius = StrmrConstants.Blur.RADIUS_STANDARD),
-                        contentScale = ContentScale.Crop,
-                        alpha = 1f,
-                    )
+                else -> {
+                    // Backdrop image as the main background
+                    val backdropUrl = selectedItem?.getBackdropUrl()
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.TopStart,
+                    ) {
+                        // Minimal test: only backdrop and gradient overlay
+                        AsyncImage(
+                            model = backdropUrl,
+                            contentDescription = null,
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .graphicsLayer {
+                                        scaleX = 1.1f
+                                        scaleY = 1.1f
+                                    }
+                                    .blur(radius = StrmrConstants.Blur.RADIUS_STANDARD),
+                            contentScale = ContentScale.Crop,
+                            alpha = 1f,
+                        )
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        Brush.horizontalGradient(
+                                            colors =
+                                                listOf(
+                                                    Color.Black.copy(alpha = 0.7f),
+                                                    Color.Black.copy(alpha = 0.3f),
+                                                ),
+                                            startX = 0f, // Should start at very left edge
+                                            endX = 2200f,
+                                        ),
+                                    ),
+                        )
+                    }
+
+                    // Wide, soft horizontal gradient overlay from left edge (behind nav bar) to main area (HOME style)
                     Box(
                         modifier =
                             Modifier
@@ -157,137 +176,118 @@ fun <T> MediaPage(
                                     Brush.horizontalGradient(
                                         colors =
                                             listOf(
+                                                Color.Black,
                                                 Color.Black.copy(alpha = 0.7f),
                                                 Color.Black.copy(alpha = 0.3f),
+                                                Color.Transparent,
                                             ),
-                                        startX = 0f, // Should start at very left edge
-                                        endX = 2200f,
+                                        startX = -navBarWidthPx, // Start at very left edge, behind nav bar
+                                        endX = 1200f,
                                     ),
                                 ),
                     )
-                }
-
-                // Wide, soft horizontal gradient overlay from left edge (behind nav bar) to main area (HOME style)
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.horizontalGradient(
-                                    colors =
-                                        listOf(
-                                            Color.Black,
-                                            Color.Black.copy(alpha = 0.7f),
-                                            Color.Black.copy(alpha = 0.3f),
-                                            Color.Transparent,
-                                        ),
-                                    startX = -navBarWidthPx, // Start at very left edge, behind nav bar
-                                    endX = 1200f,
-                                ),
-                            ),
-                )
-                // (Optional) Scrim overlay if needed for readability
-                // Box(
-                //     modifier = Modifier
-                //         .fillMaxSize()
-                //         .background(Color.Black.copy(alpha = 0.5f))
-                // )
-                // Simplified layout with hero and LazyColumn
-                Column(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .padding(start = navBarWidth),
-                ) {
-                    // Hero section (fixed at top)
-                    Box(
+                    // (Optional) Scrim overlay if needed for readability
+                    // Box(
+                    //     modifier = Modifier
+                    //         .fillMaxSize()
+                    //         .background(Color.Black.copy(alpha = 0.5f))
+                    // )
+                    // Simplified layout with hero and LazyColumn
+                    Column(
                         modifier =
                             Modifier
-                                .fillMaxWidth()
-                                .height(300.dp),
+                                .fillMaxSize()
+                                .padding(start = navBarWidth),
                     ) {
-                        val selectedImdbId =
-                            when (selectedItem) {
-                                is com.strmr.ai.data.database.MovieEntity -> selectedItem.imdbId
-                                is com.strmr.ai.data.database.TvShowEntity -> selectedItem.imdbId
-                                is com.strmr.ai.viewmodel.HomeMediaItem.Movie -> selectedItem.movie.imdbId
-                                is com.strmr.ai.viewmodel.HomeMediaItem.TvShow -> selectedItem.show.imdbId
-                                else -> null
-                            }
-                        var omdbRatings by remember(selectedImdbId) { mutableStateOf<OmdbResponse?>(null) }
-                        LaunchedEffect(selectedImdbId) {
-                            if (!selectedImdbId.isNullOrBlank()) {
-                                try {
-                                    omdbRatings =
-                                        withContext(Dispatchers.IO) {
-                                            getOmdbRatings(selectedImdbId)
-                                        }
-                                } catch (_: Exception) {
+                        // Hero section (fixed at top)
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(300.dp),
+                        ) {
+                            val selectedImdbId =
+                                when (selectedItem) {
+                                    is com.strmr.ai.data.database.MovieEntity -> selectedItem.imdbId
+                                    is com.strmr.ai.data.database.TvShowEntity -> selectedItem.imdbId
+                                    is com.strmr.ai.viewmodel.HomeMediaItem.Movie -> selectedItem.movie.imdbId
+                                    is com.strmr.ai.viewmodel.HomeMediaItem.TvShow -> selectedItem.show.imdbId
+                                    else -> null
+                                }
+                            var omdbRatings by remember(selectedImdbId) { mutableStateOf<OmdbResponse?>(null) }
+                            LaunchedEffect(selectedImdbId) {
+                                if (!selectedImdbId.isNullOrBlank()) {
+                                    try {
+                                        omdbRatings =
+                                            withContext(Dispatchers.IO) {
+                                                getOmdbRatings(selectedImdbId)
+                                            }
+                                    } catch (_: Exception) {
+                                        omdbRatings = null
+                                    }
+                                } else {
                                     omdbRatings = null
                                 }
-                            } else {
-                                omdbRatings = null
                             }
+                            MediaHero(
+                                mediaDetails = {
+                                    selectedItem?.let { item ->
+                                        val details = item.getMediaDetails()
+                                        MediaDetails(
+                                            title = details.title,
+                                            logoUrl = details.logoUrl,
+                                            year = details.year,
+                                            formattedDate = details.releaseDate,
+                                            runtime = details.runtime,
+                                            genres = details.genres,
+                                            rating = details.rating,
+                                            overview = details.overview,
+                                            cast = details.cast,
+                                            omdbRatings = omdbRatings,
+                                        )
+                                    }
+                                },
+                            )
                         }
-                        MediaHero(
-                            mediaDetails = {
-                                selectedItem?.let { item ->
-                                    val details = item.getMediaDetails()
-                                    MediaDetails(
-                                        title = details.title,
-                                        logoUrl = details.logoUrl,
-                                        year = details.year,
-                                        formattedDate = details.releaseDate,
-                                        runtime = details.runtime,
-                                        genres = details.genres,
-                                        rating = details.rating,
-                                        overview = details.overview,
-                                        cast = details.cast,
-                                        omdbRatings = omdbRatings,
-                                    )
-                                }
-                            },
-                        )
-                    }
 
-                    // Rows section with LazyColumn
-                    LazyColumn(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentPadding = PaddingValues(vertical = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        rowTitles.forEachIndexed { rowIndex, rowTitle ->
-                            val rowItems = rows.getOrNull(rowIndex) as? List<T> ?: emptyList()
-                            if (rowItems.isNotEmpty()) {
-                                item(key = rowTitle) {
-                                    UnifiedMediaRow(
-                                        config =
-                                            MediaRowConfig(
-                                                title = rowTitle,
-                                                dataSource = DataSource.RegularList(rowItems),
-                                                cardType = CardType.PORTRAIT,
-                                                itemWidth = 120.dp,
-                                                itemSpacing = 12.dp,
-                                                contentPadding = PaddingValues(horizontal = 48.dp),
-                                                onItemClick = onItemClick,
-                                                itemContent = { item, isSelected ->
-                                                    MediaCard(
-                                                        title = item.getTitle(),
-                                                        posterUrl = item.getPosterUrl(),
-                                                        isSelected = isSelected,
-                                                        onClick = { onItemClick?.invoke(item) },
-                                                    )
-                                                },
-                                            ),
-                                        rowIndex = rowIndex,
-                                    )
+                        // Rows section with LazyColumn
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentPadding = PaddingValues(vertical = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                        ) {
+                            rowTitles.forEachIndexed { rowIndex, rowTitle ->
+                                val rowItems = rows.getOrNull(rowIndex) as? List<T> ?: emptyList()
+                                if (rowItems.isNotEmpty()) {
+                                    item(key = rowTitle) {
+                                        UnifiedMediaRow(
+                                            config =
+                                                MediaRowConfig(
+                                                    title = rowTitle,
+                                                    dataSource = DataSource.RegularList(rowItems),
+                                                    cardType = CardType.PORTRAIT,
+                                                    itemWidth = 120.dp,
+                                                    itemSpacing = 12.dp,
+                                                    contentPadding = PaddingValues(horizontal = 48.dp),
+                                                    onItemClick = onItemClick,
+                                                    itemContent = { item, isSelected ->
+                                                        MediaCard(
+                                                            title = item.getTitle(),
+                                                            posterUrl = item.getPosterUrl(),
+                                                            isSelected = isSelected,
+                                                            onClick = { onItemClick?.invoke(item) },
+                                                        )
+                                                    },
+                                                ),
+                                            rowIndex = rowIndex,
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-        }
         }
     }
 }

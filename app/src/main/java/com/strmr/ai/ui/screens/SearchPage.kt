@@ -46,10 +46,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.strmr.ai.ui.utils.WithFocusProviders
-import com.strmr.ai.ui.utils.LocalCurrentRouteProvider
-import com.strmr.ai.ui.utils.LocalFocusTransferredOnLaunchProvider
-import com.strmr.ai.ui.utils.LocalLastFocusedItemPerDestinationProvider
 import com.strmr.ai.R
 import com.strmr.ai.data.SearchResultItem
 import com.strmr.ai.ui.components.CardType
@@ -60,6 +56,7 @@ import com.strmr.ai.ui.components.MediaRowSkeleton
 import com.strmr.ai.ui.components.SkeletonCardType
 import com.strmr.ai.ui.components.UnifiedMediaRow
 import com.strmr.ai.ui.theme.StrmrConstants
+import com.strmr.ai.ui.utils.WithFocusProviders
 import com.strmr.ai.viewmodel.SearchViewModel
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -111,190 +108,190 @@ fun SearchPage(
                 modifier
                     .fillMaxSize(),
         ) {
-        // Wallpaper background (fills entire screen)
-        Image(
-            painter = painterResource(id = R.drawable.wallpaper),
-            contentDescription = null,
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .blur(radius = StrmrConstants.Blur.RADIUS_STANDARD),
-            contentScale = ContentScale.Crop,
-        )
-
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(start = navBarWidth),
-        ) {
-            // Search bar section (fixed at top)
-            SearchBar(
-                query = searchQuery,
-                onQueryChange = viewModel::updateSearchQuery,
-                onClear = viewModel::clearSearch,
-                onVoiceSearch = {
-                    try {
-                        val intent =
-                            Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                                putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-                                putExtra(RecognizerIntent.EXTRA_PROMPT, "Search for movies, TV shows, or people")
-                            }
-                        voiceSearchLauncher.launch(intent)
-                    } catch (e: ActivityNotFoundException) {
-                        Log.e("SearchPage", "Voice recognition not available", e)
-                    }
-                },
-                hasSearchResults = searchResults != null,
-                searchBarFocusRequester = searchBarFocusRequester,
-                onDownPressed = {
-                    // Only transfer focus to results when user explicitly presses DOWN
-                    if (searchResults != null) {
-                        Log.d("SearchPage", "🎯 User pressed DOWN - transferring focus to results")
-                        localContentFocused = true
-                        onContentFocusChanged?.invoke(true)
-                    }
-                },
-                onFocusReceived = {
-                    // Keep focus on search bar, don't auto-transfer to results
-                    Log.d("SearchPage", "🎯 Search bar focused - maintaining search bar focus")
-                    localContentFocused = false
-                    onContentFocusChanged?.invoke(false)
-                },
-                modifier = Modifier.padding(16.dp),
-            )
-
-            // Single LazyColumn for all content
-            LazyColumn(
+            // Wallpaper background (fills entire screen)
+            Image(
+                painter = painterResource(id = R.drawable.wallpaper),
+                contentDescription = null,
                 modifier =
                     Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                contentPadding = PaddingValues(horizontal = 0.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                        .fillMaxSize()
+                        .blur(radius = StrmrConstants.Blur.RADIUS_STANDARD),
+                contentScale = ContentScale.Crop,
+            )
+
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(start = navBarWidth),
             ) {
-                // Error message
-                errorMessage?.let { error ->
-                    item {
-                        Card(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.Red.copy(alpha = 0.1f)),
-                        ) {
-                            Text(
-                                text = error,
-                                color = Color.Red,
-                                modifier = Modifier.padding(16.dp),
-                            )
+                // Search bar section (fixed at top)
+                SearchBar(
+                    query = searchQuery,
+                    onQueryChange = viewModel::updateSearchQuery,
+                    onClear = viewModel::clearSearch,
+                    onVoiceSearch = {
+                        try {
+                            val intent =
+                                Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+                                    putExtra(RecognizerIntent.EXTRA_PROMPT, "Search for movies, TV shows, or people")
+                                }
+                            voiceSearchLauncher.launch(intent)
+                        } catch (e: ActivityNotFoundException) {
+                            Log.e("SearchPage", "Voice recognition not available", e)
                         }
-                    }
-                }
+                    },
+                    hasSearchResults = searchResults != null,
+                    searchBarFocusRequester = searchBarFocusRequester,
+                    onDownPressed = {
+                        // Only transfer focus to results when user explicitly presses DOWN
+                        if (searchResults != null) {
+                            Log.d("SearchPage", "🎯 User pressed DOWN - transferring focus to results")
+                            localContentFocused = true
+                            onContentFocusChanged?.invoke(true)
+                        }
+                    },
+                    onFocusReceived = {
+                        // Keep focus on search bar, don't auto-transfer to results
+                        Log.d("SearchPage", "🎯 Search bar focused - maintaining search bar focus")
+                        localContentFocused = false
+                        onContentFocusChanged?.invoke(false)
+                    },
+                    modifier = Modifier.padding(16.dp),
+                )
 
-                // Search results
-                when {
-                    isLoading -> {
+                // Single LazyColumn for all content
+                LazyColumn(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                    contentPadding = PaddingValues(horizontal = 0.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    // Error message
+                    errorMessage?.let { error ->
                         item {
-                            SearchResultsLoading(
-                                modifier = Modifier.fillMaxWidth(),
-                            )
+                            Card(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.Red.copy(alpha = 0.1f)),
+                            ) {
+                                Text(
+                                    text = error,
+                                    color = Color.Red,
+                                    modifier = Modifier.padding(16.dp),
+                                )
+                            }
                         }
                     }
-                    searchResults != null -> {
-                        searchResults?.let { results ->
-                            Log.d(
-                                "SearchPage",
-                                "📊 Search results received: movies=${results.movies.size}, shows=${results.tvShows.size}, people=${results.people.size}",
-                            )
 
-                            // Add sections directly as LazyColumn items
-                            val sections =
-                                buildList {
-                                    if (results.movies.isNotEmpty()) {
-                                        add("Movies" to results.movies)
+                    // Search results
+                    when {
+                        isLoading -> {
+                            item {
+                                SearchResultsLoading(
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+                        }
+                        searchResults != null -> {
+                            searchResults?.let { results ->
+                                Log.d(
+                                    "SearchPage",
+                                    "📊 Search results received: movies=${results.movies.size}, shows=${results.tvShows.size}, people=${results.people.size}",
+                                )
+
+                                // Add sections directly as LazyColumn items
+                                val sections =
+                                    buildList {
+                                        if (results.movies.isNotEmpty()) {
+                                            add("Movies" to results.movies)
+                                        }
+                                        if (results.tvShows.isNotEmpty()) {
+                                            add("TV Shows" to results.tvShows)
+                                        }
+                                        if (results.people.isNotEmpty()) {
+                                            add("People" to results.people)
+                                        }
                                     }
-                                    if (results.tvShows.isNotEmpty()) {
-                                        add("TV Shows" to results.tvShows)
-                                    }
-                                    if (results.people.isNotEmpty()) {
-                                        add("People" to results.people)
+
+                                sections.forEachIndexed { rowIndex, (title, items) ->
+                                    item(key = title) {
+                                        UnifiedMediaRow(
+                                            config =
+                                                MediaRowConfig(
+                                                    title = title,
+                                                    dataSource = DataSource.RegularList(items),
+                                                    cardType = CardType.PORTRAIT,
+                                                    itemWidth = 120.dp,
+                                                    itemSpacing = 12.dp,
+                                                    contentPadding = PaddingValues(horizontal = 48.dp),
+                                                    onItemClick = { item ->
+                                                        when (item) {
+                                                            is SearchResultItem.Movie -> {
+                                                                onNavigateToDetails?.invoke("movie", item.tmdbId ?: item.id)
+                                                            }
+                                                            is SearchResultItem.TvShow -> {
+                                                                onNavigateToDetails?.invoke("tvshow", item.tmdbId ?: item.id)
+                                                            }
+                                                            is SearchResultItem.Person -> {
+                                                                Log.d("SearchPage", "Person clicked: ${item.name}")
+                                                            }
+                                                        }
+                                                    },
+                                                    itemContent = { item, isSelected ->
+                                                        SearchResultCard(
+                                                            item = item,
+                                                            isSelected = isSelected,
+                                                            onClick = {
+                                                                when (item) {
+                                                                    is SearchResultItem.Movie -> {
+                                                                        onNavigateToDetails?.invoke("movie", item.tmdbId ?: item.id)
+                                                                    }
+                                                                    is SearchResultItem.TvShow -> {
+                                                                        onNavigateToDetails?.invoke("tvshow", item.tmdbId ?: item.id)
+                                                                    }
+                                                                    is SearchResultItem.Person -> {
+                                                                        Log.d("SearchPage", "Person clicked: ${item.name}")
+                                                                    }
+                                                                }
+                                                            },
+                                                        )
+                                                    },
+                                                ),
+                                            rowIndex = rowIndex,
+                                        )
                                     }
                                 }
-
-                            sections.forEachIndexed { rowIndex, (title, items) ->
-                                item(key = title) {
-                                    UnifiedMediaRow(
-                                        config =
-                                            MediaRowConfig(
-                                                title = title,
-                                                dataSource = DataSource.RegularList(items),
-                                                cardType = CardType.PORTRAIT,
-                                                itemWidth = 120.dp,
-                                                itemSpacing = 12.dp,
-                                                contentPadding = PaddingValues(horizontal = 48.dp),
-                                                onItemClick = { item ->
-                                                    when (item) {
-                                                        is SearchResultItem.Movie -> {
-                                                            onNavigateToDetails?.invoke("movie", item.tmdbId ?: item.id)
-                                                        }
-                                                        is SearchResultItem.TvShow -> {
-                                                            onNavigateToDetails?.invoke("tvshow", item.tmdbId ?: item.id)
-                                                        }
-                                                        is SearchResultItem.Person -> {
-                                                            Log.d("SearchPage", "Person clicked: ${item.name}")
-                                                        }
-                                                    }
-                                                },
-                                                itemContent = { item, isSelected ->
-                                                    SearchResultCard(
-                                                        item = item,
-                                                        isSelected = isSelected,
-                                                        onClick = {
-                                                            when (item) {
-                                                                is SearchResultItem.Movie -> {
-                                                                    onNavigateToDetails?.invoke("movie", item.tmdbId ?: item.id)
-                                                                }
-                                                                is SearchResultItem.TvShow -> {
-                                                                    onNavigateToDetails?.invoke("tvshow", item.tmdbId ?: item.id)
-                                                                }
-                                                                is SearchResultItem.Person -> {
-                                                                    Log.d("SearchPage", "Person clicked: ${item.name}")
-                                                                }
-                                                            }
-                                                        },
-                                                    )
-                                                },
-                                            ),
-                                        rowIndex = rowIndex,
+                            }
+                        }
+                        searchQuery.length >= 2 -> {
+                            // Show empty state
+                            item {
+                                Box(
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .padding(32.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = "No results found for \"$searchQuery\"",
+                                        color = Color.White.copy(alpha = 0.7f),
+                                        fontSize = 18.sp,
+                                        textAlign = TextAlign.Center,
                                     )
                                 }
                             }
                         }
                     }
-                    searchQuery.length >= 2 -> {
-                        // Show empty state
-                        item {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .padding(32.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text(
-                                    text = "No results found for \"$searchQuery\"",
-                                    color = Color.White.copy(alpha = 0.7f),
-                                    fontSize = 18.sp,
-                                    textAlign = TextAlign.Center,
-                                )
-                            }
-                        }
-                    }
                 }
             }
-        }
         }
     }
 }

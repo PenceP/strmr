@@ -2,6 +2,7 @@ package com.strmr.ai.data.api
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.strmr.ai.data.TraktApiService
+import com.strmr.ai.ui.theme.StrmrConstants
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -14,7 +15,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import com.strmr.ai.ui.theme.StrmrConstants
 
 @RunWith(AndroidJUnit4::class)
 class TraktApiServiceIntegrationTest {

@@ -23,7 +23,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import com.strmr.ai.ui.utils.WithFocusProviders
 import com.strmr.ai.config.ConfigurationLoader
 import com.strmr.ai.config.PageConfiguration
 import com.strmr.ai.data.DataSourceConfig
@@ -39,6 +38,7 @@ import com.strmr.ai.ui.components.MediaRowConfig
 import com.strmr.ai.ui.components.PaginationStateInfo
 import com.strmr.ai.ui.components.UnifiedMediaRow
 import com.strmr.ai.ui.theme.StrmrConstants
+import com.strmr.ai.ui.utils.WithFocusProviders
 import com.strmr.ai.viewmodel.FlixclusiveGenericViewModel
 import com.strmr.ai.viewmodel.GenericTvShowsViewModel
 import kotlinx.coroutines.Dispatchers
@@ -193,37 +193,56 @@ fun TvShowsPage(
         Box(
             modifier = Modifier.fillMaxSize(),
         ) {
-        // Only render content after initialization is complete
-        if (!isInitialized) {
-            // Show loading state while initializing
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = androidx.compose.ui.Alignment.Center,
-            ) {
-                androidx.compose.material3.CircularProgressIndicator(
-                    color = androidx.compose.ui.graphics.Color.White,
+            // Only render content after initialization is complete
+            if (!isInitialized) {
+                // Show loading state while initializing
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = androidx.compose.ui.Alignment.Center,
+                ) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        color = androidx.compose.ui.graphics.Color.White,
+                    )
+                }
+                return@Box
+            }
+            // Backdrop image as the main background
+            if (shouldShowHero && !backdropUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = backdropUrl,
+                    contentDescription = null,
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                scaleX = 1.1f
+                                scaleY = 1.1f
+                            }
+                            .blur(radius = StrmrConstants.Blur.RADIUS_STANDARD),
+                    contentScale = ContentScale.Crop,
+                    alpha = 1f,
+                )
+
+                // Gradient overlay for readability
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.horizontalGradient(
+                                    colors =
+                                        listOf(
+                                            Color.Black.copy(alpha = 0.7f),
+                                            Color.Black.copy(alpha = 0.3f),
+                                        ),
+                                    startX = 0f,
+                                    endX = 2200f,
+                                ),
+                            ),
                 )
             }
-            return@Box
-        }
-        // Backdrop image as the main background
-        if (shouldShowHero && !backdropUrl.isNullOrBlank()) {
-            AsyncImage(
-                model = backdropUrl,
-                contentDescription = null,
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .graphicsLayer {
-                            scaleX = 1.1f
-                            scaleY = 1.1f
-                        }
-                        .blur(radius = StrmrConstants.Blur.RADIUS_STANDARD),
-                contentScale = ContentScale.Crop,
-                alpha = 1f,
-            )
 
-            // Gradient overlay for readability
+            // Wide, soft horizontal gradient overlay from left edge (behind nav bar) to main area
             Box(
                 modifier =
                     Modifier
@@ -232,184 +251,165 @@ fun TvShowsPage(
                             Brush.horizontalGradient(
                                 colors =
                                     listOf(
+                                        Color.Black,
                                         Color.Black.copy(alpha = 0.7f),
                                         Color.Black.copy(alpha = 0.3f),
+                                        Color.Transparent,
                                     ),
-                                startX = 0f,
-                                endX = 2200f,
+                                startX = -navBarWidthPx,
+                                endX = 1200f,
                             ),
                         ),
             )
-        }
 
-        // Wide, soft horizontal gradient overlay from left edge (behind nav bar) to main area
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.horizontalGradient(
-                            colors =
-                                listOf(
-                                    Color.Black,
-                                    Color.Black.copy(alpha = 0.7f),
-                                    Color.Black.copy(alpha = 0.3f),
-                                    Color.Transparent,
-                                ),
-                            startX = -navBarWidthPx,
-                            endX = 1200f,
-                        ),
-                    ),
-        )
+            // ✅ NEW: Main content with vertical column for all rows
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(start = 1.dp),
+            ) {
+                // Hero section (based on configuration)
+                if (shouldShowHero && selectedItem != null) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .weight(0.49f)
+                                .padding(start = navBarWidth - 2.dp),
+                    ) {
+                        MediaHero(
+                            mediaDetails = {
+                                MediaDetails(
+                                    title = selectedItem.title,
+                                    logoUrl = logoUrls[selectedItem.tmdbId] ?: selectedItem.logoUrl,
+                                    year = selectedItem.year,
+                                    formattedDate = selectedItem.firstAirDate,
+                                    runtime = null, // TV shows don't have runtime
+                                    genres = selectedItem.genres,
+                                    rating = selectedItem.rating,
+                                    overview = selectedItem.overview,
+                                    cast = selectedItem.cast.map { it.name ?: "" },
+                                    omdbRatings = omdbRatings,
+                                    onFetchLogo = {
+                                        viewModel.fetchAndUpdateLogo(selectedItem)
+                                    },
+                                )
+                            },
+                        )
+                    }
+                }
 
-        // ✅ NEW: Main content with vertical column for all rows
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(start = 1.dp),
-        ) {
-            // Hero section (based on configuration)
-            if (shouldShowHero && selectedItem != null) {
+                // ✅ NEW: All rows section with vertical scrolling
                 Box(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .weight(0.49f)
-                            .padding(start = navBarWidth - 2.dp),
+                            .weight(if (shouldShowHero) 0.51f else 1f),
                 ) {
-                    MediaHero(
-                        mediaDetails = {
-                            MediaDetails(
-                                title = selectedItem.title,
-                                logoUrl = logoUrls[selectedItem.tmdbId] ?: selectedItem.logoUrl,
-                                year = selectedItem.year,
-                                formattedDate = selectedItem.firstAirDate,
-                                runtime = null, // TV shows don't have runtime
-                                genres = selectedItem.genres,
-                                rating = selectedItem.rating,
-                                overview = selectedItem.overview,
-                                cast = selectedItem.cast.map { it.name ?: "" },
-                                omdbRatings = omdbRatings,
-                                onFetchLogo = {
-                                    viewModel.fetchAndUpdateLogo(selectedItem)
-                                },
+                    val columnState = rememberLazyListState()
+
+                    LazyColumn(
+                        state = columnState,
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        contentPadding = PaddingValues(vertical = 16.dp),
+                        flingBehavior = com.strmr.ai.ui.components.rememberThrottledFlingBehavior(),
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
+                        items(
+                            count = rowData.size,
+                            key = { index -> rowData[index].title },
+                        ) { rowIndex ->
+                            val row = rowData[rowIndex]
+                            val isRowSelected = selectedRowIndex == rowIndex
+
+                            UnifiedMediaRow(
+                                config =
+                                    MediaRowConfig(
+                                        title = row.title,
+                                        dataSource =
+                                            DataSource.RegularList(
+                                                items = row.tvShows,
+                                                paginationState = row.paginationState,
+                                            ),
+                                        onItemClick = { tvShow ->
+                                            if (tvShow is TvShowEntity) {
+                                                onNavigateToDetails?.invoke(tvShow.tmdbId)
+                                            }
+                                        },
+                                        onPaginate = { page ->
+                                            Log.d("TvShowsPage", "🚀 Pagination triggered for ${row.title} page $page")
+                                            val config = dataSourceConfigs.find { it.title == row.title }
+                                            if (config != null) {
+                                                when (config.id) {
+                                                    "trending", "popular" -> tvShowsViewModel.paginateTvShows(config, page)
+                                                    else -> tvShowsViewModel.loadTvShows(config)
+                                                }
+                                            }
+                                        },
+                                        cardType = CardType.PORTRAIT,
+                                        itemWidth = 120.dp,
+                                        itemSpacing = 12.dp,
+                                        itemContent = { tvShow, isFocused ->
+                                            MediaCard(
+                                                title = tvShow.title,
+                                                posterUrl = tvShow.posterUrl,
+                                                isSelected = isFocused,
+                                                onClick = {
+                                                    if (tvShow is TvShowEntity) {
+                                                        onNavigateToDetails?.invoke(tvShow.tmdbId)
+                                                    }
+                                                },
+                                            )
+                                        },
+                                        // ✅ NEW: Handle row and item selection
+                                        onSelectionChanged = { itemIndex ->
+                                            selectedRowIndex = rowIndex
+                                            selectedItemIndex = itemIndex
+                                            Log.d("TvShowsPage", "🎯 Selection changed: row=$rowIndex, item=$itemIndex")
+                                        },
+                                    ),
+                                rowIndex = rowIndex,
+                                modifier = Modifier.fillMaxWidth(),
                             )
-                        },
+                        }
+                    }
+                }
+            }
+
+            // Navigation arrows for vertical row navigation
+            if (selectedRowIndex > 0) {
+                Box(
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = 16.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.KeyboardArrowUp,
+                        contentDescription = "Navigate up",
+                        tint = Color.White.copy(alpha = 0.7f),
+                        modifier = Modifier.size(32.dp),
                     )
                 }
             }
 
-            // ✅ NEW: All rows section with vertical scrolling
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .weight(if (shouldShowHero) 0.51f else 1f),
-            ) {
-                val columnState = rememberLazyListState()
-
-                LazyColumn(
-                    state = columnState,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(vertical = 16.dp),
-                    flingBehavior = com.strmr.ai.ui.components.rememberThrottledFlingBehavior(),
-                    modifier = Modifier.fillMaxSize(),
+            // Down arrow (shown when there are more rows below)
+            if (selectedRowIndex < rowData.size - 1) {
+                Box(
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 16.dp),
                 ) {
-                    items(
-                        count = rowData.size,
-                        key = { index -> rowData[index].title },
-                    ) { rowIndex ->
-                        val row = rowData[rowIndex]
-                        val isRowSelected = selectedRowIndex == rowIndex
-
-                        UnifiedMediaRow(
-                            config =
-                                MediaRowConfig(
-                                    title = row.title,
-                                    dataSource =
-                                        DataSource.RegularList(
-                                            items = row.tvShows,
-                                            paginationState = row.paginationState,
-                                        ),
-                                    onItemClick = { tvShow ->
-                                        if (tvShow is TvShowEntity) {
-                                            onNavigateToDetails?.invoke(tvShow.tmdbId)
-                                        }
-                                    },
-                                    onPaginate = { page ->
-                                        Log.d("TvShowsPage", "🚀 Pagination triggered for ${row.title} page $page")
-                                        val config = dataSourceConfigs.find { it.title == row.title }
-                                        if (config != null) {
-                                            when (config.id) {
-                                                "trending", "popular" -> tvShowsViewModel.paginateTvShows(config, page)
-                                                else -> tvShowsViewModel.loadTvShows(config)
-                                            }
-                                        }
-                                    },
-                                    cardType = CardType.PORTRAIT,
-                                    itemWidth = 120.dp,
-                                    itemSpacing = 12.dp,
-                                    itemContent = { tvShow, isFocused ->
-                                        MediaCard(
-                                            title = tvShow.title,
-                                            posterUrl = tvShow.posterUrl,
-                                            isSelected = isFocused,
-                                            onClick = {
-                                                if (tvShow is TvShowEntity) {
-                                                    onNavigateToDetails?.invoke(tvShow.tmdbId)
-                                                }
-                                            },
-                                        )
-                                    },
-                                    // ✅ NEW: Handle row and item selection
-                                    onSelectionChanged = { itemIndex ->
-                                        selectedRowIndex = rowIndex
-                                        selectedItemIndex = itemIndex
-                                        Log.d("TvShowsPage", "🎯 Selection changed: row=$rowIndex, item=$itemIndex")
-                                    },
-                                ),
-                            rowIndex = rowIndex,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Filled.KeyboardArrowDown,
+                        contentDescription = "Navigate down",
+                        tint = Color.White.copy(alpha = 0.7f),
+                        modifier = Modifier.size(32.dp),
+                    )
                 }
             }
-        }
-
-        // Navigation arrows for vertical row navigation
-        if (selectedRowIndex > 0) {
-            Box(
-                modifier =
-                    Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = 16.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.KeyboardArrowUp,
-                    contentDescription = "Navigate up",
-                    tint = Color.White.copy(alpha = 0.7f),
-                    modifier = Modifier.size(32.dp),
-                )
-            }
-        }
-
-        // Down arrow (shown when there are more rows below)
-        if (selectedRowIndex < rowData.size - 1) {
-            Box(
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 16.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.KeyboardArrowDown,
-                    contentDescription = "Navigate down",
-                    tint = Color.White.copy(alpha = 0.7f),
-                    modifier = Modifier.size(32.dp),
-                )
-            }
-        }
         }
     }
 }
