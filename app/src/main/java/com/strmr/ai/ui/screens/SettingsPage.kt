@@ -75,7 +75,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.focusTarget
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -1203,28 +1202,14 @@ fun ModernSettingsCard(
     isRightPanelFocused: Boolean = false,
     content: (@Composable () -> Unit)? = null,
 ) {
-    var isFocused by remember { mutableStateOf(false) }
-
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .onFocusChanged { focusState ->
-                isFocused = focusState.isFocused
-            }
-            .focusTarget(),
+        modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = if (isFocused || isRightPanelFocused)
-                StrmrConstants.Colors.PRIMARY_BLUE.copy(alpha = 0.3f)
-            else
-                StrmrConstants.Colors.SURFACE_DARK
+            containerColor = StrmrConstants.Colors.SURFACE_DARK
         ),
         shape = StrmrConstants.Shapes.CORNER_RADIUS_MEDIUM,
         elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isFocused || isRightPanelFocused) {
-                StrmrConstants.Dimensions.Elevation.STANDARD * 2
-            } else {
-                StrmrConstants.Dimensions.Elevation.STANDARD
-            }
+            defaultElevation = StrmrConstants.Dimensions.Elevation.STANDARD
         ),
     ) {
         Column(
@@ -1306,8 +1291,8 @@ fun SettingsToggleRow(
                 isFocused = focusState.isFocused
             }
             .background(
-                if (isFocused || isRightPanelFocused)
-                    StrmrConstants.Colors.PRIMARY_BLUE.copy(alpha = 0.2f)
+                if (isFocused)
+                    StrmrConstants.Colors.PRIMARY_BLUE.copy(alpha = 0.3f)
                 else
                     Color.Transparent,
                 StrmrConstants.Shapes.CORNER_RADIUS_STANDARD
@@ -1321,7 +1306,7 @@ fun SettingsToggleRow(
                 text = label,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
-                color = if (isFocused || isRightPanelFocused)
+                color = if (isFocused)
                     StrmrConstants.Colors.PRIMARY_BLUE
                 else
                     Color.White,
@@ -1376,8 +1361,8 @@ fun SettingsRadioGroup(
                         isFocused = focusState.isFocused
                     }
                     .background(
-                        if (isFocused || isRightPanelFocused)
-                            StrmrConstants.Colors.PRIMARY_BLUE.copy(alpha = 0.2f)
+                        if (isFocused)
+                            StrmrConstants.Colors.PRIMARY_BLUE.copy(alpha = 0.3f)
                         else
                             Color.Transparent,
                         StrmrConstants.Shapes.CORNER_RADIUS_STANDARD
@@ -1403,7 +1388,7 @@ fun SettingsRadioGroup(
                         text = option,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
-                        color = if (isFocused || isRightPanelFocused)
+                        color = if (isFocused)
                             StrmrConstants.Colors.PRIMARY_BLUE
                         else
                             StrmrConstants.Colors.TEXT_PRIMARY,
