@@ -1,4 +1,5 @@
 package com.strmr.ai.ui.screens
+// EXTRA MATERIAL3 IMPORTS
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,23 +17,45 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.Collections
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Switch
@@ -45,6 +68,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,12 +85,17 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.strmr.ai.ui.components.ModernErrorDialog
 import com.strmr.ai.ui.theme.StrmrConstants
 import com.strmr.ai.viewmodel.SettingsViewModel
 import com.strmr.ai.viewmodel.UpdateViewModel
+import kotlinx.coroutines.launch
 
 // Settings categories
 enum class SettingsCategory(val displayName: String, val icon: ImageVector) {
@@ -80,9 +109,6 @@ enum class SettingsCategory(val displayName: String, val icon: ImageVector) {
 
 @Composable
 fun SettingsPage(
-    onNavigateToTraktSettings: () -> Unit,
-    onNavigateToPremiumizeSettings: () -> Unit,
-    onNavigateToRealDebridSettings: () -> Unit,
     onLeftBoundary: () -> Unit,
     modifier: Modifier = Modifier,
     onContentFocusChanged: (Boolean) -> Unit = {},
@@ -200,9 +226,6 @@ fun SettingsPage(
                 onAutoPlayChanged = {},
                 nextEpisodeTime = "5", // Example state
                 onNextEpisodeTimeChanged = {},
-                onNavigateToTraktSettings = onNavigateToTraktSettings,
-                onNavigateToPremiumizeSettings = onNavigateToPremiumizeSettings,
-                onNavigateToRealDebridSettings = onNavigateToRealDebridSettings
             )
         }
     }
@@ -396,9 +419,6 @@ fun RightSettingsPanel(
     onAutoPlayChanged: (Boolean) -> Unit,
     nextEpisodeTime: String,
     onNextEpisodeTimeChanged: (String) -> Unit,
-    onNavigateToTraktSettings: () -> Unit,
-    onNavigateToPremiumizeSettings: () -> Unit,
-    onNavigateToRealDebridSettings: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -426,16 +446,14 @@ fun RightSettingsPanel(
         when (selectedCategory) {
             SettingsCategory.TRAKT -> TraktSettingsContent(
                 traktAuthState, traktUserState, syncOnLaunch, onSyncOnLaunchChanged,
-                syncAfterPlayback, onSyncAfterPlaybackChanged, onNavigateToTraktSettings,
+                syncAfterPlayback, onSyncAfterPlaybackChanged,
                 isRightPanelFocused = focusLevel == 3
             )
             SettingsCategory.PREMIUMIZE -> PremiumizeSettingsContent(
-                onNavigateToPremiumizeSettings,
                 isRightPanelFocused = focusLevel == 3
             )
 
             SettingsCategory.REALDEBRID -> RealDebridSettingsContent(
-                onNavigateToRealDebridSettings,
                 isRightPanelFocused = focusLevel == 3
             )
 
@@ -464,52 +482,410 @@ fun TraktSettingsContent(
     onSyncOnLaunchChanged: (Boolean) -> Unit,
     syncAfterPlayback: Boolean,
     onSyncAfterPlaybackChanged: (Boolean) -> Unit,
-    onNavigateToTraktSettings: () -> Unit,
     isRightPanelFocused: Boolean,
 ) {
-    ModernSettingsCard(
-        title = "Trakt",
-        subtitle = if (traktAuthState.isAuthorized) {
-            "Connected as ${traktUserState.profile?.username ?: "User"}"
-        } else {
-            "Connect to sync your watch history and ratings"
-        },
-        icon = Icons.Default.AccountCircle,
-        isConnected = traktAuthState.isAuthorized,
-        onClick = onNavigateToTraktSettings,
-        isRightPanelFocused = isRightPanelFocused,
+    val viewModel: SettingsViewModel = hiltViewModel()
+    val traktSettingsState by viewModel.traktSettingsState.collectAsState()
+    
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(StrmrConstants.Dimensions.SPACING_LARGE)
     ) {
+        // Connection Status Card
+        ModernSettingsCard(
+            title = "Trakt Account",
+            subtitle = if (traktAuthState.isAuthorized) {
+                "Connected as ${traktUserState.profile?.username ?: "User"}"
+            } else {
+                "Not connected - Click to authorize"
+            },
+            icon = Icons.Default.AccountCircle,
+            isConnected = traktAuthState.isAuthorized,
+            onClick = if (!traktAuthState.isAuthorized) {
+                { viewModel.startTraktAuth() }
+            } else null,
+            isRightPanelFocused = isRightPanelFocused,
+            showArrow = !traktAuthState.isAuthorized,
+        ) {
+            if (traktAuthState.isAuthorized) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = StrmrConstants.Dimensions.SPACING_STANDARD),
+                ) {
+                    traktUserState.profile?.let { profile ->
+                        TraktInfoRow(
+                            label = "Username",
+                            value = profile.username,
+                            icon = Icons.Default.Person,
+                        )
+
+                        if (profile.name != null) {
+                            TraktInfoRow(
+                                label = "Display Name",
+                                value = profile.name,
+                                icon = Icons.Default.Badge,
+                            )
+                        }
+
+                        TraktInfoRow(
+                            label = "Account Type",
+                            value = if (profile.vip) "VIP Member" else "Free Account",
+                            icon = if (profile.vip) Icons.Default.Star else Icons.Default.Person,
+                            valueColor = if (profile.vip) StrmrConstants.Colors.PRIMARY_BLUE else StrmrConstants.Colors.TEXT_PRIMARY,
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
+
+                    Button(
+                        onClick = { viewModel.logout() },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = StrmrConstants.Colors.ERROR_RED,
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Logout,
+                            contentDescription = null,
+                            modifier = Modifier.size(StrmrConstants.Dimensions.Icons.SMALL),
+                        )
+                        Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_SMALL))
+                        Text(
+                            text = "Disconnect Account",
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+                }
+            }
+        }
+
+        // Sync Settings Card (only if authorized)
         if (traktAuthState.isAuthorized) {
+            ModernSettingsCard(
+                title = "Sync Settings",
+                subtitle = "Control when and how your data syncs with Trakt",
+                icon = Icons.Default.Sync,
+                showArrow = false,
+                isRightPanelFocused = isRightPanelFocused,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = StrmrConstants.Dimensions.SPACING_STANDARD),
+                ) {
+                    SettingsToggleRow(
+                        label = "Sync on app launch",
+                        subtitle = "Automatically sync when opening the app",
+                        checked = syncOnLaunch,
+                        onCheckedChange = onSyncOnLaunchChanged,
+                        isRightPanelFocused = isRightPanelFocused,
+                    )
+
+                    Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_MEDIUM))
+
+                    SettingsToggleRow(
+                        label = "Sync after playback",
+                        subtitle = "Update watch status after finishing content",
+                        checked = syncAfterPlayback,
+                        onCheckedChange = onSyncAfterPlaybackChanged,
+                        isRightPanelFocused = isRightPanelFocused,
+                    )
+
+                    if (traktSettingsState.lastSyncTimestamp > 0) {
+                        Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
+                        
+                        val dateFormat = java.text.SimpleDateFormat("MMMM dd, yyyy 'at' hh:mm a", java.util.Locale.getDefault())
+                        val lastSync = dateFormat.format(java.util.Date(traktSettingsState.lastSyncTimestamp))
+
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    StrmrConstants.Colors.CONTAINER_DARK,
+                                    StrmrConstants.Shapes.CORNER_RADIUS_STANDARD,
+                                )
+                                .padding(StrmrConstants.Dimensions.SPACING_STANDARD),
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Schedule,
+                                    contentDescription = null,
+                                    tint = StrmrConstants.Colors.TEXT_SECONDARY,
+                                    modifier = Modifier.size(StrmrConstants.Dimensions.Icons.SMALL),
+                                )
+                                Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_SMALL))
+                                Text(
+                                    text = "Last sync:",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = StrmrConstants.Colors.TEXT_SECONDARY,
+                                )
+                            }
+
+                            Text(
+                                text = lastSync,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = StrmrConstants.Colors.TEXT_PRIMARY,
+                                modifier = Modifier.padding(top = StrmrConstants.Dimensions.SPACING_TINY),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Statistics Card (only if authorized and stats available)
+        if (traktAuthState.isAuthorized && traktUserState.stats != null) {
+            ModernSettingsCard(
+                title = "Your Statistics",
+                subtitle = "Your viewing habits and activity on Trakt",
+                icon = Icons.Default.Analytics,
+                showArrow = false,
+                isRightPanelFocused = isRightPanelFocused,
+            ) {
+                traktUserState.stats?.let { stats ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = StrmrConstants.Dimensions.SPACING_STANDARD),
+                    ) {
+                        // Stats Grid
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    StrmrConstants.Colors.CONTAINER_DARK,
+                                    StrmrConstants.Shapes.CORNER_RADIUS_MEDIUM,
+                                )
+                                .padding(StrmrConstants.Dimensions.SPACING_LARGE),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                        ) {
+                            TraktStatItem(
+                                label = "Movies",
+                                value = "${stats.movies.watched}",
+                                icon = Icons.Default.Movie,
+                            )
+
+                            TraktStatItem(
+                                label = "Shows",
+                                value = "${stats.shows.watched}",
+                                icon = Icons.Default.Tv,
+                            )
+
+                            TraktStatItem(
+                                label = "Episodes",
+                                value = "${stats.episodes.watched}",
+                                icon = Icons.Default.PlayCircle,
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
+
+                        // Additional Stats
+                        TraktInfoRow(
+                            label = "Total Watch Time",
+                            value = "${(stats.movies.minutes + stats.episodes.minutes) / 60} hours",
+                            icon = Icons.Default.Schedule,
+                        )
+
+                        TraktInfoRow(
+                            label = "Ratings Given",
+                            value = "${stats.ratings.total}",
+                            icon = Icons.Default.Star,
+                        )
+
+                        if (stats.movies.collected > 0 || stats.shows.collected > 0) {
+                            TraktInfoRow(
+                                label = "Collection Items",
+                                value = "${stats.movies.collected + stats.shows.collected}",
+                                icon = Icons.Default.Collections,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Trakt Authorization Dialog
+    if (traktAuthState.isAuthorizing) {
+        ModernTraktAuthDialog(
+            userCode = traktAuthState.userCode,
+            timeLeft = traktAuthState.timeLeft,
+            onDismiss = { /* do nothing, let dialog stay open unless user cancels */ },
+            onCancel = { viewModel.cancelTraktAuth() },
+        )
+    }
+
+    // Error Dialog
+    (traktAuthState.error ?: traktUserState.error)?.let { error ->
+        ModernErrorDialog(
+            message = error,
+            onDismiss = { viewModel.clearError() },
+        )
+    }
+}
+
+@Composable
+fun PremiumizeSettingsContent(
+    isRightPanelFocused: Boolean,
+) {
+    val viewModel: com.strmr.ai.viewmodel.PremiumizeSettingsViewModel = hiltViewModel()
+    val coroutineScope = rememberCoroutineScope()
+
+    // State
+    var apiKey by remember { mutableStateOf(viewModel.getApiKey() ?: "") }
+    var isApiKeyVisible by remember { mutableStateOf(false) }
+    var isValidating by remember { mutableStateOf(false) }
+    var validationError by remember { mutableStateOf<String?>(null) }
+    var isConfigured by remember { mutableStateOf(viewModel.isConfigured()) }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(StrmrConstants.Dimensions.SPACING_LARGE)
+    ) {
+        // Status Card
+        ModernSettingsCard(
+            title = "Connection Status",
+            subtitle = if (isConfigured) "Configured and ready" else "Enter your API key to get started",
+            icon = if (isConfigured) Icons.Default.CheckCircle else Icons.Default.Cloud,
+            isConnected = isConfigured,
+            showArrow = false,
+            isRightPanelFocused = isRightPanelFocused,
+        )
+
+        // API Key Configuration Card
+        ModernSettingsCard(
+            title = "API Configuration",
+            subtitle = "Find your API key at premiumize.me/account",
+            icon = Icons.Default.Key,
+            showArrow = false,
+            isRightPanelFocused = isRightPanelFocused,
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = StrmrConstants.Dimensions.SPACING_STANDARD),
             ) {
-                SettingsToggleRow(
-                    label = "Sync on app launch",
-                    subtitle = "Automatically sync when opening the app",
-                    checked = syncOnLaunch,
-                    onCheckedChange = onSyncOnLaunchChanged,
-                    isRightPanelFocused = isRightPanelFocused,
+                // API Key Input
+                OutlinedTextField(
+                    value = apiKey,
+                    onValueChange = {
+                        apiKey = it
+                        validationError = null
+                    },
+                    label = { Text("API Key") },
+                    placeholder = { Text("Enter your Premiumize API key") },
+                    visualTransformation = if (isApiKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        IconButton(onClick = { isApiKeyVisible = !isApiKeyVisible }) {
+                            Icon(
+                                imageVector = if (isApiKeyVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                contentDescription = if (isApiKeyVisible) "Hide API key" else "Show API key",
+                                tint = StrmrConstants.Colors.TEXT_SECONDARY,
+                            )
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = StrmrConstants.Colors.PRIMARY_BLUE,
+                        unfocusedBorderColor = StrmrConstants.Colors.BORDER_DARK,
+                        focusedLabelColor = StrmrConstants.Colors.PRIMARY_BLUE,
+                        unfocusedLabelColor = StrmrConstants.Colors.TEXT_SECONDARY,
+                        focusedTextColor = StrmrConstants.Colors.TEXT_PRIMARY,
+                        unfocusedTextColor = StrmrConstants.Colors.TEXT_PRIMARY,
+                        cursorColor = StrmrConstants.Colors.PRIMARY_BLUE,
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
-                Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_MEDIUM))
-
-                SettingsToggleRow(
-                    label = "Sync after playback",
-                    subtitle = "Update watch status after finishing content",
-                    checked = syncAfterPlayback,
-                    onCheckedChange = onSyncAfterPlaybackChanged,
-                    isRightPanelFocused = isRightPanelFocused,
-                )
-
-                if (traktUserState.stats != null) {
-                    Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
-                    StatsDisplay(
-                        movies = traktUserState.stats?.movies?.watched ?: 0,
-                        shows = traktUserState.stats?.shows?.watched ?: 0,
-                        lastSync = "2 hours ago", // This would be actual timestamp
+                // Error message
+                validationError?.let { error ->
+                    Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_SMALL))
+                    Text(
+                        text = error,
+                        color = StrmrConstants.Colors.ERROR_RED,
+                        style = MaterialTheme.typography.bodySmall,
                     )
+                }
+
+                Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))
+
+                // Save Button
+                Button(
+                    onClick = {
+                        coroutineScope.launch {
+                            isValidating = true
+                            validationError = null
+
+                            if (apiKey.isBlank()) {
+                                validationError = "Please enter your API key"
+                                isValidating = false
+                                return@launch
+                            }
+
+                            val isValid = viewModel.validateAndSaveApiKey(apiKey)
+                            if (isValid) {
+                                isConfigured = true
+                                validationError = null
+                            } else {
+                                validationError = "Invalid API key. Please check and try again."
+                            }
+                            isValidating = false
+                        }
+                    },
+                    enabled = !isValidating && apiKey.isNotBlank(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = StrmrConstants.Colors.PRIMARY_BLUE,
+                        disabledContainerColor = StrmrConstants.Colors.BORDER_DARK,
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    if (isValidating) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(StrmrConstants.Dimensions.Icons.SMALL),
+                            color = StrmrConstants.Colors.TEXT_PRIMARY,
+                            strokeWidth = StrmrConstants.Dimensions.Components.BORDER_WIDTH * 2,
+                        )
+                        Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_SMALL))
+                        Text("Validating...")
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Save,
+                            contentDescription = null,
+                            modifier = Modifier.size(StrmrConstants.Dimensions.Icons.SMALL),
+                        )
+                        Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_SMALL))
+                        Text("Save API Key")
+                    }
+                }
+
+                // Clear Button (if configured)
+                if (isConfigured) {
+                    Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_SMALL))
+
+                    OutlinedButton(
+                        onClick = {
+                            viewModel.clearApiKey()
+                            apiKey = ""
+                            isConfigured = false
+                            validationError = null
+                        },
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = StrmrConstants.Colors.ERROR_RED,
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = null,
+                            modifier = Modifier.size(StrmrConstants.Dimensions.Icons.SMALL),
+                        )
+                        Spacer(modifier = Modifier.width(StrmrConstants.Dimensions.SPACING_SMALL))
+                        Text("Clear API Key")
+                    }
                 }
             }
         }
@@ -517,31 +893,36 @@ fun TraktSettingsContent(
 }
 
 @Composable
-fun PremiumizeSettingsContent(
-    onNavigateToPremiumizeSettings: () -> Unit,
-    isRightPanelFocused: Boolean,
-) {
-    ModernSettingsCard(
-        title = "Premiumize",
-        subtitle = "Connect to access your cloud storage",
-        icon = Icons.Default.Cloud,
-        onClick = onNavigateToPremiumizeSettings,
-        isRightPanelFocused = isRightPanelFocused,
-    )
-}
-
-@Composable
 fun RealDebridSettingsContent(
-    onNavigateToRealDebridSettings: () -> Unit,
     isRightPanelFocused: Boolean,
 ) {
     ModernSettingsCard(
-        title = "RealDebrid",
-        subtitle = "Connect to access your cloud storage",
+        title = "RealDebrid Integration",
+        subtitle = "RealDebrid integration coming soon!",
         icon = Icons.Default.Link,
-        onClick = onNavigateToRealDebridSettings,
+        showArrow = false,
         isRightPanelFocused = isRightPanelFocused,
-    )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = StrmrConstants.Dimensions.SPACING_STANDARD),
+        ) {
+            Text(
+                text = "🚧 Under Development",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                color = StrmrConstants.Colors.TEXT_PRIMARY,
+                modifier = Modifier.padding(bottom = StrmrConstants.Dimensions.SPACING_SMALL),
+            )
+            
+            Text(
+                text = "RealDebrid support is currently being developed and will be available in a future update.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = StrmrConstants.Colors.TEXT_SECONDARY,
+            )
+        }
+    }
 }
 
 @Composable
@@ -1103,3 +1484,6 @@ fun StatItem(
         )
     }
 }
+
+
+
