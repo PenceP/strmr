@@ -5,12 +5,14 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -19,7 +21,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.strmr.ai.ui.utils.WithFocusProviders
 import com.strmr.ai.R
 import com.strmr.ai.config.ConfigurationLoader
 import com.strmr.ai.config.PageConfiguration
@@ -40,12 +41,14 @@ import com.strmr.ai.ui.components.MediaRowSkeleton
 import com.strmr.ai.ui.components.SkeletonCardType
 import com.strmr.ai.ui.components.UnifiedMediaRow
 import com.strmr.ai.ui.theme.StrmrConstants
+import com.strmr.ai.ui.utils.WithFocusProviders
 import com.strmr.ai.utils.ComposeOptimizationUtils
 import com.strmr.ai.utils.DateFormatter
 import com.strmr.ai.utils.OptimizedLaunchedEffect
 import com.strmr.ai.viewmodel.HomeMediaItem
 import com.strmr.ai.viewmodel.HomeViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -354,306 +357,353 @@ fun HomePage(
         }
     }
 
+    // Focus management for when content is focused
+    val focusRequester = remember { FocusRequester() }
+    val lazyColumnState = rememberLazyListState()
+
+    // Request focus when isContentFocused changes to true
+    LaunchedEffect(isContentFocused) {
+        if (isContentFocused) {
+            Log.d("HomePage", "🎯 Content focused, requesting focus on first item")
+            // Small delay to ensure UI is ready
+            delay(100)
+            focusRequester.requestFocus()
+        }
+    }
+
+    // Simple focus tracking
+    LaunchedEffect(selectedRowIndex, selectedItemIndex, isContentFocused) {
+        if (isContentFocused) {
+            Log.d("HomePage", "🎯 Focus on row $selectedRowIndex, item $selectedItemIndex")
+        }
+    }
+
     // Wrap with focus providers (Flixclusive pattern)
     WithFocusProviders("home") {
         // Unified layout: wallpaper is always the base background
         Box(modifier = modifier.fillMaxSize()) {
-        // Wallpaper background (fills entire screen)
-        Image(
-            painter = painterResource(id = R.drawable.wallpaper),
-            contentDescription = null,
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .blur(radius = StrmrConstants.Blur.RADIUS_STANDARD),
-            contentScale = ContentScale.Crop,
-        )
-
-        // Check if current row should show hero based on configuration
-        val currentRowTitle = rowTitles.getOrNull(validRowIndex)
-        val shouldShowHero =
-            pageConfiguration?.let { config ->
-                currentRowTitle?.let { title ->
-                    val rowConfig = config.rows.find { it.title == title }
-                    rowConfig?.showHero == true
-                }
-            } ?: false
-        val backdropUrl = if (shouldShowHero) heroData.backdropUrl else null
-
-        // OMDb ratings state for hero
-        var omdbRatings by ComposeOptimizationUtils.rememberExpensiveCalculation(selectedItem) {
-            mutableStateOf<OmdbResponse?>(null)
-        }
-        LaunchedEffect(selectedItem) {
-            if (shouldShowHero) {
-                val imdbId =
-                    when (selectedItem) {
-                        is HomeMediaItem.Movie -> selectedItem.movie.imdbId
-                        is HomeMediaItem.TvShow -> selectedItem.show.imdbId
-                        else -> null
-                    }
-                if (!imdbId.isNullOrBlank()) {
-                    omdbRatings =
-                        withContext(Dispatchers.IO) {
-                            viewModel.fetchOmdbRatings(imdbId)
-                        }
-                } else {
-                    omdbRatings = null
-                }
-            } else {
-                omdbRatings = null
-            }
-        }
-        if (shouldShowHero && !backdropUrl.isNullOrBlank()) {
-            AsyncImage(
-                model = backdropUrl,
+            // Wallpaper background (fills entire screen)
+            Image(
+                painter = painterResource(id = R.drawable.wallpaper),
                 contentDescription = null,
                 modifier =
                     Modifier
                         .fillMaxSize()
                         .blur(radius = StrmrConstants.Blur.RADIUS_STANDARD),
                 contentScale = ContentScale.Crop,
-                alpha = 1f,
             )
-            // Dark overlay for readability
-            Box(
+
+            // Check if current row should show hero based on configuration
+            val currentRowTitle = rowTitles.getOrNull(validRowIndex)
+            val shouldShowHero =
+                pageConfiguration?.let { config ->
+                    currentRowTitle?.let { title ->
+                        val rowConfig = config.rows.find { it.title == title }
+                        rowConfig?.showHero == true
+                    }
+                } ?: false
+            // Only use backdrop if showHero is true for current row
+            val backdropUrl = if (shouldShowHero) heroData.backdropUrl else null
+
+            // OMDb ratings state for hero
+            var omdbRatings by ComposeOptimizationUtils.rememberExpensiveCalculation(selectedItem) {
+                mutableStateOf<OmdbResponse?>(null)
+            }
+            LaunchedEffect(selectedItem) {
+                if (shouldShowHero) {
+                    val imdbId =
+                        when (selectedItem) {
+                            is HomeMediaItem.Movie -> selectedItem.movie.imdbId
+                            is HomeMediaItem.TvShow -> selectedItem.show.imdbId
+                            else -> null
+                        }
+                    if (!imdbId.isNullOrBlank()) {
+                        omdbRatings =
+                            withContext(Dispatchers.IO) {
+                                viewModel.fetchOmdbRatings(imdbId)
+                            }
+                    } else {
+                        omdbRatings = null
+                    }
+                } else {
+                    omdbRatings = null
+                }
+            }
+            if (shouldShowHero && !backdropUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = backdropUrl,
+                    contentDescription = null,
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .blur(radius = StrmrConstants.Blur.RADIUS_STANDARD),
+                    contentScale = ContentScale.Crop,
+                    alpha = 1f,
+                )
+                // Dark overlay for readability
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.5f)),
+                )
+            }
+
+            // Main content with Column layout like MoviesPage
+            Column(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.5f)),
-            )
-        }
-
-        // Hero section (based on configuration)
-        if (shouldShowHero) {
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(start = navBarWidth, top = 0.dp, bottom = 16.dp)
-                        .align(Alignment.TopStart),
+                        .padding(start = 1.dp),
             ) {
-                MediaHero(
-                    mediaDetails = {
-                        MediaDetails(
-                            title = heroData.title,
-                            logoUrl = heroData.logoUrl,
-                            year = heroData.year,
-                            formattedDate = heroData.formattedDate,
-                            runtime = heroData.runtime,
-                            genres = heroData.genres,
-                            rating = heroData.rating,
-                            overview = heroData.overview,
-                            cast = heroData.cast,
-                            omdbRatings = omdbRatings, // <-- pass ratings
-                            extraContent = {
-                                if (selectedItem is HomeMediaItem.TvShow && selectedItem.season != null && selectedItem.episode != null) {
-                                    Text(
-                                        text = "S${selectedItem.season}: E${selectedItem.episode}",
-                                        color = Color.White.copy(alpha = 0.8f),
-                                        fontSize = 16.sp,
-                                    )
-                                }
+                // Hero section (based on configuration)
+                if (shouldShowHero) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .weight(0.49f)
+                                .padding(start = navBarWidth - 2.dp),
+                    ) {
+                        MediaHero(
+                            mediaDetails = {
+                                MediaDetails(
+                                    title = heroData.title,
+                                    logoUrl = heroData.logoUrl,
+                                    year = heroData.year,
+                                    formattedDate = heroData.formattedDate,
+                                    runtime = heroData.runtime,
+                                    genres = heroData.genres,
+                                    rating = heroData.rating,
+                                    overview = heroData.overview,
+                                    cast = heroData.cast,
+                                    omdbRatings = omdbRatings, // <-- pass ratings
+                                    extraContent = {
+                                        if (selectedItem is HomeMediaItem.TvShow && selectedItem.season != null && selectedItem.episode != null) {
+                                            Text(
+                                                text = "S${selectedItem.season}: E${selectedItem.episode}",
+                                                color = Color.White.copy(alpha = 0.8f),
+                                                fontSize = 16.sp,
+                                            )
+                                        }
+                                    },
+                                )
                             },
                         )
-                    },
-                )
-            }
-        }
+                    }
+                }
 
-        // Simplified layout using LazyColumn like MoviesPage/TvShowsPage
-        LazyColumn(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(start = navBarWidth),
-            contentPadding =
-                PaddingValues(
-                    top = if (shouldShowHero) 290.dp else 32.dp,
-                    bottom = 32.dp,
-                ),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            rowTitles.forEachIndexed { rowIndex, rowTitle ->
-                val rowItems = rows.getOrNull(rowIndex) ?: emptyList()
-                val rowConfig = rowConfigs[rowTitle] ?: pageConfiguration?.rows?.find { it.title == rowTitle }
+                // All rows section with fixed positioning (like MoviesPage)
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .weight(if (shouldShowHero) 0.51f else 1f),
+                ) {
+                    LazyColumn(
+                        state = lazyColumnState,
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        contentPadding = PaddingValues(vertical = 16.dp),
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
+                        items(
+                            count = rowTitles.size,
+                            key = { index -> rowTitles[index] }
+                        ) { rowIndex ->
+                            val rowTitle = rowTitles[rowIndex]
+                            val rowItems = rows.getOrNull(rowIndex) ?: emptyList()
+                            val rowConfig = rowConfigs[rowTitle] ?: pageConfiguration?.rows?.find { it.title == rowTitle }
 
-                // Check if this row should show loading state
-                val isLoading =
-                    rowConfig?.showLoading == true &&
-                        when (rowConfig?.type) {
-                            "continue_watching" -> isContinueWatchingLoading
-                            "networks" -> isNetworksLoading
-                            "nested_items" -> if (rowTitle == "Trakt Lists") isTraktListsLoading else false
-                            else -> false
-                        }
+                            // Check if this row should show loading state
+                            val isLoading =
+                                rowConfig?.showLoading == true &&
+                                    when (rowConfig?.type) {
+                                        "continue_watching" -> isContinueWatchingLoading
+                                        "networks" -> isNetworksLoading
+                                        "nested_items" -> if (rowTitle == "Trakt Lists") isTraktListsLoading else false
+                                        else -> false
+                                    }
 
-                item(key = rowTitle) {
-                    if (isLoading) {
-                        val skeletonCardType =
-                            when (rowConfig?.cardType) {
-                                "landscape" -> SkeletonCardType.LANDSCAPE
-                                "portrait" -> SkeletonCardType.PORTRAIT
-                                else -> SkeletonCardType.PORTRAIT
-                            }
-                        MediaRowSkeleton(
-                            title = rowTitle,
-                            cardCount = 6,
-                            cardType = skeletonCardType,
-                        )
-                    } else if (rowItems.isNotEmpty()) {
-                        UnifiedMediaRow(
-                            config =
-                                MediaRowConfig(
-                                    title = rowTitle,
-                                    dataSource = DataSource.RegularList(rowItems),
-                                    cardType = if (rowConfig?.cardType == "landscape") CardType.LANDSCAPE else CardType.PORTRAIT,
-                                    itemWidth = if (rowConfig?.cardType == "landscape") 200.dp else 120.dp,
-                                    itemSpacing = 12.dp,
-                                    onItemClick =
-                                        if (rowConfig?.displayOptions?.clickable == true) {
-                                            { item ->
-                                                when (item) {
-                                                    is HomeMediaItem.Movie ->
-                                                        onNavigateToDetails?.invoke(
-                                                            "movie",
-                                                            item.movie.tmdbId,
-                                                            null,
-                                                            null,
-                                                        )
-                                                    is HomeMediaItem.TvShow ->
-                                                        onNavigateToDetails?.invoke(
-                                                            "tvshow",
-                                                            item.show.tmdbId,
-                                                            item.season,
-                                                            item.episode,
-                                                        )
-                                                    is com.strmr.ai.data.NetworkInfo -> {
-                                                        val displayName = if (item.name.isBlank()) item.id else item.name
-                                                        val viewType = if (item.dataUrl?.contains("api.trakt.tv") == true) "trakt_list" else "network"
-                                                        onNavigateToIntermediateView?.invoke(
-                                                            viewType,
-                                                            item.id,
-                                                            displayName,
-                                                            item.posterUrl,
-                                                            item.dataUrl,
-                                                        )
-                                                    }
-                                                    is HomeMediaItem.Collection -> {
-                                                        val displayName = if (item.name.isBlank()) item.id else item.name
-                                                        val viewType =
-                                                            when (rowConfig?.type) {
-                                                                "collections" -> "collection"
-                                                                "directors" -> "director"
-                                                                else -> "collection"
-                                                            }
-                                                        onNavigateToIntermediateView?.invoke(
-                                                            viewType,
-                                                            item.id,
-                                                            displayName,
-                                                            item.backgroundImageUrl,
-                                                            item.dataUrl,
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        } else {
-                                            null
+                            if (isLoading) {
+                            val skeletonCardType =
+                                when (rowConfig?.cardType) {
+                                    "landscape" -> SkeletonCardType.LANDSCAPE
+                                    "portrait" -> SkeletonCardType.PORTRAIT
+                                    else -> SkeletonCardType.PORTRAIT
+                                }
+                            MediaRowSkeleton(
+                                title = rowTitle,
+                                cardCount = 6,
+                                cardType = skeletonCardType,
+                            )
+                        } else if (rowItems.isNotEmpty()) {
+                            UnifiedMediaRow(
+                                config =
+                                    MediaRowConfig(
+                                        title = rowTitle,
+                                        dataSource = DataSource.RegularList(rowItems),
+                                        cardType = if (rowConfig?.cardType == "landscape") CardType.LANDSCAPE else CardType.PORTRAIT,
+                                        itemWidth = if (rowConfig?.cardType == "landscape") 200.dp else 120.dp,
+                                        itemSpacing = 12.dp,
+                                        contentPadding =
+                                            if (rowIndex == 0) {
+                                                // First row gets different padding to prevent jumping
+                                                PaddingValues(horizontal = 56.dp, vertical = 0.dp)
+                                            } else {
+                                                PaddingValues(horizontal = 56.dp)
+                                            },
+                                        focusRequester = if (rowIndex == 0) focusRequester else null,
+                                        onSelectionChanged = { itemIndex ->
+                                            selectedRowIndex = rowIndex
+                                            selectedItemIndex = itemIndex
+                                            onContentFocusChanged?.invoke(true)
                                         },
-                                    itemContent = { mediaItem, isFocused ->
-                                        when (mediaItem) {
-                                            is HomeMediaItem.Movie -> {
-                                                if (rowConfig?.cardType == "landscape") {
-                                                    LandscapeMediaCard(
-                                                        title = mediaItem.movie.title,
-                                                        landscapeUrl = mediaItem.movie.backdropUrl,
-                                                        logoUrl = mediaItem.movie.logoUrl,
-                                                        progress = mediaItem.progress ?: 0f,
-                                                        isSelected = isFocused,
-                                                        onClick = { },
-                                                    )
-                                                } else {
-                                                    MediaCard(
-                                                        title = mediaItem.movie.title,
-                                                        posterUrl = mediaItem.movie.posterUrl,
-                                                        isSelected = isFocused,
-                                                        onClick = { },
-                                                    )
-                                                }
-                                            }
-                                            is HomeMediaItem.TvShow -> {
-                                                if (rowConfig?.cardType == "landscape") {
-                                                    LandscapeMediaCard(
-                                                        title = mediaItem.show.title,
-                                                        landscapeUrl = mediaItem.episodeImageUrl ?: mediaItem.show.backdropUrl,
-                                                        logoUrl = mediaItem.show.logoUrl,
-                                                        progress = mediaItem.progress ?: 0f,
-                                                        isSelected = isFocused,
-                                                        onClick = { },
-                                                        bottomRightLabel =
-                                                            if (mediaItem.season != null && mediaItem.episode != null) {
-                                                                if (mediaItem.isNextEpisode) {
-                                                                    "Next: S${mediaItem.season}: E${mediaItem.episode}"
-                                                                } else {
-                                                                    "S${mediaItem.season}: E${mediaItem.episode}"
+                                        onLeftBoundary = onLeftBoundary,
+                                        onItemClick =
+                                            if (rowConfig?.displayOptions?.clickable == true) {
+                                                { item ->
+                                                    when (item) {
+                                                        is HomeMediaItem.Movie ->
+                                                            onNavigateToDetails?.invoke(
+                                                                "movie",
+                                                                item.movie.tmdbId,
+                                                                null,
+                                                                null,
+                                                            )
+                                                        is HomeMediaItem.TvShow ->
+                                                            onNavigateToDetails?.invoke(
+                                                                "tvshow",
+                                                                item.show.tmdbId,
+                                                                item.season,
+                                                                item.episode,
+                                                            )
+                                                        is com.strmr.ai.data.NetworkInfo -> {
+                                                            val displayName = if (item.name.isBlank()) item.id else item.name
+                                                            val viewType = if (item.dataUrl?.contains("api.trakt.tv") == true) "trakt_list" else "network"
+                                                            onNavigateToIntermediateView?.invoke(
+                                                                viewType,
+                                                                item.id,
+                                                                displayName,
+                                                                item.posterUrl,
+                                                                item.dataUrl,
+                                                            )
+                                                        }
+                                                        is HomeMediaItem.Collection -> {
+                                                            val displayName = if (item.name.isBlank()) item.id else item.name
+                                                            val viewType =
+                                                                when (rowConfig?.type) {
+                                                                    "collections" -> "collection"
+                                                                    "directors" -> "director"
+                                                                    else -> "collection"
                                                                 }
-                                                            } else {
-                                                                null
-                                                            },
-                                                    )
-                                                } else {
-                                                    MediaCard(
-                                                        title = mediaItem.show.title,
-                                                        posterUrl = mediaItem.show.posterUrl,
-                                                        isSelected = isFocused,
-                                                        onClick = { },
-                                                    )
+                                                            onNavigateToIntermediateView?.invoke(
+                                                                viewType,
+                                                                item.id,
+                                                                displayName,
+                                                                item.backgroundImageUrl,
+                                                                item.dataUrl,
+                                                            )
+                                                        }
+                                                    }
                                                 }
-                                            }
-                                            is com.strmr.ai.data.NetworkInfo -> {
-                                                LandscapeMediaCard(
-                                                    title = mediaItem.name,
-                                                    landscapeUrl = mediaItem.posterUrl,
-                                                    logoUrl = null,
-                                                    isSelected = isFocused,
-                                                    onClick = { },
-                                                )
-                                            }
-                                            is HomeMediaItem.Collection -> {
-                                                if (rowConfig?.cardType == "landscape") {
+                                            } else {
+                                                null
+                                            },
+                                        itemContent = { mediaItem, isFocused ->
+                                            when (mediaItem) {
+                                                is HomeMediaItem.Movie -> {
+                                                    if (rowConfig?.cardType == "landscape") {
+                                                        LandscapeMediaCard(
+                                                            title = mediaItem.movie.title,
+                                                            landscapeUrl = mediaItem.movie.backdropUrl,
+                                                            logoUrl = mediaItem.movie.logoUrl,
+                                                            progress = mediaItem.progress ?: 0f,
+                                                            isSelected = isFocused,
+                                                            onClick = { },
+                                                        )
+                                                    } else {
+                                                        MediaCard(
+                                                            title = mediaItem.movie.title,
+                                                            posterUrl = mediaItem.movie.posterUrl,
+                                                            isSelected = isFocused,
+                                                            onClick = { },
+                                                        )
+                                                    }
+                                                }
+                                                is HomeMediaItem.TvShow -> {
+                                                    if (rowConfig?.cardType == "landscape") {
+                                                        LandscapeMediaCard(
+                                                            title = mediaItem.show.title,
+                                                            landscapeUrl = mediaItem.episodeImageUrl ?: mediaItem.show.backdropUrl,
+                                                            logoUrl = mediaItem.show.logoUrl,
+                                                            progress = mediaItem.progress ?: 0f,
+                                                            isSelected = isFocused,
+                                                            onClick = { },
+                                                            bottomRightLabel =
+                                                                if (mediaItem.season != null && mediaItem.episode != null) {
+                                                                    if (mediaItem.isNextEpisode) {
+                                                                        "Next: S${mediaItem.season}: E${mediaItem.episode}"
+                                                                    } else {
+                                                                        "S${mediaItem.season}: E${mediaItem.episode}"
+                                                                    }
+                                                                } else {
+                                                                    null
+                                                                },
+                                                        )
+                                                    } else {
+                                                        MediaCard(
+                                                            title = mediaItem.show.title,
+                                                            posterUrl = mediaItem.show.posterUrl,
+                                                            isSelected = isFocused,
+                                                            onClick = { },
+                                                        )
+                                                    }
+                                                }
+                                                is com.strmr.ai.data.NetworkInfo -> {
                                                     LandscapeMediaCard(
-                                                        title = if (mediaItem.nameDisplayMode != "Hidden") mediaItem.name else "",
-                                                        landscapeUrl = mediaItem.backgroundImageUrl,
+                                                        title = mediaItem.name,
+                                                        landscapeUrl = mediaItem.posterUrl,
                                                         logoUrl = null,
                                                         isSelected = isFocused,
                                                         onClick = { },
                                                     )
-                                                } else {
+                                                }
+                                                is HomeMediaItem.Collection -> {
+                                                    if (rowConfig?.cardType == "landscape") {
+                                                        LandscapeMediaCard(
+                                                            title = if (mediaItem.nameDisplayMode != "Hidden") mediaItem.name else "",
+                                                            landscapeUrl = mediaItem.backgroundImageUrl,
+                                                            logoUrl = null,
+                                                            isSelected = isFocused,
+                                                            onClick = { },
+                                                        )
+                                                    } else {
+                                                        MediaCard(
+                                                            title = if (mediaItem.nameDisplayMode != "Hidden") mediaItem.name else "",
+                                                            posterUrl = mediaItem.backgroundImageUrl,
+                                                            isSelected = isFocused,
+                                                            onClick = { },
+                                                        )
+                                                    }
+                                                }
+                                                else -> {
                                                     MediaCard(
-                                                        title = if (mediaItem.nameDisplayMode != "Hidden") mediaItem.name else "",
-                                                        posterUrl = mediaItem.backgroundImageUrl,
+                                                        title = "Unknown Item",
+                                                        posterUrl = null,
                                                         isSelected = isFocused,
                                                         onClick = { },
                                                     )
                                                 }
                                             }
-                                            else -> {
-                                                MediaCard(
-                                                    title = "Unknown Item",
-                                                    posterUrl = null,
-                                                    isSelected = isFocused,
-                                                    onClick = { },
-                                                )
-                                            }
-                                        }
-                                    },
-                                ),
-                            rowIndex = rowIndex,
-                        )
+                                        },
+                                    ),
+                                rowIndex = rowIndex,
+                            )
+                        }
+                        }
                     }
                 }
             }
-        }
         }
     }
 }

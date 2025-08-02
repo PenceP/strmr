@@ -1,6 +1,12 @@
 package com.strmr.ai.ui.components
 
 import android.util.Log
+import androidx.compose.animation.core.EaseInOut
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusGroup
@@ -17,15 +23,10 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.EaseInOut
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import com.strmr.ai.ui.utils.FocusRequesterModifiers
@@ -208,8 +209,8 @@ fun <T : Any> UnifiedMediaRow(
                             },
                         ) { index ->
                             val item = config.dataSource.items[index]
-                            val itemKey = "row_${rowIndex}_item_${index}"
-                            
+                            val itemKey = "row_${rowIndex}_item_$index"
+
                             MediaRowItem(
                                 item = item,
                                 config = config,
@@ -232,6 +233,7 @@ fun <T : Any> UnifiedMediaRow(
                                     )
                                     config.onSelectionChanged(focusedIndex)
                                 },
+                                onLeftBoundary = if (index == 0) config.onLeftBoundary else null,
                             )
                         }
 
@@ -277,8 +279,8 @@ fun <T : Any> UnifiedMediaRow(
                     ) { index ->
                         val item = config.dataSource.pagingItems[index]
                         if (item != null) {
-                            val itemKey = "row_${rowIndex}_paging_item_${index}"
-                            
+                            val itemKey = "row_${rowIndex}_paging_item_$index"
+
                             MediaRowItem(
                                 item = item,
                                 config = config,
@@ -301,6 +303,7 @@ fun <T : Any> UnifiedMediaRow(
                                     )
                                     config.onSelectionChanged(focusedIndex)
                                 },
+                                onLeftBoundary = if (index == 0) config.onLeftBoundary else null,
                             )
                         } else {
                             SkeletonCard(config)
@@ -345,6 +348,7 @@ private fun <T : Any> MediaRowItem(
     onItemClick: () -> Unit,
     onItemLongPress: () -> Unit,
     onItemFocused: (Int) -> Unit,
+    onLeftBoundary: (() -> Unit)? = null,
 ) {
     var isFocused by remember { mutableStateOf(false) }
 
@@ -358,14 +362,14 @@ private fun <T : Any> MediaRowItem(
                         focusRestorers.childModifier
                     } else {
                         Modifier
-                    }
+                    },
                 )
                 .focusOnMount(
                     itemKey = itemKey,
                     onFocus = {
                         Log.d("MediaRowItem", "🎯 Focus restored to itemKey: $itemKey (index: $index)")
                         onItemFocused(index)
-                    }
+                    },
                 )
                 .onFocusChanged { focusState ->
                     isFocused = focusState.isFocused
@@ -374,6 +378,17 @@ private fun <T : Any> MediaRowItem(
                     }
                 }
                 .focusable()
+                .onKeyEvent { event ->
+                    if (event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN &&
+                        event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_LEFT &&
+                        index == 0 && onLeftBoundary != null
+                    ) {
+                        onLeftBoundary()
+                        true
+                    } else {
+                        false
+                    }
+                }
                 .combinedClickable(
                     onClick = onItemClick,
                     onLongClick = onItemLongPress,
