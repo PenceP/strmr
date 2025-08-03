@@ -288,6 +288,15 @@ private fun SimpleMovieRow(
         }
     }
 
+    // Also handle initial positioning when row becomes focused with pre-set selectedIndex
+    LaunchedEffect(isFocused, movies.size) {
+        if (isFocused && movies.isNotEmpty() && selectedIndex > 0) {
+            // Small delay to ensure the row is ready, then position the selected poster
+            delay(100)
+            listState.scrollToItem(selectedIndex)
+        }
+    }
+
     // Load more when near end
     LaunchedEffect(selectedIndex) {
         if (selectedIndex >= movies.size - 5 && hasMore && !isLoading) {
