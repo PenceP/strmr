@@ -19,7 +19,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -44,12 +43,6 @@ fun MoviePosterCard(
             .background(StrmrConstants.Colors.SURFACE_DARK)
             .focusable(interactionSource = interactionSource)
             .clickable { onClick() }
-            .graphicsLayer {
-                // Scale effect when focused
-                val scale = if (isSelected && isFocused) 1.05f else 1f
-                scaleX = scale
-                scaleY = scale
-            }
             .then(
                 if (isSelected && isFocused) {
                     Modifier.border(

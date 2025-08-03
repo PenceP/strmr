@@ -1,14 +1,26 @@
 package com.strmr.ai.ui.screens
 
-import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -18,14 +30,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import com.strmr.ai.ui.components.MovieRow
+import com.strmr.ai.ui.components.MoviePosterCard
 import com.strmr.ai.ui.theme.StrmrConstants
 import com.strmr.ai.viewmodel.MoviesViewModel
 
@@ -38,63 +57,74 @@ fun MoviesPage(
 ) {
     val viewModel: MoviesViewModel = hiltViewModel()
     
-    // Collect state from ViewModel
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val trendingMovies by viewModel.trendingMovies.collectAsStateWithLifecycle()
     val popularMovies by viewModel.popularMovies.collectAsStateWithLifecycle()
 
-    // Focus and selection management
-    var selectedRowIndex by remember { mutableStateOf(0) }
-    var selectedItemIndices by remember { mutableStateOf(mapOf(0 to 0, 1 to 0)) }
-    var focusLevel by remember { mutableStateOf(1) } // 1 = nav bar, 2 = content
+    // Simple state management
+    var focusedRowIndex by remember { mutableStateOf(0) }
+    var isPageFocused by remember { mutableStateOf(false) }
+
+    // Netflix-style: Remember selected index for each row
+    var trendingSelectedIndex by remember { mutableStateOf(0) }
+    var popularSelectedIndex by remember { mutableStateOf(0) }
+
+    // Remember the last clicked movie ID to restore selection on return
+    var lastClickedMovieId by remember { mutableStateOf<Int?>(null) }
 
     val columnState = rememberLazyListState()
 
-    // Navigation bar width
-    val navBarWidth = StrmrConstants.Dimensions.Components.NAV_BAR_WIDTH
-
-    // Handle external focus changes
+    // Handle external focus
     LaunchedEffect(isContentFocused) {
-        if (isContentFocused && focusLevel == 1) {
-            Log.d("MoviesPage", "🎯 Content focused from nav bar, setting focus level to 2")
-            focusLevel = 2
+        if (isContentFocused && !isPageFocused) {
+            isPageFocused = true
+            onContentFocusChanged?.invoke(true)
         }
     }
 
-    // Notify external focus changes
-    LaunchedEffect(focusLevel) {
-        Log.d("MoviesPage", "🎯 Focus level changed to: $focusLevel")
-        when (focusLevel) {
-            1 -> onContentFocusChanged?.invoke(false) // Nav bar focused
-            2 -> onContentFocusChanged?.invoke(true)  // Content focused
+    // Restore selection when returning from details page
+    LaunchedEffect(
+        isContentFocused,
+        lastClickedMovieId,
+        trendingMovies.movies,
+        popularMovies.movies
+    ) {
+        if (isContentFocused && lastClickedMovieId != null) {
+            // Find the movie in trending first
+            val trendingIndex = trendingMovies.movies.indexOfFirst { it.id == lastClickedMovieId }
+            if (trendingIndex >= 0) {
+                focusedRowIndex = 0
+                trendingSelectedIndex = trendingIndex
+                return@LaunchedEffect
+            }
+
+            // If not found in trending, check popular
+            val popularIndex = popularMovies.movies.indexOfFirst { it.id == lastClickedMovieId }
+            if (popularIndex >= 0) {
+                focusedRowIndex = 1
+                popularSelectedIndex = popularIndex
+            }
         }
     }
 
-    // Auto-scroll to selected row
-    LaunchedEffect(selectedRowIndex) {
-        if (selectedRowIndex >= 0) {
-            columnState.animateScrollToItem(selectedRowIndex)
-        }
+    // Scroll to focused row
+    LaunchedEffect(focusedRowIndex) {
+        columnState.animateScrollToItem(focusedRowIndex)
     }
 
-    // Get current selections
-    val currentSelectedItemIndex = selectedItemIndices[selectedRowIndex] ?: 0
-    val currentSelectedMovie = when (selectedRowIndex) {
-        0 -> trendingMovies.movies.getOrNull(currentSelectedItemIndex)
-        1 -> popularMovies.movies.getOrNull(currentSelectedItemIndex)
+    // Get current selected movie for background
+    val currentSelectedMovie = when (focusedRowIndex) {
+        0 -> trendingMovies.movies.getOrNull(trendingSelectedIndex)
+        1 -> popularMovies.movies.getOrNull(popularSelectedIndex)
         else -> null
     }
-
-    // Background image from selected movie
-    val backdropUrl = currentSelectedMovie?.backdropUrl
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(StrmrConstants.Colors.BACKGROUND_DARK)
-    ) {
-        // Background image
-        backdropUrl?.let { url ->
+            .background(StrmrConstants.Colors.BACKGROUND_DARK)) {
+        // Background
+        currentSelectedMovie?.backdropUrl?.let { url ->
             AsyncImage(
                 model = url,
                 contentDescription = null,
@@ -106,7 +136,7 @@ fun MoviesPage(
             )
         }
 
-        // Dark gradient overlay
+        // Gradient overlay
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -121,162 +151,90 @@ fun MoviesPage(
                 )
         )
 
-        // Loading state
+        // Loading
         if (uiState.isLoading) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(
-                    color = StrmrConstants.Colors.TEXT_PRIMARY
-                )
+                CircularProgressIndicator(color = StrmrConstants.Colors.TEXT_PRIMARY)
             }
             return@Box
         }
 
-        // Main content
+        // Content
         LazyColumn(
             state = columnState,
             verticalArrangement = Arrangement.spacedBy(32.dp),
             contentPadding = PaddingValues(vertical = 40.dp),
             modifier = Modifier.fillMaxSize()
         ) {
-            // Trending Movies Row
+            // Trending Movies
             item {
-                MovieRow(
+                SimpleMovieRow(
                     title = "Trending Movies",
-                    movieRowState = trendingMovies,
-                    isRowFocused = focusLevel == 2 && selectedRowIndex == 0,
-                    selectedItemIndex = selectedItemIndices[0] ?: 0,
-                    onSelectionChanged = { itemIndex ->
-                        selectedItemIndices = selectedItemIndices.toMutableMap().apply {
-                            put(0, itemIndex)
-                        }
-                        selectedRowIndex = 0
-                    },
-                    onItemClick = { movie ->
-                        Log.d("MoviesPage", "🎬 Clicked movie: ${movie.title}")
+                    movies = trendingMovies.movies,
+                    isLoading = trendingMovies.isLoading,
+                    hasMore = trendingMovies.hasMore,
+                    isFocused = isPageFocused && focusedRowIndex == 0,
+                    selectedIndex = trendingSelectedIndex,
+                    onSelectionChanged = { trendingSelectedIndex = it },
+                    onMovieClick = { movie ->
+                        lastClickedMovieId = movie.id
                         onNavigateToDetails?.invoke(movie.id)
                     },
-                    onLoadMore = {
-                        viewModel.loadTrendingMovies()
+                    onLoadMore = { viewModel.loadTrendingMovies() },
+                    onNavigateUp = {
+                        // Already at top
                     },
-                    onKeyEvent = { keyEvent ->
-                        handleKeyEvent(
-                            keyEvent = keyEvent,
-                            currentRowIndex = selectedRowIndex,
-                            currentItemIndex = selectedItemIndices[selectedRowIndex] ?: 0,
-                            maxItemIndex = trendingMovies.movies.size - 1,
-                            onNavigateUp = {
-                                // No row above trending
-                            },
-                            onNavigateDown = {
-                                if (popularMovies.movies.isNotEmpty()) {
-                                    selectedRowIndex = 1
-                                }
-                            },
-                            onNavigateLeft = { newIndex ->
-                                if (newIndex >= 0) {
-                                    selectedItemIndices = selectedItemIndices.toMutableMap().apply {
-                                        put(selectedRowIndex, newIndex)
-                                    }
-                                } else {
-                                    // Navigate to nav bar
-                                    focusLevel = 1
-                                    onLeftBoundary?.invoke()
-                                }
-                            },
-                            onNavigateRight = { newIndex ->
-                                selectedItemIndices = selectedItemIndices.toMutableMap().apply {
-                                    put(selectedRowIndex, newIndex)
-                                }
-                                // Trigger load more if near end
-                                if (newIndex >= trendingMovies.movies.size - 5) {
-                                    viewModel.loadTrendingMovies()
-                                }
-                            },
-                            onSelect = {
-                                val movie = trendingMovies.movies.getOrNull(selectedItemIndices[0] ?: 0)
-                                movie?.let {
-                                    Log.d("MoviesPage", "🎬 Selected movie: ${it.title}")
-                                    onNavigateToDetails?.invoke(it.id)
-                                }
-                            },
-                            onBack = {
-                                focusLevel = 1
-                                onLeftBoundary?.invoke()
-                            }
-                        )
+                    onNavigateDown = {
+                        if (popularMovies.movies.isNotEmpty()) focusedRowIndex = 1
+                    },
+                    onNavigateLeft = { canGoLeft ->
+                        if (!canGoLeft) {
+                            isPageFocused = false
+                            onContentFocusChanged?.invoke(false)
+                            onLeftBoundary?.invoke()
+                        }
+                    },
+                    onBack = {
+                        isPageFocused = false
+                        onContentFocusChanged?.invoke(false)
+                        onLeftBoundary?.invoke()
                     }
                 )
             }
 
-            // Popular Movies Row
+            // Popular Movies
             item {
-                MovieRow(
+                SimpleMovieRow(
                     title = "Popular Movies",
-                    movieRowState = popularMovies,
-                    isRowFocused = focusLevel == 2 && selectedRowIndex == 1,
-                    selectedItemIndex = selectedItemIndices[1] ?: 0,
-                    onSelectionChanged = { itemIndex ->
-                        selectedItemIndices = selectedItemIndices.toMutableMap().apply {
-                            put(1, itemIndex)
-                        }
-                        selectedRowIndex = 1
-                    },
-                    onItemClick = { movie ->
-                        Log.d("MoviesPage", "🎬 Clicked movie: ${movie.title}")
+                    movies = popularMovies.movies,
+                    isLoading = popularMovies.isLoading,
+                    hasMore = popularMovies.hasMore,
+                    isFocused = isPageFocused && focusedRowIndex == 1,
+                    selectedIndex = popularSelectedIndex,
+                    onSelectionChanged = { popularSelectedIndex = it },
+                    onMovieClick = { movie ->
+                        lastClickedMovieId = movie.id
                         onNavigateToDetails?.invoke(movie.id)
                     },
-                    onLoadMore = {
-                        viewModel.loadPopularMovies()
+                    onLoadMore = { viewModel.loadPopularMovies() },
+                    onNavigateUp = {
+                        if (trendingMovies.movies.isNotEmpty()) focusedRowIndex = 0
                     },
-                    onKeyEvent = { keyEvent ->
-                        handleKeyEvent(
-                            keyEvent = keyEvent,
-                            currentRowIndex = selectedRowIndex,
-                            currentItemIndex = selectedItemIndices[selectedRowIndex] ?: 0,
-                            maxItemIndex = popularMovies.movies.size - 1,
-                            onNavigateUp = {
-                                if (trendingMovies.movies.isNotEmpty()) {
-                                    selectedRowIndex = 0
-                                }
-                            },
-                            onNavigateDown = {
-                                // No row below popular
-                            },
-                            onNavigateLeft = { newIndex ->
-                                if (newIndex >= 0) {
-                                    selectedItemIndices = selectedItemIndices.toMutableMap().apply {
-                                        put(selectedRowIndex, newIndex)
-                                    }
-                                } else {
-                                    // Navigate to nav bar
-                                    focusLevel = 1
-                                    onLeftBoundary?.invoke()
-                                }
-                            },
-                            onNavigateRight = { newIndex ->
-                                selectedItemIndices = selectedItemIndices.toMutableMap().apply {
-                                    put(selectedRowIndex, newIndex)
-                                }
-                                // Trigger load more if near end
-                                if (newIndex >= popularMovies.movies.size - 5) {
-                                    viewModel.loadPopularMovies()
-                                }
-                            },
-                            onSelect = {
-                                val movie = popularMovies.movies.getOrNull(selectedItemIndices[1] ?: 0)
-                                movie?.let {
-                                    Log.d("MoviesPage", "🎬 Selected movie: ${it.title}")
-                                    onNavigateToDetails?.invoke(it.id)
-                                }
-                            },
-                            onBack = {
-                                focusLevel = 1
-                                onLeftBoundary?.invoke()
-                            }
-                        )
+                    onNavigateDown = { /* Already at bottom */ },
+                    onNavigateLeft = { canGoLeft ->
+                        if (!canGoLeft) {
+                            isPageFocused = false
+                            onContentFocusChanged?.invoke(false)
+                            onLeftBoundary?.invoke()
+                        }
+                    },
+                    onBack = {
+                        isPageFocused = false
+                        onContentFocusChanged?.invoke(false)
+                        onLeftBoundary?.invoke()
                     }
                 )
             }
@@ -284,59 +242,192 @@ fun MoviesPage(
     }
 }
 
-private fun handleKeyEvent(
-    keyEvent: android.view.KeyEvent,
-    currentRowIndex: Int,
-    currentItemIndex: Int,
-    maxItemIndex: Int,
+@Composable
+private fun SimpleMovieRow(
+    title: String,
+    movies: List<com.strmr.ai.viewmodel.MovieRowItem>,
+    isLoading: Boolean,
+    hasMore: Boolean,
+    isFocused: Boolean,
+    selectedIndex: Int,
+    onSelectionChanged: (Int) -> Unit,
+    onMovieClick: (com.strmr.ai.viewmodel.MovieRowItem) -> Unit,
+    onLoadMore: () -> Unit,
     onNavigateUp: () -> Unit,
     onNavigateDown: () -> Unit,
-    onNavigateLeft: (Int) -> Unit,
-    onNavigateRight: (Int) -> Unit,
-    onSelect: () -> Unit,
+    onNavigateLeft: (Boolean) -> Unit,
     onBack: () -> Unit,
-): Boolean {
-    // Throttle navigation
-    val throttleMs = 80L
-    val currentTime = System.currentTimeMillis()
-    
-    return when (keyEvent.keyCode) {
-        android.view.KeyEvent.KEYCODE_DPAD_UP -> {
-            if (keyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
-                onNavigateUp()
+) {
+    val listState = rememberLazyListState()
+    val focusRequester = remember { FocusRequester() }
+    var isInternallyFocused by remember { mutableStateOf(false) }
+
+    val posterWidth = 115.dp
+    val posterSpacing = 12.dp
+    val focusPosition = StrmrConstants.Dimensions.Icons.EXTRA_LARGE
+
+    // Request focus when row becomes focused
+    LaunchedEffect(isFocused) {
+        if (isFocused) {
+            kotlinx.coroutines.delay(50)
+            try {
+                focusRequester.requestFocus()
+            } catch (e: Exception) {
+                // Ignore focus request failures
             }
-            true
         }
-        android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
-            if (keyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
-                onNavigateDown()
+    }
+
+    // Scroll to keep selected poster in static focus position
+    LaunchedEffect(selectedIndex, isFocused) {
+        if (isFocused && movies.isNotEmpty() && selectedIndex in 0 until movies.size) {
+            listState.animateScrollToItem(selectedIndex)
+        }
+    }
+
+    // Load more when near end
+    LaunchedEffect(selectedIndex) {
+        if (selectedIndex >= movies.size - 5 && hasMore && !isLoading) {
+            onLoadMore()
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        // Title
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = if (isFocused) StrmrConstants.Colors.TEXT_PRIMARY
+            else StrmrConstants.Colors.TEXT_PRIMARY.copy(alpha = 0.7f),
+            fontSize = 24.sp,
+            modifier = Modifier.padding(start = focusPosition, bottom = 16.dp)
+        )
+
+        // Row with static focus overlay
+        Box(modifier = Modifier.fillMaxWidth()) {
+            LazyRow(
+                state = listState,
+                horizontalArrangement = Arrangement.spacedBy(posterSpacing),
+                contentPadding = PaddingValues(start = focusPosition, end = focusPosition),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester)
+                    .onFocusChanged { isInternallyFocused = it.isFocused }
+                    .focusable()
+                    .onKeyEvent { keyEvent ->
+                        if (keyEvent.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
+                            when (keyEvent.nativeKeyEvent.keyCode) {
+                                android.view.KeyEvent.KEYCODE_DPAD_UP -> {
+                                    onNavigateUp()
+                                    true
+                                }
+
+                                android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
+                                    onNavigateDown()
+                                    true
+                                }
+
+                                android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
+                                    if (selectedIndex > 0) {
+                                        onSelectionChanged(selectedIndex - 1)
+                                        onNavigateLeft(true)
+                                    } else {
+                                        onNavigateLeft(false)
+                                    }
+                                    true
+                                }
+
+                                android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                                    if (selectedIndex < movies.size - 1) {
+                                        onSelectionChanged(selectedIndex + 1)
+                                    } else if (hasMore) {
+                                        onLoadMore()
+                                    }
+                                    true
+                                }
+
+                                android.view.KeyEvent.KEYCODE_DPAD_CENTER, android.view.KeyEvent.KEYCODE_ENTER -> {
+                                    movies.getOrNull(selectedIndex)?.let { onMovieClick(it) }
+                                    true
+                                }
+
+                                android.view.KeyEvent.KEYCODE_BACK -> {
+                                    onBack()
+                                    true
+                                }
+
+                                else -> false
+                            }
+                        } else false
+                    }
+            ) {
+                itemsIndexed(movies) { index, movie ->
+                    val alpha = when {
+                        !isFocused -> 0.6f
+                        index == selectedIndex -> 1f
+                        else -> 0.6f
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .width(posterWidth)
+                            .graphicsLayer { this.alpha = alpha }
+                    ) {
+                        MoviePosterCard(
+                            movie = movie,
+                            isSelected = index == selectedIndex,
+                            isFocused = isFocused,
+                            onClick = {
+                                onSelectionChanged(index)
+                                onMovieClick(movie)
+                            }
+                        )
+                    }
+                }
+
+                // Loading indicator
+                if (isLoading) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .width(posterWidth)
+                                .height(172.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                color = StrmrConstants.Colors.PRIMARY_BLUE,
+                                modifier = Modifier.width(24.dp)
+                            )
+                        }
+                    }
+                }
+
+                // Spacers for smooth scrolling
+                repeat(3) {
+                    item {
+                        Spacer(modifier = Modifier.width(posterWidth + posterSpacing))
+                    }
+                }
             }
-            true
-        }
-        android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
-            if (keyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
-                onNavigateLeft(currentItemIndex - 1)
+
+            // Static focus border overlay
+            if (movies.isNotEmpty() && isFocused) {
+                Box(
+                    modifier = Modifier
+                        .padding(start = focusPosition)
+                        .width(posterWidth)
+                        .height(172.dp)
+                        .border(
+                            width = 3.dp,
+                            color = StrmrConstants.Colors.TEXT_PRIMARY,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .graphicsLayer {
+                            alpha = if (isInternallyFocused) 1f else 0.3f
+                        }
+                )
             }
-            true
         }
-        android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
-            if (keyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
-                onNavigateRight((currentItemIndex + 1).coerceAtMost(maxItemIndex + 20)) // Allow going beyond for infinite scroll
-            }
-            true
-        }
-        android.view.KeyEvent.KEYCODE_DPAD_CENTER, android.view.KeyEvent.KEYCODE_ENTER -> {
-            if (keyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
-                onSelect()
-            }
-            true
-        }
-        android.view.KeyEvent.KEYCODE_BACK -> {
-            if (keyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
-                onBack()
-            }
-            true
-        }
-        else -> false
     }
 }

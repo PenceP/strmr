@@ -1,6 +1,8 @@
 package com.strmr.ai.ui.components
 
 import android.util.Log
+import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -37,48 +40,55 @@ import com.strmr.ai.viewmodel.MovieRowItem
 import com.strmr.ai.viewmodel.MovieRowState
 
 @Composable
-fun MovieRow(
+fun NetflixMovieRow(
+    rowIndex: Int,
     title: String,
     movieRowState: MovieRowState,
-    isRowFocused: Boolean,
-    selectedItemIndex: Int,
+    isFocused: Boolean,
+    selectedIndex: Int,
+    scrollPosition: Int,
     onSelectionChanged: (Int) -> Unit,
-    onItemClick: (MovieRowItem) -> Unit,
+    onScrollPositionChanged: (Int) -> Unit,
+    onMovieClick: (MovieRowItem) -> Unit,
     onLoadMore: () -> Unit,
-    onKeyEvent: (android.view.KeyEvent) -> Boolean,
+    onNavigateUp: () -> Unit,
+    onNavigateDown: () -> Unit,
+    onNavigateLeft: (Boolean) -> Unit, // Boolean indicates if can go further left
+    onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
     val focusRequester = remember { FocusRequester() }
-    var isFocused by remember { mutableStateOf(false) }
+    var isInternallyFocused by remember { mutableStateOf(false) }
 
     val posterWidth = 115.dp
     val posterSpacing = 12.dp
     val selectorStart = StrmrConstants.Dimensions.Icons.EXTRA_LARGE
 
-    // Simple: scroll to selected item when it changes
-    LaunchedEffect(selectedItemIndex) {
-        if (isRowFocused && movieRowState.movies.isNotEmpty() && selectedItemIndex in 0 until movieRowState.movies.size) {
-            listState.animateScrollToItem(selectedItemIndex)
-        }
-    }
-
-    // Focus management
-    LaunchedEffect(isRowFocused) {
-        if (isRowFocused) {
+    // Restore scroll position when row becomes focused
+    LaunchedEffect(isFocused) {
+        if (isFocused && movieRowState.movies.isNotEmpty()) {
+            // Request focus after small delay
             kotlinx.coroutines.delay(50)
             try {
                 focusRequester.requestFocus()
             } catch (e: Exception) {
-                Log.w("MovieRow", "Failed to request focus: ${e.message}")
+                Log.w("NetflixMovieRow", "Failed to request focus: ${e.message}")
             }
         }
     }
 
-    // Load more when near end
-    LaunchedEffect(selectedItemIndex, movieRowState.movies.size) {
-        if (selectedItemIndex >= movieRowState.movies.size - 5 && movieRowState.hasMore && !movieRowState.isLoading) {
-            Log.d("MovieRow", "🔄 Loading more movies for row: $title")
+    // Smooth scroll to keep selected item in static focus position
+    LaunchedEffect(selectedIndex) {
+        if (isFocused && movieRowState.movies.isNotEmpty() && selectedIndex in 0 until movieRowState.movies.size) {
+            // Always scroll to position selected item at static focus spot
+            listState.animateScrollToItem(selectedIndex)
+        }
+    }
+
+    // Load more when approaching end
+    LaunchedEffect(selectedIndex, movieRowState.movies.size) {
+        if (selectedIndex >= movieRowState.movies.size - 5 && movieRowState.hasMore && !movieRowState.isLoading) {
             onLoadMore()
         }
     }
@@ -91,7 +101,7 @@ fun MovieRow(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = if (isRowFocused) {
+            color = if (isFocused) {
                 StrmrConstants.Colors.TEXT_PRIMARY
             } else {
                 StrmrConstants.Colors.TEXT_PRIMARY.copy(alpha = 0.7f)
@@ -103,7 +113,7 @@ fun MovieRow(
             )
         )
 
-        // Movies row with fixed selector overlay (like episodes)
+        // Movies row with static focus position
         Box(
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -118,16 +128,64 @@ fun MovieRow(
                     .fillMaxWidth()
                     .focusRequester(focusRequester)
                     .onFocusChanged { focusState ->
-                        isFocused = focusState.isFocused
+                        isInternallyFocused = focusState.isFocused
                     }
+                    .focusable()
                     .onKeyEvent { keyEvent ->
-                        onKeyEvent(keyEvent.nativeKeyEvent)
+                        if (keyEvent.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
+                            when (keyEvent.nativeKeyEvent.keyCode) {
+                                android.view.KeyEvent.KEYCODE_DPAD_UP -> {
+                                    onNavigateUp()
+                                    true
+                                }
+
+                                android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
+                                    onNavigateDown()
+                                    true
+                                }
+
+                                android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
+                                    if (selectedIndex > 0) {
+                                        onSelectionChanged(selectedIndex - 1)
+                                        onNavigateLeft(true)
+                                    } else {
+                                        onNavigateLeft(false)
+                                    }
+                                    true
+                                }
+
+                                android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                                    if (selectedIndex < movieRowState.movies.size - 1) {
+                                        onSelectionChanged(selectedIndex + 1)
+                                    } else if (movieRowState.hasMore) {
+                                        onLoadMore()
+                                    }
+                                    true
+                                }
+
+                                android.view.KeyEvent.KEYCODE_DPAD_CENTER, android.view.KeyEvent.KEYCODE_ENTER -> {
+                                    movieRowState.movies.getOrNull(selectedIndex)?.let { movie ->
+                                        onMovieClick(movie)
+                                    }
+                                    true
+                                }
+
+                                android.view.KeyEvent.KEYCODE_BACK -> {
+                                    onNavigateBack()
+                                    true
+                                }
+
+                                else -> false
+                            }
+                        } else {
+                            false
+                        }
                     }
             ) {
                 itemsIndexed(movieRowState.movies) { index, movie ->
                     val itemAlpha = when {
-                        !isRowFocused -> 0.6f
-                        isRowFocused && index == selectedItemIndex -> 1f
+                        !isFocused -> 0.6f
+                        isFocused && index == selectedIndex -> 1f
                         else -> 0.6f
                     }
 
@@ -140,23 +198,23 @@ fun MovieRow(
                     ) {
                         MoviePosterCard(
                             movie = movie,
-                            isSelected = index == selectedItemIndex,
-                            isFocused = isRowFocused,
+                            isSelected = index == selectedIndex,
+                            isFocused = isFocused,
                             onClick = {
                                 onSelectionChanged(index)
-                                onItemClick(movie)
+                                onMovieClick(movie)
                             }
                         )
                     }
                 }
 
-                // Loading indicator at end
+                // Loading indicator
                 if (movieRowState.isLoading) {
                     item {
                         Box(
                             modifier = Modifier
                                 .width(posterWidth)
-                                .height(210.dp), // 140 * 3/2 aspect ratio
+                                .height(172.dp), // 2:3 aspect ratio
                             contentAlignment = Alignment.Center
                         ) {
                             CircularProgressIndicator(
@@ -167,7 +225,7 @@ fun MovieRow(
                     }
                 }
 
-                // Add spacers at the end to allow smooth scrolling for last items (like episodes)
+                // Spacers for smooth scrolling
                 repeat(3) {
                     item {
                         Spacer(modifier = Modifier.width(posterWidth + posterSpacing))
@@ -175,19 +233,22 @@ fun MovieRow(
                 }
             }
 
-            // Fixed selector overlay (fades when row not focused)
-            if (movieRowState.movies.isNotEmpty()) {
+            // Static focus indicator (border overlay)
+            if (movieRowState.movies.isNotEmpty() && isFocused) {
                 Box(
                     modifier = Modifier
                         .padding(start = selectorStart)
                         .width(posterWidth)
-                        .height(210.dp) // 2:3 aspect ratio height
+                        .height(172.dp) // 2:3 aspect ratio
+                        .border(
+                            width = 3.dp,
+                            color = StrmrConstants.Colors.TEXT_PRIMARY,
+                            shape = RoundedCornerShape(8.dp)
+                        )
                         .graphicsLayer {
-                            alpha = if (isRowFocused && isFocused) 1f else 0.3f
+                            alpha = if (isInternallyFocused) 1f else 0.3f
                         }
-                ) {
-                    // The border is handled by the MoviePosterCard itself
-                }
+                )
             }
         }
 
