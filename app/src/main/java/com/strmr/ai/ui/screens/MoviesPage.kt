@@ -47,6 +47,7 @@ import coil.compose.AsyncImage
 import com.strmr.ai.ui.components.MoviePosterCard
 import com.strmr.ai.ui.theme.StrmrConstants
 import com.strmr.ai.viewmodel.MoviesViewModel
+import kotlinx.coroutines.delay
 
 @Composable
 fun MoviesPage(
@@ -83,14 +84,16 @@ fun MoviesPage(
     }
 
     // Restore selection when returning from details page
-    LaunchedEffect(
-        isContentFocused,
-        lastClickedMovieId,
-        trendingMovies.movies,
-        popularMovies.movies
-    ) {
+    LaunchedEffect(isContentFocused, lastClickedMovieId) {
         if (isContentFocused && lastClickedMovieId != null) {
-            // Find the movie in trending first
+            // Force focus back to content area
+            isPageFocused = true
+            onContentFocusChanged?.invoke(true)
+
+            // Small delay to ensure the page is ready
+            delay(150)
+
+            // Find and restore the clicked movie position
             val trendingIndex = trendingMovies.movies.indexOfFirst { it.id == lastClickedMovieId }
             if (trendingIndex >= 0) {
                 focusedRowIndex = 0
@@ -269,7 +272,7 @@ private fun SimpleMovieRow(
     // Request focus when row becomes focused
     LaunchedEffect(isFocused) {
         if (isFocused) {
-            kotlinx.coroutines.delay(50)
+            delay(50)
             try {
                 focusRequester.requestFocus()
             } catch (e: Exception) {
