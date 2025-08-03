@@ -18,10 +18,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -284,12 +284,35 @@ fun MainScreen(
     // Track navigation state to prevent focus conflicts
     var isNavigating by remember { mutableStateOf(false) }
     
+    // Track if we came from details page for focus restoration
+    var cameFromDetails by remember { mutableStateOf(false) }
+    
     // Reset content focus when route changes with improved debouncing
     LaunchedEffect(currentRoute) {
         isNavigating = true
-        isContentFocused = false
+        
+        // Don't reset content focus when returning from details to main screens
+        // This allows the focus restoration system to work
+        val previousRoute = navController.previousBackStackEntry?.destination?.route
+        val isReturningFromDetails = cameFromDetails && currentRoute in mainDestinations
         
         Log.d("MainActivity", "🚀 Navigation to route: $currentRoute")
+        Log.d("MainActivity", "📍 Previous route: $previousRoute, cameFromDetails: $cameFromDetails, returning from details: $isReturningFromDetails")
+        
+        if (!isReturningFromDetails) {
+            isContentFocused = false
+        } else {
+            // When returning from details, immediately set content focus to true
+            // and prevent navbar from grabbing focus
+            isContentFocused = true
+            // Reset the cameFromDetails flag after handling the return
+            cameFromDetails = false
+        }
+        
+        // Set cameFromDetails flag when navigating TO details
+        if (currentRoute?.contains("details") == true) {
+            cameFromDetails = true
+        }
         
         // Longer delay for navigation transitions, especially back navigation
         kotlinx.coroutines.delay(200)

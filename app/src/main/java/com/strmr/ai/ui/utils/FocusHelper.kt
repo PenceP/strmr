@@ -3,6 +3,7 @@ package com.strmr.ai.ui.utils
 import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.mutableStateOf
@@ -15,6 +16,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.onGloballyPositioned
 import com.strmr.ai.utils.safeCall
+import kotlinx.coroutines.delay
 
 // Global focus state that survives navigation changes
 object GlobalFocusState {
@@ -59,7 +61,7 @@ fun LocalCurrentRouteProvider(
 
     // For focus restoration from details pages, we need to detect when we're coming back
     // The key insight: when returning from details, don't reset the focus transfer state
-    remember(currentRoute) {
+    LaunchedEffect(currentRoute) {
         // Log.d("FocusDebug", "🔄 Route changed to: $currentRoute")
 
         // Only reset focus transfer state for non-content routes that aren't focus restoration scenarios
@@ -82,8 +84,10 @@ fun LocalCurrentRouteProvider(
             if (hasSavedFocus) {
                 // We have saved focus for this route, so we're returning from a sub-page
                 // Reset the focus transfer state so focus restoration can work
-                // Log.d("FocusDebug", "🔙 Returning to $currentRoute with saved focus - enabling restoration")
-                // Log.d("FocusDebug", "🔓 Setting isInitialFocusTransferred=false for restoration")
+                Log.d(
+                    "FocusDebug",
+                    "🔙 Returning to $currentRoute with saved focus - resetting transfer state"
+                )
                 isInitialFocusTransferred.value = false
             } else if (!isInitialFocusTransferred.value) {
                 // No saved focus and no transfer yet - this is initial load
@@ -180,39 +184,78 @@ fun Modifier.focusOnMount(
 
     val focusRequester = remember { FocusRequester() }
 
+    // Add LaunchedEffect for delayed focus restoration
+    LaunchedEffect(currentRoute, itemKey) {
+        val lastFocusedKey = lastFocusedItemPerDestination[currentRoute]
+
+        // Add detailed logging for debugging
+        Log.d(
+            "FocusDebug",
+            "🔍 FocusHelper check - route: $currentRoute, itemKey: $itemKey, lastFocusedKey: $lastFocusedKey"
+        )
+        Log.d(
+            "FocusDebug",
+            "🗂️ Full focus map: $lastFocusedItemPerDestination"
+        )
+        Log.d(
+            "FocusDebug",
+            "🎯 isInitialFocusTransferred: ${isInitialFocusTransferred.value}"
+        )
+
+        // Route-aware focus restoration with delay for better reliability
+        if (lastFocusedKey == itemKey && !isInitialFocusTransferred.value) {
+            val isTargetRoute = currentRoute in listOf("home", "movies", "tvshows", "search")
+            val isIntermediatePage = currentRoute.startsWith("intermediate_view_")
+
+            if (isTargetRoute && !isIntermediatePage) {
+                Log.d(
+                    "FocusDebug",
+                    "🎯 Delayed focus restoration for itemKey: $itemKey in route: $currentRoute"
+                )
+
+                // Add delay to ensure UI is fully rendered
+                delay(150)
+
+                try {
+                    focusRequester.requestFocus()
+                    isInitialFocusTransferred.value = true
+                    Log.d("FocusHelper", "✅ Delayed focus request successful for itemKey: $itemKey")
+                } catch (e: IllegalStateException) {
+                    Log.w(
+                        "FocusHelper",
+                        "⚠️ Delayed focus request failed for itemKey: $itemKey - FocusRequester not initialized: ${e.message}"
+                    )
+                } catch (e: Exception) {
+                    Log.e(
+                        "FocusHelper",
+                        "❌ Unexpected error during delayed focus request for itemKey: $itemKey",
+                        e
+                    )
+                }
+            } else {
+                Log.d(
+                    "FocusDebug",
+                    "🚫 Skipping focus request - route: $currentRoute (isTarget=$isTargetRoute, isIntermediate=$isIntermediatePage)"
+                )
+            }
+        } else {
+            Log.d(
+                "FocusDebug",
+                "❌ No focus restoration - lastFocusedKey: $lastFocusedKey, itemKey: $itemKey, match: ${lastFocusedKey == itemKey}, transferred: ${isInitialFocusTransferred.value}"
+            )
+        }
+    }
+
     return this
         .focusRequester(focusRequester)
         .onGloballyPositioned {
             val lastFocusedKey = lastFocusedItemPerDestination[currentRoute]
-            //Log.d(
-            //    "FocusDebug",
-            //    "🎯 onGloballyPositioned - route: $currentRoute, itemKey: $itemKey, lastFocusedKey: $lastFocusedKey, isInitialFocusTransferred: ${isInitialFocusTransferred.value}",
-            //)
-
-            // Route-aware focus restoration: only restore focus if this item is for the target route
+            // Only log when there's a match to restore
             if (lastFocusedKey == itemKey && !isInitialFocusTransferred.value) {
-                // Only restore focus for the destination route (home, movies, etc), not intermediate pages
-                val isTargetRoute = currentRoute in listOf("home", "movies", "tvshows", "search")
-                val isIntermediatePage = currentRoute.startsWith("intermediate_view_")
-
-                if (isTargetRoute && !isIntermediatePage) {
-                    //Log.d("FocusDebug", "🔥 REQUESTING FOCUS for itemKey: $itemKey in route: $currentRoute")
-                    try {
-                        focusRequester.requestFocus()
-                        isInitialFocusTransferred.value = true
-                        //Log.d("FocusHelper", "✅ Focus request successful for itemKey: $itemKey")
-                    } catch (e: IllegalStateException) {
-                        Log.w("FocusHelper", "⚠️ Focus request failed for itemKey: $itemKey - FocusRequester not initialized: ${e.message}")
-                        // Don't set isInitialFocusTransferred to true if focus failed
-                    } catch (e: Exception) {
-                        Log.e("FocusHelper", "❌ Unexpected error during focus request for itemKey: $itemKey", e)
-                    }
-                } else {
-                    //Log.d(
-                    //    "FocusDebug",
-                    //    "🚫 Skipping focus request - not target route: $currentRoute (isTarget=$isTargetRoute, isIntermediate=$isIntermediatePage)",
-                    //)
-                }
+                Log.d(
+                    "FocusDebug",
+                    "🎯 Match found - route: $currentRoute, itemKey: $itemKey, lastFocusedKey: $lastFocusedKey",
+                )
             }
         }
         .onFocusChanged {
@@ -220,7 +263,10 @@ fun Modifier.focusOnMount(
                 Log.d("FocusDebug", "📍 FOCUS GAINED by itemKey: $itemKey in route: $currentRoute")
                 onFocus?.invoke()
                 lastFocusedItemPerDestination[currentRoute] = itemKey
-                Log.d("FocusDebug", "🔒 Setting isInitialFocusTransferred=true from onFocusChanged for $itemKey")
+                Log.d(
+                    "FocusDebug",
+                    "🔒 Setting isInitialFocusTransferred=true from onFocusChanged for $itemKey"
+                )
                 isInitialFocusTransferred.value = true
             }
         }

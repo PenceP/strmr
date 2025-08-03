@@ -3,11 +3,27 @@ package com.strmr.ai.ui.navigation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Theaters
+import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Icon
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -37,14 +53,24 @@ fun NavigationBar(
 
     // Auto-focus the NavigationBar on app start
     LaunchedEffect(Unit) {
-        navFocusRequester.safeRequestFocus("NavigationBar-AppStart")
-        hasNavBarFocus = true // Ensure navbar focus state is set on app start
+        // Only auto-focus on app start if content is not focused
+        if (!isContentFocused) {
+            navFocusRequester.safeRequestFocus("NavigationBar-AppStart")
+            hasNavBarFocus = true // Ensure navbar focus state is set on app start
+        }
     }
 
     // Update navbar focus state when content focus changes
     LaunchedEffect(isContentFocused) {
         hasNavBarFocus = !isContentFocused
         android.util.Log.d("NavigationBar", "🎯 Content focus changed: isContentFocused=$isContentFocused, hasNavBarFocus=$hasNavBarFocus")
+        
+        // Don't auto-request focus if content should be focused (e.g., when returning from details)
+        if (!isContentFocused && !hasNavBarFocus) {
+            // Only request navbar focus if content is not focused and navbar doesn't have focus
+            navFocusRequester.safeRequestFocus("NavigationBar-ContentFocusChange")
+        }
+        
         // Force recomposition when focus state changes
         forceRecomposition++
     }
@@ -161,7 +187,7 @@ fun NavigationBar(
 
                             android.view.KeyEvent.KEYCODE_DPAD_CENTER,
                             android.view.KeyEvent.KEYCODE_ENTER,
-                            -> {
+                                -> {
                                 // Navigate to the selected item
                                 val route =
                                     when (focusedIndex) {
