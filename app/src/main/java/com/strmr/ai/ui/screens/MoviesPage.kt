@@ -2,56 +2,35 @@ package com.strmr.ai.ui.screens
 
 import android.util.Log
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material3.Icon
-import androidx.compose.runtime.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import com.strmr.ai.config.ConfigurationLoader
-import com.strmr.ai.config.PageConfiguration
-import com.strmr.ai.config.toGenericRowConfiguration
-import com.strmr.ai.data.DataSourceConfig
-import com.strmr.ai.data.MediaType
-import com.strmr.ai.data.OmdbResponse
-import com.strmr.ai.data.database.MovieEntity
-import com.strmr.ai.ui.components.CardType
-import com.strmr.ai.ui.components.DataSource
-import com.strmr.ai.ui.components.MediaCard
-import com.strmr.ai.ui.components.MediaDetails
-import com.strmr.ai.ui.components.MediaHero
-import com.strmr.ai.ui.components.MediaRowConfig
-import com.strmr.ai.ui.components.PaginationStateInfo
-import com.strmr.ai.ui.components.UnifiedMediaRow
+import com.strmr.ai.ui.components.MovieRow
 import com.strmr.ai.ui.theme.StrmrConstants
-import com.strmr.ai.ui.utils.WithFocusProviders
-import com.strmr.ai.viewmodel.FlixclusiveGenericViewModel
-import com.strmr.ai.viewmodel.GenericMoviesViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-
-// Data class to hold row information
-data class MovieRowData(
-    val title: String,
-    val movies: List<MovieEntity>,
-    val paginationState: PaginationStateInfo,
-    val showHero: Boolean,
-)
+import com.strmr.ai.viewmodel.MoviesViewModel
 
 @Composable
 fun MoviesPage(
@@ -60,388 +39,308 @@ fun MoviesPage(
     onLeftBoundary: (() -> Unit)? = null,
     onNavigateToDetails: ((Int) -> Unit)?,
 ) {
-    val context = LocalContext.current
-    val viewModel: GenericMoviesViewModel = hiltViewModel()
+    val viewModel: MoviesViewModel = hiltViewModel()
+    
+    // Collect state from ViewModel
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val trendingMovies by viewModel.trendingMovies.collectAsStateWithLifecycle()
+    val popularMovies by viewModel.popularMovies.collectAsStateWithLifecycle()
 
-    // Load configuration
-    var pageConfiguration by remember { mutableStateOf<PageConfiguration?>(null) }
-    LaunchedEffect(Unit) {
-        val configLoader = ConfigurationLoader(context)
-        pageConfiguration = configLoader.loadPageConfiguration("MOVIES")
-    }
-
-    val logoUrls by viewModel.logoUrls.collectAsState()
-
-    // ✅ NEW: Generic row configurations from JSON
-    val genericConfigs =
-        remember(pageConfiguration) {
-            pageConfiguration?.rows
-                ?.mapNotNull { it.toGenericRowConfiguration() }
-                ?.sortedBy { it.order }
-                ?: emptyList()
-        }
-
-    // ✅ NEW: Use single generic ViewModel for all rows
-    val moviesViewModel: FlixclusiveGenericViewModel = hiltViewModel()
-
-    // Data source configurations
-    val dataSourceConfigs =
-        remember {
-            listOf(
-                DataSourceConfig(
-                    id = "trending",
-                    title = "Trending",
-                    endpoint = "movies/trending",
-                    mediaType = MediaType.MOVIE,
-                    cacheKey = "trending",
-                ),
-                DataSourceConfig(
-                    id = "popular",
-                    title = "Popular",
-                    endpoint = "movies/popular",
-                    mediaType = MediaType.MOVIE,
-                    cacheKey = "popular",
-                ),
-                DataSourceConfig(
-                    id = "top_movies_week",
-                    title = "Top Movies of the Week",
-                    endpoint = "users/garycrawfordgc/lists/top-movies-of-the-week/items",
-                    mediaType = MediaType.MOVIE,
-                    cacheKey = "top_movies_week",
-                ),
-                DataSourceConfig(
-                    id = "recommended_movies",
-                    title = "Recommended Movies",
-                    endpoint = "users/garycrawfordgc/lists/recommended-movies/items",
-                    mediaType = MediaType.MOVIE,
-                    cacheKey = "recommended_movies",
-                ),
-            )
-        }
-
-    // Initialize all data sources and wait for them to be populated
-    var isInitialized by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        Log.d("MoviesPage", "🚀 Starting initialization of ${dataSourceConfigs.size} data sources")
-        dataSourceConfigs.forEach { config ->
-            Log.d("MoviesPage", "🔄 Initializing ${config.id}...")
-            moviesViewModel.initializeDataSource(config)
-        }
-        // Small delay to ensure async flows are populated
-        kotlinx.coroutines.delay(100)
-        isInitialized = true
-        Log.d("MoviesPage", "✅ All data sources initialized")
-    }
-
-    // Collect data from generic ViewModel for each row
-    val trendingMovies by moviesViewModel.getMoviesFlow("trending").collectAsStateWithLifecycle()
-    val trendingPaginationState by moviesViewModel.getPaginationFlow("trending").collectAsStateWithLifecycle()
-
-    val popularMovies by moviesViewModel.getMoviesFlow("popular").collectAsStateWithLifecycle()
-    val popularPaginationState by moviesViewModel.getPaginationFlow("popular").collectAsStateWithLifecycle()
-
-    val topMovies by moviesViewModel.getMoviesFlow("top_movies_week").collectAsStateWithLifecycle()
-    val topMoviesPaginationState by moviesViewModel.getPaginationFlow("top_movies_week").collectAsStateWithLifecycle()
-
-    val recommendedMovies by moviesViewModel.getMoviesFlow("recommended_movies").collectAsStateWithLifecycle()
-    val recommendedPaginationState by moviesViewModel.getPaginationFlow("recommended_movies").collectAsStateWithLifecycle()
-
-    // ✅ NEW: Multi-row management with all 4 rows
-    val rowData =
-        remember(trendingMovies, popularMovies, topMovies, recommendedMovies) {
-            val rows =
-                listOf(
-                    MovieRowData("Trending", trendingMovies, trendingPaginationState, true),
-                    MovieRowData("Popular", popularMovies, popularPaginationState, true),
-                    MovieRowData("Top Movies of the Week", topMovies, topMoviesPaginationState, true),
-                    MovieRowData("Recommended Movies", recommendedMovies, recommendedPaginationState, true),
-                )
-            Log.d("MoviesPage", "🎬 Created ${rows.size} rows: ${rows.map { "${it.title}(${it.movies.size} movies)" }}")
-            rows
-        }
-
-    // ✅ NEW: Row and item selection state
+    // Focus and selection management
     var selectedRowIndex by remember { mutableStateOf(0) }
-    var selectedItemIndex by remember { mutableStateOf(0) }
+    var selectedItemIndices by remember { mutableStateOf(mapOf(0 to 0, 1 to 0)) }
+    var focusLevel by remember { mutableStateOf(1) } // 1 = nav bar, 2 = content
 
-    // Update external focus when content focus changes
+    val columnState = rememberLazyListState()
+
+    // Navigation bar width
+    val navBarWidth = StrmrConstants.Dimensions.Components.NAV_BAR_WIDTH
+
+    // Handle external focus changes
     LaunchedEffect(isContentFocused) {
-        Log.d("MoviesPage", "🎯 External focus changed: isContentFocused=$isContentFocused")
-    }
-
-    val navBarWidth = 56.dp
-    val navBarWidthPx = with(LocalDensity.current) { navBarWidth.toPx() }
-
-    // Get currently selected row and item
-    val currentRow = rowData.getOrNull(selectedRowIndex)
-    val selectedItem = currentRow?.movies?.getOrNull(selectedItemIndex)
-
-    Log.d(
-        "MoviesPage",
-        "🎬 Current selection: row=${currentRow?.title} ($selectedRowIndex) item=${selectedItem?.title} ($selectedItemIndex)",
-    )
-
-    // Update focused row in ViewModel when it changes
-    LaunchedEffect(currentRow?.title) {
-        currentRow?.title?.let { title ->
-            viewModel.updateFocusedRow(title)
+        if (isContentFocused && focusLevel == 1) {
+            Log.d("MoviesPage", "🎯 Content focused from nav bar, setting focus level to 2")
+            focusLevel = 2
         }
     }
 
-    // Check if current row should show hero based on configuration
-    val shouldShowHero = currentRow?.showHero == true
-
-    // Get backdrop URL for background
-    val backdropUrl =
-        if (shouldShowHero) {
-            selectedItem?.backdropUrl.also {
-                Log.d("MoviesPage", "🎨 Hero backdrop URL: $it for ${selectedItem?.title}")
-            }
-        } else {
-            null
-        }
-
-    // OMDb ratings for hero section
-    var omdbRatings by remember(selectedItem, selectedRowIndex, selectedItemIndex) { mutableStateOf<OmdbResponse?>(null) }
-    LaunchedEffect(selectedItem, selectedRowIndex, selectedItemIndex) {
-        if (shouldShowHero && selectedItem != null) {
-            val imdbId = selectedItem.imdbId
-            if (!imdbId.isNullOrBlank()) {
-                omdbRatings =
-                    withContext(Dispatchers.IO) {
-                        viewModel.fetchOmdbRatings(imdbId)
-                    }
-            } else {
-                omdbRatings = null
-            }
-        } else {
-            omdbRatings = null
+    // Notify external focus changes
+    LaunchedEffect(focusLevel) {
+        Log.d("MoviesPage", "🎯 Focus level changed to: $focusLevel")
+        when (focusLevel) {
+            1 -> onContentFocusChanged?.invoke(false) // Nav bar focused
+            2 -> onContentFocusChanged?.invoke(true)  // Content focused
         }
     }
 
-    // Wrap with focus providers (Flixclusive pattern)
-    WithFocusProviders("movies") {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            // Only render content after initialization is complete
-            if (!isInitialized) {
-                // Show loading state while initializing
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.Center,
-                ) {
-                    androidx.compose.material3.CircularProgressIndicator(
-                        color = androidx.compose.ui.graphics.Color.White,
-                    )
-                }
-                return@Box
-            }
-            // Backdrop image as the main background
-            if (shouldShowHero && !backdropUrl.isNullOrBlank()) {
-                AsyncImage(
-                    model = backdropUrl,
-                    contentDescription = null,
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .graphicsLayer {
-                                scaleX = 1.1f
-                                scaleY = 1.1f
-                            }
-                            .blur(radius = StrmrConstants.Blur.RADIUS_STANDARD),
-                    contentScale = ContentScale.Crop,
-                    alpha = 1f,
-                )
+    // Auto-scroll to selected row
+    LaunchedEffect(selectedRowIndex) {
+        if (selectedRowIndex >= 0) {
+            columnState.animateScrollToItem(selectedRowIndex)
+        }
+    }
 
-                // Gradient overlay for readability
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.horizontalGradient(
-                                    colors =
-                                        listOf(
-                                            Color.Black.copy(alpha = 0.7f),
-                                            Color.Black.copy(alpha = 0.3f),
-                                        ),
-                                    startX = 0f,
-                                    endX = 2200f,
-                                ),
-                            ),
-                )
-            }
+    // Get current selections
+    val currentSelectedItemIndex = selectedItemIndices[selectedRowIndex] ?: 0
+    val currentSelectedMovie = when (selectedRowIndex) {
+        0 -> trendingMovies.movies.getOrNull(currentSelectedItemIndex)
+        1 -> popularMovies.movies.getOrNull(currentSelectedItemIndex)
+        else -> null
+    }
 
-            // Wide, soft horizontal gradient overlay from left edge (behind nav bar) to main area
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.horizontalGradient(
-                                colors =
-                                    listOf(
-                                        Color.Black,
-                                        Color.Black.copy(alpha = 0.7f),
-                                        Color.Black.copy(alpha = 0.3f),
-                                        Color.Transparent,
-                                    ),
-                                startX = -navBarWidthPx,
-                                endX = 1200f,
-                            ),
-                        ),
+    // Background image from selected movie
+    val backdropUrl = currentSelectedMovie?.backdropUrl
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(StrmrConstants.Colors.BACKGROUND_DARK)
+            .padding(start = navBarWidth)
+    ) {
+        // Background image
+        backdropUrl?.let { url ->
+            AsyncImage(
+                model = url,
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blur(radius = StrmrConstants.Blur.RADIUS_STANDARD),
+                contentScale = ContentScale.Crop,
+                alpha = 0.3f
             )
+        }
 
-            // ✅ NEW: Main content with vertical column for all rows
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(start = 1.dp),
+        // Dark gradient overlay
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Black.copy(alpha = 0.8f),
+                            Color.Black.copy(alpha = 0.6f),
+                            Color.Black.copy(alpha = 0.9f)
+                        )
+                    )
+                )
+        )
+
+        // Loading state
+        if (uiState.isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                // Hero section (based on configuration)
-                if (shouldShowHero && selectedItem != null) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .weight(0.49f)
-                                .padding(start = navBarWidth - 2.dp),
-                    ) {
-                        MediaHero(
-                            mediaDetails = {
-                                MediaDetails(
-                                    title = selectedItem.title,
-                                    logoUrl = logoUrls[selectedItem.tmdbId] ?: selectedItem.logoUrl,
-                                    year = selectedItem.year,
-                                    formattedDate = selectedItem.releaseDate,
-                                    runtime = selectedItem.runtime,
-                                    genres = selectedItem.genres,
-                                    rating = selectedItem.rating,
-                                    overview = selectedItem.overview,
-                                    cast = selectedItem.cast.map { it.name ?: "" },
-                                    omdbRatings = omdbRatings,
-                                    onFetchLogo = {
-                                        viewModel.fetchAndUpdateLogo(selectedItem)
-                                    },
-                                )
+                CircularProgressIndicator(
+                    color = StrmrConstants.Colors.TEXT_PRIMARY
+                )
+            }
+            return@Box
+        }
+
+        // Main content
+        LazyColumn(
+            state = columnState,
+            verticalArrangement = Arrangement.spacedBy(32.dp),
+            contentPadding = PaddingValues(vertical = 40.dp),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            // Trending Movies Row
+            item {
+                MovieRow(
+                    title = "Trending Movies",
+                    movieRowState = trendingMovies,
+                    isRowFocused = focusLevel == 2 && selectedRowIndex == 0,
+                    selectedItemIndex = selectedItemIndices[0] ?: 0,
+                    onSelectionChanged = { itemIndex ->
+                        selectedItemIndices = selectedItemIndices.toMutableMap().apply {
+                            put(0, itemIndex)
+                        }
+                        selectedRowIndex = 0
+                    },
+                    onItemClick = { movie ->
+                        Log.d("MoviesPage", "🎬 Clicked movie: ${movie.title}")
+                        onNavigateToDetails?.invoke(movie.id)
+                    },
+                    onLoadMore = {
+                        viewModel.loadTrendingMovies()
+                    },
+                    onKeyEvent = { keyEvent ->
+                        handleKeyEvent(
+                            keyEvent = keyEvent,
+                            currentRowIndex = selectedRowIndex,
+                            currentItemIndex = selectedItemIndices[selectedRowIndex] ?: 0,
+                            maxItemIndex = trendingMovies.movies.size - 1,
+                            onNavigateUp = {
+                                // No row above trending
                             },
+                            onNavigateDown = {
+                                if (popularMovies.movies.isNotEmpty()) {
+                                    selectedRowIndex = 1
+                                }
+                            },
+                            onNavigateLeft = { newIndex ->
+                                if (newIndex >= 0) {
+                                    selectedItemIndices = selectedItemIndices.toMutableMap().apply {
+                                        put(selectedRowIndex, newIndex)
+                                    }
+                                } else {
+                                    // Navigate to nav bar
+                                    focusLevel = 1
+                                    onLeftBoundary?.invoke()
+                                }
+                            },
+                            onNavigateRight = { newIndex ->
+                                selectedItemIndices = selectedItemIndices.toMutableMap().apply {
+                                    put(selectedRowIndex, newIndex)
+                                }
+                                // Trigger load more if near end
+                                if (newIndex >= trendingMovies.movies.size - 5) {
+                                    viewModel.loadTrendingMovies()
+                                }
+                            },
+                            onSelect = {
+                                val movie = trendingMovies.movies.getOrNull(selectedItemIndices[0] ?: 0)
+                                movie?.let {
+                                    Log.d("MoviesPage", "🎬 Selected movie: ${it.title}")
+                                    onNavigateToDetails?.invoke(it.id)
+                                }
+                            },
+                            onBack = {
+                                focusLevel = 1
+                                onLeftBoundary?.invoke()
+                            }
                         )
                     }
-                }
+                )
+            }
 
-                // ✅ NEW: All rows section with vertical scrolling
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .weight(if (shouldShowHero) 0.51f else 1f),
-                ) {
-                    val columnState = rememberLazyListState()
-
-                    LazyColumn(
-                        state = columnState,
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        contentPadding = PaddingValues(vertical = 16.dp),
-                        flingBehavior = com.strmr.ai.ui.components.rememberThrottledFlingBehavior(),
-                        modifier = Modifier.fillMaxSize(),
-                    ) {
-                        items(
-                            count = rowData.size,
-                            key = { index -> rowData[index].title },
-                        ) { rowIndex ->
-                            val row = rowData[rowIndex]
-                            val isRowSelected = selectedRowIndex == rowIndex
-
-                            UnifiedMediaRow(
-                                config =
-                                    MediaRowConfig(
-                                        title = row.title,
-                                        dataSource =
-                                            DataSource.RegularList(
-                                                items = row.movies,
-                                                paginationState = row.paginationState,
-                                            ),
-                                        onItemClick = { movie ->
-                                            if (movie is MovieEntity) {
-                                                onNavigateToDetails?.invoke(movie.tmdbId)
-                                            }
-                                        },
-                                        onPaginate = { page ->
-                                            Log.d("MoviesPage", "🚀 Pagination triggered for ${row.title} page $page")
-                                            val config = dataSourceConfigs.find { it.title == row.title }
-                                            if (config != null) {
-                                                when (config.id) {
-                                                    "trending", "popular" -> moviesViewModel.paginateMovies(config, page)
-                                                    else -> moviesViewModel.loadMovies(config)
-                                                }
-                                            }
-                                        },
-                                        cardType = CardType.PORTRAIT,
-                                        itemWidth = 120.dp,
-                                        itemSpacing = 12.dp,
-                                        itemContent = { movie, isFocused ->
-                                            MediaCard(
-                                                title = movie.title,
-                                                posterUrl = movie.posterUrl,
-                                                isSelected = isFocused,
-                                                onClick = {
-                                                    if (movie is MovieEntity) {
-                                                        onNavigateToDetails?.invoke(movie.tmdbId)
-                                                    }
-                                                },
-                                            )
-                                        },
-                                        // ✅ NEW: Handle row and item selection
-                                        onSelectionChanged = { itemIndex ->
-                                            selectedRowIndex = rowIndex
-                                            selectedItemIndex = itemIndex
-                                            Log.d("MoviesPage", "🎯 Selection changed: row=$rowIndex, item=$itemIndex")
-                                        },
-                                    ),
-                                rowIndex = rowIndex,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
+            // Popular Movies Row
+            item {
+                MovieRow(
+                    title = "Popular Movies",
+                    movieRowState = popularMovies,
+                    isRowFocused = focusLevel == 2 && selectedRowIndex == 1,
+                    selectedItemIndex = selectedItemIndices[1] ?: 0,
+                    onSelectionChanged = { itemIndex ->
+                        selectedItemIndices = selectedItemIndices.toMutableMap().apply {
+                            put(1, itemIndex)
                         }
+                        selectedRowIndex = 1
+                    },
+                    onItemClick = { movie ->
+                        Log.d("MoviesPage", "🎬 Clicked movie: ${movie.title}")
+                        onNavigateToDetails?.invoke(movie.id)
+                    },
+                    onLoadMore = {
+                        viewModel.loadPopularMovies()
+                    },
+                    onKeyEvent = { keyEvent ->
+                        handleKeyEvent(
+                            keyEvent = keyEvent,
+                            currentRowIndex = selectedRowIndex,
+                            currentItemIndex = selectedItemIndices[selectedRowIndex] ?: 0,
+                            maxItemIndex = popularMovies.movies.size - 1,
+                            onNavigateUp = {
+                                if (trendingMovies.movies.isNotEmpty()) {
+                                    selectedRowIndex = 0
+                                }
+                            },
+                            onNavigateDown = {
+                                // No row below popular
+                            },
+                            onNavigateLeft = { newIndex ->
+                                if (newIndex >= 0) {
+                                    selectedItemIndices = selectedItemIndices.toMutableMap().apply {
+                                        put(selectedRowIndex, newIndex)
+                                    }
+                                } else {
+                                    // Navigate to nav bar
+                                    focusLevel = 1
+                                    onLeftBoundary?.invoke()
+                                }
+                            },
+                            onNavigateRight = { newIndex ->
+                                selectedItemIndices = selectedItemIndices.toMutableMap().apply {
+                                    put(selectedRowIndex, newIndex)
+                                }
+                                // Trigger load more if near end
+                                if (newIndex >= popularMovies.movies.size - 5) {
+                                    viewModel.loadPopularMovies()
+                                }
+                            },
+                            onSelect = {
+                                val movie = popularMovies.movies.getOrNull(selectedItemIndices[1] ?: 0)
+                                movie?.let {
+                                    Log.d("MoviesPage", "🎬 Selected movie: ${it.title}")
+                                    onNavigateToDetails?.invoke(it.id)
+                                }
+                            },
+                            onBack = {
+                                focusLevel = 1
+                                onLeftBoundary?.invoke()
+                            }
+                        )
                     }
-                }
-            }
-
-            // Navigation arrows for vertical row navigation
-            if (selectedRowIndex > 0) {
-                Box(
-                    modifier =
-                        Modifier
-                            .align(Alignment.TopCenter)
-                            .padding(top = 16.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.KeyboardArrowUp,
-                        contentDescription = "Navigate up",
-                        tint = Color.White.copy(alpha = 0.7f),
-                        modifier = Modifier.size(32.dp),
-                    )
-                }
-            }
-
-            // Down arrow (shown when there are more rows below)
-            if (selectedRowIndex < rowData.size - 1) {
-                Box(
-                    modifier =
-                        Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 16.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.KeyboardArrowDown,
-                        contentDescription = "Navigate down",
-                        tint = Color.White.copy(alpha = 0.7f),
-                        modifier = Modifier.size(32.dp),
-                    )
-                }
+                )
             }
         }
+    }
+}
+
+private fun handleKeyEvent(
+    keyEvent: android.view.KeyEvent,
+    currentRowIndex: Int,
+    currentItemIndex: Int,
+    maxItemIndex: Int,
+    onNavigateUp: () -> Unit,
+    onNavigateDown: () -> Unit,
+    onNavigateLeft: (Int) -> Unit,
+    onNavigateRight: (Int) -> Unit,
+    onSelect: () -> Unit,
+    onBack: () -> Unit,
+): Boolean {
+    // Throttle navigation
+    val throttleMs = 80L
+    val currentTime = System.currentTimeMillis()
+    
+    return when (keyEvent.keyCode) {
+        android.view.KeyEvent.KEYCODE_DPAD_UP -> {
+            if (keyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
+                onNavigateUp()
+            }
+            true
+        }
+        android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
+            if (keyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
+                onNavigateDown()
+            }
+            true
+        }
+        android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
+            if (keyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
+                onNavigateLeft(currentItemIndex - 1)
+            }
+            true
+        }
+        android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
+            if (keyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
+                onNavigateRight((currentItemIndex + 1).coerceAtMost(maxItemIndex + 20)) // Allow going beyond for infinite scroll
+            }
+            true
+        }
+        android.view.KeyEvent.KEYCODE_DPAD_CENTER, android.view.KeyEvent.KEYCODE_ENTER -> {
+            if (keyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
+                onSelect()
+            }
+            true
+        }
+        android.view.KeyEvent.KEYCODE_BACK -> {
+            if (keyEvent.action == android.view.KeyEvent.ACTION_DOWN) {
+                onBack()
+            }
+            true
+        }
+        else -> false
     }
 }

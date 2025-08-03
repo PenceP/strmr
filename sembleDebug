@@ -1,0 +1,129 @@
+[1mdiff --git a/app/src/main/java/com/strmr/ai/ui/screens/SettingsPage.kt b/app/src/main/java/com/strmr/ai/ui/screens/SettingsPage.kt[m
+[1mindex fee2eec..55354af 100644[m
+[1m--- a/app/src/main/java/com/strmr/ai/ui/screens/SettingsPage.kt[m
+[1m+++ b/app/src/main/java/com/strmr/ai/ui/screens/SettingsPage.kt[m
+[36m@@ -536,12 +536,37 @@[m [mfun TraktSettingsContent([m
+ [m
+                     Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))[m
+ [m
+[32m+[m[32m                    Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))[m
+[32m+[m
+[32m+[m[32m                    var disconnectButtonFocused by remember { mutableStateOf(false) }[m
+                     Button([m
+                         onClick = { viewModel.logout() },[m
+                         colors = ButtonDefaults.buttonColors([m
+                             containerColor = StrmrConstants.Colors.ERROR_RED,[m
+                         ),[m
+[31m-                        modifier = Modifier.fillMaxWidth(),[m
+[32m+[m[32m                        border = if (disconnectButtonFocused) androidx.compose.foundation.BorderStroke([m
+[32m+[m[32m                            2.dp,[m[41m [m
+[32m+[m[32m                            StrmrConstants.Colors.PRIMARY_BLUE[m
+[32m+[m[32m                        ) else null,[m
+[32m+[m[32m                        modifier = Modifier[m
+[32m+[m[32m                            .fillMaxWidth()[m
+[32m+[m[32m                            .focusable()[m
+[32m+[m[32m                            .onFocusChanged { focusState ->[m
+[32m+[m[32m                                disconnectButtonFocused = focusState.isFocused[m
+[32m+[m[32m                            }[m
+[32m+[m[32m                            .onKeyEvent { keyEvent ->[m
+[32m+[m[32m                                if (keyEvent.type == androidx.compose.ui.input.key.KeyEventType.KeyDown) {[m
+[32m+[m[32m                                    when (keyEvent.key) {[m
+[32m+[m[32m                                        Key.Enter,[m
+[32m+[m[32m                                        Key.DirectionCenter -> {[m
+[32m+[m[32m                                            viewModel.logout()[m
+[32m+[m[32m                                            true[m
+[32m+[m[32m                                        }[m
+[32m+[m
+[32m+[m[32m                                        else -> false[m
+[32m+[m[32m                                    }[m
+[32m+[m[32m                                } else false[m
+[32m+[m[32m                            },[m
+                     ) {[m
+                         Icon([m
+                             imageVector = Icons.Default.Logout,[m
+[36m@@ -771,6 +796,7 @@[m [mfun PremiumizeSettingsContent([m
+                 Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_STANDARD))[m
+ [m
+                 // Save Button[m
+[32m+[m[32m                var saveButtonFocused by remember { mutableStateOf(false) }[m
+                 Button([m
+                     onClick = {[m
+                         coroutineScope.launch {[m
+[36m@@ -798,7 +824,16 @@[m [mfun PremiumizeSettingsContent([m
+                         containerColor = StrmrConstants.Colors.PRIMARY_BLUE,[m
+                         disabledContainerColor = StrmrConstants.Colors.BORDER_DARK,[m
+                     ),[m
+[31m-                    modifier = Modifier.fillMaxWidth(),[m
+[32m+[m[32m                    border = if (saveButtonFocused) androidx.compose.foundation.BorderStroke([m
+[32m+[m[32m                        2.dp,[m[41m [m
+[32m+[m[32m                        StrmrConstants.Colors.PRIMARY_BLUE[m
+[32m+[m[32m                    ) else null,[m
+[32m+[m[32m                    modifier = Modifier[m
+[32m+[m[32m                        .fillMaxWidth()[m
+[32m+[m[32m                        .focusable()[m
+[32m+[m[32m                        .onFocusChanged { focusState ->[m
+[32m+[m[32m                            saveButtonFocused = focusState.isFocused[m
+[32m+[m[32m                        },[m
+                 ) {[m
+                     if (isValidating) {[m
+                         CircularProgressIndicator([m
+[36m@@ -823,6 +858,8 @@[m [mfun PremiumizeSettingsContent([m
+                 if (isConfigured) {[m
+                     Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_SMALL))[m
+ [m
+[32m+[m[32m                    var clearButtonFocused by remember { mutableStateOf(false) }[m
+[32m+[m
+                     OutlinedButton([m
+                         onClick = {[m
+                             viewModel.clearApiKey()[m
+[36m@@ -833,7 +870,35 @@[m [mfun PremiumizeSettingsContent([m
+                         colors = ButtonDefaults.outlinedButtonColors([m
+                             contentColor = StrmrConstants.Colors.ERROR_RED,[m
+                         ),[m
+[31m-                        modifier = Modifier.fillMaxWidth(),[m
+[32m+[m[32m                        border = if (clearButtonFocused) androidx.compose.foundation.BorderStroke([m
+[32m+[m[32m                            2.dp,[m
+[32m+[m[32m                            StrmrConstants.Colors.PRIMARY_BLUE[m
+[32m+[m[32m                        ) else androidx.compose.foundation.BorderStroke([m
+[32m+[m[32m                            1.dp,[m
+[32m+[m[32m                            StrmrConstants.Colors.ERROR_RED[m
+[32m+[m[32m                        ),[m
+[32m+[m[32m                        modifier = Modifier[m
+[32m+[m[32m                            .fillMaxWidth()[m
+[32m+[m[32m                            .focusable()[m
+[32m+[m[32m                            .onFocusChanged { focusState ->[m
+[32m+[m[32m                                clearButtonFocused = focusState.isFocused[m
+[32m+[m[32m                            }[m
+[32m+[m[32m                            .onKeyEvent { keyEvent ->[m
+[32m+[m[32m                                if (keyEvent.type == androidx.compose.ui.input.key.KeyEventType.KeyDown) {[m
+[32m+[m[32m                                    when (keyEvent.key) {[m
+[32m+[m[32m                                        Key.Enter,[m
+[32m+[m[32m                                        Key.DirectionCenter -> {[m
+[32m+[m[32m                                            viewModel.clearApiKey()[m
+[32m+[m[32m                                            apiKey = ""[m
+[32m+[m[32m                                            isConfigured = false[m
+[32m+[m[32m                                            validationError = null[m
+[32m+[m[32m                                            true[m
+[32m+[m[32m                                        }[m
+[32m+[m
+[32m+[m[32m                                        else -> false[m
+[32m+[m[32m                                    }[m
+[32m+[m[32m                                } else false[m
+[32m+[m[32m                            },[m
+                     ) {[m
+                         Icon([m
+                             imageVector = Icons.Default.Delete,[m
+[36m@@ -1072,12 +1137,22 @@[m [mfun SystemSettingsContent([m
+                             Spacer(modifier = Modifier.height(StrmrConstants.Dimensions.SPACING_MEDIUM))[m
+ [m
+                             Row {[m
+[32m+[m[32m                                var updateNowButtonFocused by remember { mutableStateOf(false) }[m
+                                 Button([m
+                                     onClick = { updateViewModel.downloadAndInstallUpdate() },[m
+                                     colors =[m
+                                         ButtonDefaults.buttonColors([m
+                                             containerColor = StrmrConstants.Colors.PRIMARY_BLUE,[m
+                                         ),[m
+[32m+[m[32m                                    border = if (updateNowButtonFocused) androidx.compose.foundation.BorderStroke([m
+[32m+[m[32m                                        2.dp,[m
+[32m+[m[32m           

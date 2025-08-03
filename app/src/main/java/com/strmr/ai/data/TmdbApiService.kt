@@ -92,6 +92,17 @@ interface TmdbApiService {
         @Path("tv_id") tvId: Int,
         @Query("language") language: String = "en-US",
     ): TmdbVideosResponse
+
+    @GET("trending/movie/{time_window}")
+    suspend fun getTrendingMovies(
+        @Path("time_window") timeWindow: String = "week", // "day" or "week"
+        @Query("page") page: Int = 1,
+    ): TmdbMovieResponse
+
+    @GET("movie/popular")
+    suspend fun getPopularMovies(
+        @Query("page") page: Int = 1,
+    ): TmdbMovieResponse
 }
 
 data class TmdbMovieDetails(
@@ -256,4 +267,23 @@ data class TmdbSeasonSummary(
     val overview: String?,
     val poster_path: String?,
     val season_number: Int,
+)
+
+data class TmdbMovieResponse(
+    val page: Int,
+    val results: List<TmdbMovie>,
+    val total_pages: Int,
+    val total_results: Int,
+)
+
+data class TmdbMovie(
+    val id: Int,
+    val title: String,
+    val poster_path: String?,
+    val backdrop_path: String?,
+    val vote_average: Float?,
+    val release_date: String?,
+    val overview: String?,
+    val genre_ids: List<Int>? = null,
+    val adult: Boolean? = false,
 )
