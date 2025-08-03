@@ -51,8 +51,8 @@ fun MovieRow(
     val listState = rememberLazyListState()
     val focusRequester = remember { FocusRequester() }
     var isFocused by remember { mutableStateOf(false) }
-    
-    val posterWidth = 140.dp
+
+    val posterWidth = 115.dp
     val posterSpacing = 12.dp
     val selectorStart = StrmrConstants.Dimensions.Icons.EXTRA_LARGE
 
