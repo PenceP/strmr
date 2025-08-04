@@ -20,17 +20,59 @@ import kotlinx.coroutines.delay
 
 // Global focus state that survives navigation changes
 object GlobalFocusState {
-    private val _lastFocusedItemPerDestination = mutableMapOf<String, String>()
+    // Changed to store focus per row within each destination
+    private val _lastFocusedItemPerDestinationAndRow =
+        mutableMapOf<String, MutableMap<String, String>>()
     private val _focusTransferredOnLaunch = mutableStateOf(false)
     var lastRoute: String? = null
 
-    val lastFocusedItemPerDestination: MutableMap<String, String> get() = _lastFocusedItemPerDestination
+    val lastFocusedItemPerDestinationAndRow: MutableMap<String, MutableMap<String, String>> get() = _lastFocusedItemPerDestinationAndRow
     val focusTransferredOnLaunch: MutableState<Boolean> get() = _focusTransferredOnLaunch
+
+    // Helper functions to manage row-specific focus
+    fun getLastFocusedItemForRow(route: String, rowKey: String): String? {
+        return _lastFocusedItemPerDestinationAndRow[route]?.get(rowKey)
+    }
+
+    fun setLastFocusedItemForRow(route: String, rowKey: String, itemKey: String) {
+        if (_lastFocusedItemPerDestinationAndRow[route] == null) {
+            _lastFocusedItemPerDestinationAndRow[route] = mutableMapOf()
+        }
+        _lastFocusedItemPerDestinationAndRow[route]!![rowKey] = itemKey
+        Log.d("FocusDebug", "🗂️ Saved focus for route: $route, row: $rowKey, item: $itemKey")
+        Log.d("FocusDebug", "📋 Full focus map: $_lastFocusedItemPerDestinationAndRow")
+    }
+
+    fun getLastFocusedItemForRoute(route: String): String? {
+        // Return the most recently focused item in any row for this route
+        return _lastFocusedItemPerDestinationAndRow[route]?.values?.lastOrNull()
+    }
+
+    fun hasAnyFocusForRoute(route: String): Boolean {
+        return _lastFocusedItemPerDestinationAndRow[route]?.isNotEmpty() == true
+    }
+
+    // Backward compatibility helper functions for the old system
+    fun getLastFocusedItemKey(route: String): String? {
+        // Return the most recently focused item key for any row in this route
+        return _lastFocusedItemPerDestinationAndRow[route]?.values?.lastOrNull()
+    }
+
+    fun setLastFocusedItemKey(route: String, itemKey: String) {
+        // For backward compatibility, extract row key from item key or use default
+        val rowKey = when {
+            itemKey.contains("trending_row") -> "trending_row"
+            itemKey.contains("popular_row") -> "popular_row"
+            itemKey.contains("top_rated_row") -> "top_rated_row"
+            else -> "default_row"
+        }
+        setLastFocusedItemForRow(route, rowKey, itemKey)
+    }
 }
 
-private val LocalLastFocusedItemPerDestination =
-    compositionLocalOf<MutableMap<String, String>> {
-        GlobalFocusState.lastFocusedItemPerDestination
+private val LocalLastFocusedItemPerDestinationAndRow =
+    compositionLocalOf<MutableMap<String, MutableMap<String, String>>> {
+        GlobalFocusState.lastFocusedItemPerDestinationAndRow
     }
 private val LocalFocusTransferredOnLaunch =
     compositionLocalOf<MutableState<Boolean>> {
@@ -42,8 +84,11 @@ private val LocalCurrentRoute =
     }
 
 @Composable
-fun LocalLastFocusedItemPerDestinationProvider(content: @Composable () -> Unit) {
-    CompositionLocalProvider(LocalLastFocusedItemPerDestination provides GlobalFocusState.lastFocusedItemPerDestination, content = content)
+fun LocalLastFocusedItemPerDestinationAndRowProvider(content: @Composable () -> Unit) {
+    CompositionLocalProvider(
+        LocalLastFocusedItemPerDestinationAndRow provides GlobalFocusState.lastFocusedItemPerDestinationAndRow,
+        content = content
+    )
 }
 
 @Composable
@@ -57,7 +102,7 @@ fun LocalCurrentRouteProvider(
     content: @Composable () -> Unit,
 ) {
     val isInitialFocusTransferred = useLocalFocusTransferredOnLaunch()
-    val lastFocusedItemPerDestination = useLocalLastFocusedItemPerDestination()
+    val lastFocusedItemPerDestinationAndRow = useLocalLastFocusedItemPerDestinationAndRow()
 
     // For focus restoration from details pages, we need to detect when we're coming back
     // The key insight: when returning from details, don't reset the focus transfer state
@@ -75,7 +120,7 @@ fun LocalCurrentRouteProvider(
             isInitialFocusTransferred.value = false
         } else {
             // Check if we have saved focus for this route - if yes, we're likely returning from a sub-page
-            val hasSavedFocus = lastFocusedItemPerDestination[currentRoute] != null
+            val hasSavedFocus = GlobalFocusState.hasAnyFocusForRoute(currentRoute)
             Log.d(
                 "FocusDebug",
                 "📋 Checking route $currentRoute - hasSavedFocus: $hasSavedFocus, isInitialFocusTransferred: ${isInitialFocusTransferred.value}",
@@ -112,7 +157,7 @@ private fun isNavigatingBack(
 }
 
 @Composable
-fun useLocalLastFocusedItemPerDestination() = LocalLastFocusedItemPerDestination.current
+fun useLocalLastFocusedItemPerDestinationAndRow() = LocalLastFocusedItemPerDestinationAndRow.current
 
 @Composable
 fun useLocalCurrentRoute() = LocalCurrentRoute.current
@@ -176,26 +221,27 @@ fun createInitialFocusRestorerModifiers(): FocusRequesterModifiers {
 @Composable
 fun Modifier.focusOnMount(
     itemKey: String,
+    rowKey: String,
     onFocus: (() -> Unit)? = null,
 ): Modifier {
     val isInitialFocusTransferred = useLocalFocusTransferredOnLaunch()
-    val lastFocusedItemPerDestination = useLocalLastFocusedItemPerDestination()
+    val lastFocusedItemPerDestinationAndRow = useLocalLastFocusedItemPerDestinationAndRow()
     val currentRoute = useLocalCurrentRoute()
 
     val focusRequester = remember { FocusRequester() }
 
     // Add LaunchedEffect for delayed focus restoration
     LaunchedEffect(currentRoute, itemKey) {
-        val lastFocusedKey = lastFocusedItemPerDestination[currentRoute]
+        val lastFocusedKey = GlobalFocusState.getLastFocusedItemForRow(currentRoute, rowKey)
 
         // Add detailed logging for debugging
         Log.d(
             "FocusDebug",
-            "🔍 FocusHelper check - route: $currentRoute, itemKey: $itemKey, lastFocusedKey: $lastFocusedKey"
+            "🔍 FocusHelper check - route: $currentRoute, row: $rowKey, itemKey: $itemKey, lastFocusedKey: $lastFocusedKey"
         )
         Log.d(
             "FocusDebug",
-            "🗂️ Full focus map: $lastFocusedItemPerDestination"
+            "🗂️ Full focus map: ${GlobalFocusState.lastFocusedItemPerDestinationAndRow}"
         )
         Log.d(
             "FocusDebug",
@@ -210,7 +256,7 @@ fun Modifier.focusOnMount(
             if (isTargetRoute && !isIntermediatePage) {
                 Log.d(
                     "FocusDebug",
-                    "🎯 Delayed focus restoration for itemKey: $itemKey in route: $currentRoute"
+                    "🎯 Delayed focus restoration for itemKey: $itemKey in route: $currentRoute, row: $rowKey"
                 )
 
                 // Add delay to ensure UI is fully rendered
@@ -249,20 +295,23 @@ fun Modifier.focusOnMount(
     return this
         .focusRequester(focusRequester)
         .onGloballyPositioned {
-            val lastFocusedKey = lastFocusedItemPerDestination[currentRoute]
+            val lastFocusedKey = GlobalFocusState.getLastFocusedItemForRow(currentRoute, rowKey)
             // Only log when there's a match to restore
             if (lastFocusedKey == itemKey && !isInitialFocusTransferred.value) {
                 Log.d(
                     "FocusDebug",
-                    "🎯 Match found - route: $currentRoute, itemKey: $itemKey, lastFocusedKey: $lastFocusedKey",
+                    "🎯 Match found - route: $currentRoute, row: $rowKey, itemKey: $itemKey, lastFocusedKey: $lastFocusedKey",
                 )
             }
         }
         .onFocusChanged {
             if (it.isFocused) {
-                Log.d("FocusDebug", "📍 FOCUS GAINED by itemKey: $itemKey in route: $currentRoute")
+                Log.d(
+                    "FocusDebug",
+                    "📍 FOCUS GAINED by itemKey: $itemKey in route: $currentRoute, row: $rowKey"
+                )
                 onFocus?.invoke()
-                lastFocusedItemPerDestination[currentRoute] = itemKey
+                GlobalFocusState.setLastFocusedItemForRow(currentRoute, rowKey, itemKey)
                 Log.d(
                     "FocusDebug",
                     "🔒 Setting isInitialFocusTransferred=true from onFocusChanged for $itemKey"
@@ -270,4 +319,62 @@ fun Modifier.focusOnMount(
                 isInitialFocusTransferred.value = true
             }
         }
+}
+
+/**
+ * Composable that manages row-specific focus restoration.
+ * This should be used at the row level to restore focus when a row becomes visible again.
+ *
+ * @param rowKey Unique identifier for this row (e.g., "trending", "popular", "top_rated")
+ * @param isVisible Whether this row is currently visible to the user
+ */
+@Composable
+fun RowFocusManager(
+    rowKey: String,
+    isVisible: Boolean,
+    content: @Composable () -> Unit
+) {
+    val currentRoute = useLocalCurrentRoute()
+    val isInitialFocusTransferred = useLocalFocusTransferredOnLaunch()
+
+    // Track when this row becomes visible after being invisible
+    LaunchedEffect(isVisible, rowKey, currentRoute) {
+        if (isVisible) {
+            val lastFocusedInRow = GlobalFocusState.getLastFocusedItemForRow(currentRoute, rowKey)
+
+            Log.d(
+                "FocusDebug",
+                "👁️ Row '$rowKey' became visible in route '$currentRoute' - lastFocusedInRow: $lastFocusedInRow"
+            )
+
+            if (lastFocusedInRow != null && !isInitialFocusTransferred.value) {
+                Log.d(
+                    "FocusDebug",
+                    "🔄 Row '$rowKey' has saved focus item '$lastFocusedInRow' - will attempt restoration"
+                )
+            } else {
+                Log.d(
+                    "FocusDebug",
+                    "ℹ️ Row '$rowKey' - no focus to restore (lastFocused: $lastFocusedInRow, transferred: ${isInitialFocusTransferred.value})"
+                )
+            }
+        } else {
+            Log.d("FocusDebug", "👁️‍🗨️ Row '$rowKey' is no longer visible")
+        }
+    }
+
+    content()
+}
+
+/**
+ * [FocusRequesterModifiers] defines a set of modifiers which can be used for restoring focus and
+ * specifying the initially focused item.
+ *
+ * @param [parentModifier] is added to the parent container.
+ * @param [childModifier] is added to the item that needs to first gain focus.
+ */
+
+@Composable
+fun LocalLastFocusedItemPerDestinationProvider(content: @Composable () -> Unit) {
+    LocalLastFocusedItemPerDestinationAndRowProvider(content)
 }

@@ -45,10 +45,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.strmr.ai.ui.components.MoviePosterCard
 import com.strmr.ai.ui.theme.StrmrConstants
+import com.strmr.ai.ui.utils.GlobalFocusState
 import com.strmr.ai.ui.utils.WithFocusProviders
 import com.strmr.ai.ui.utils.focusOnMount
 import com.strmr.ai.ui.utils.useLocalCurrentRoute
-import com.strmr.ai.ui.utils.useLocalLastFocusedItemPerDestination
+import com.strmr.ai.ui.utils.useLocalLastFocusedItemPerDestinationAndRow
 import com.strmr.ai.viewmodel.MoviesViewModel
 import kotlinx.coroutines.delay
 
@@ -74,10 +75,14 @@ fun MoviesPage(
         var trendingSelectedIndex by remember { mutableStateOf(0) }
         var popularSelectedIndex by remember { mutableStateOf(0) }
 
+        // Store the last focused index for each row to remember positions when switching
+        var trendingLastFocusedIndex by remember { mutableStateOf(0) }
+        var popularLastFocusedIndex by remember { mutableStateOf(0) }
+
         val columnState = rememberLazyListState()
 
         // Get focus state for restoration checks
-        val lastFocusedItemPerDestination = useLocalLastFocusedItemPerDestination()
+        val lastFocusedItemPerDestination = useLocalLastFocusedItemPerDestinationAndRow()
 
         // Handle external focus
         LaunchedEffect(isContentFocused) {
@@ -92,15 +97,52 @@ fun MoviesPage(
                 // Small delay to ensure UI is ready, then try to restore saved focus
                 delay(100)
 
-                // Check if we have saved focus to restore
+                // Use helper functions to check if we have saved focus to restore
                 val currentRoute = "movies"
-                val hasSavedFocus = lastFocusedItemPerDestination[currentRoute] != null
+                val trendingFocusKey =
+                    GlobalFocusState.getLastFocusedItemForRow(currentRoute, "trending_row")
+                val popularFocusKey =
+                    GlobalFocusState.getLastFocusedItemForRow(currentRoute, "popular_row")
+                val savedFocusKey = GlobalFocusState.getLastFocusedItemKey(currentRoute)
+                val hasSavedFocus = savedFocusKey != null
 
                 if (hasSavedFocus) {
                     Log.d(
                         "MoviesPage",
-                        "🔄 Has saved focus for restoration: ${lastFocusedItemPerDestination[currentRoute]}"
+                        "🔄 Has saved focus for restoration: $savedFocusKey (trending: $trendingFocusKey, popular: $popularFocusKey)"
                     )
+
+                    // Determine which row should be focused based on the most recent saved focus key
+                    val targetRowIndex = when {
+                        savedFocusKey?.startsWith("trending_row") == true -> 0
+                        savedFocusKey?.startsWith("popular_row") == true -> 1
+                        else -> 0 // Default to trending if unclear
+                    }
+
+                    if (targetRowIndex != focusedRowIndex) {
+                        Log.d(
+                            "MoviesPage",
+                            "🎯 Adjusting focused row from $focusedRowIndex to $targetRowIndex based on saved focus"
+                        )
+                        focusedRowIndex = targetRowIndex
+                    }
+
+                    // When returning from details, restore the appropriate row position if it's currently at 0
+                    // This handles the case where focus restoration succeeded but position needs adjustment
+                    if (targetRowIndex == 0 && trendingSelectedIndex == 0 && trendingLastFocusedIndex > 0) {
+                        Log.d(
+                            "MoviesPage",
+                            "🔄 Restoring Trending position from 0 to $trendingLastFocusedIndex"
+                        )
+                        trendingSelectedIndex = trendingLastFocusedIndex
+                    } else if (targetRowIndex == 1 && popularSelectedIndex == 0 && popularLastFocusedIndex > 0) {
+                        Log.d(
+                            "MoviesPage",
+                            "🔄 Restoring Popular position from 0 to $popularLastFocusedIndex"
+                        )
+                        popularSelectedIndex = popularLastFocusedIndex
+                    }
+
                 } else {
                     Log.d("MoviesPage", "🆕 No saved focus, will use default focus behavior")
                 }
@@ -109,7 +151,13 @@ fun MoviesPage(
 
         // Scroll to focused row
         LaunchedEffect(focusedRowIndex) {
-            columnState.animateScrollToItem(focusedRowIndex)
+            if (isPageFocused && focusedRowIndex in 0 until 2) {
+                Log.d(
+                    "MoviesPage",
+                    " Focusing row $focusedRowIndex (${if (focusedRowIndex == 0) "Trending" else "Popular"})"
+                )
+                columnState.animateScrollToItem(focusedRowIndex)
+            }
         }
 
         // Get current selected movie for background
@@ -179,8 +227,22 @@ fun MoviesPage(
                         hasMore = trendingMovies.hasMore,
                         isFocused = isPageFocused && focusedRowIndex == 0,
                         selectedIndex = trendingSelectedIndex,
-                        onSelectionChanged = { trendingSelectedIndex = it },
+                        onSelectionChanged = {
+                            Log.d(
+                                "MoviesPage",
+                                " Trending selection changed: $trendingSelectedIndex -> $it"
+                            )
+                            trendingSelectedIndex = it
+                            trendingLastFocusedIndex = it  // Always save the current position
+                        },
                         onMovieClick = { movie ->
+                            // Save trending focus before navigating to details
+                            val trendingFocusKey = "trending_row_movie_${movie.id}"
+                            GlobalFocusState.setLastFocusedItemForRow("movies", "trending_row", trendingFocusKey)
+                            Log.d(
+                                "MoviesPage",
+                                "💾 Saved trending focus before details navigation: $trendingFocusKey"
+                            )
                             onNavigateToDetails?.invoke(movie.id)
                         },
                         onLoadMore = { viewModel.loadTrendingMovies() },
@@ -188,7 +250,26 @@ fun MoviesPage(
                             // Already at top
                         },
                         onNavigateDown = {
-                            if (popularMovies.movies.isNotEmpty()) focusedRowIndex = 1
+                            if (popularMovies.movies.isNotEmpty()) {
+                                Log.d("MoviesPage", "🔽 Navigating from Trending to Popular row")
+                                // Save current trending position and restore popular position
+                                trendingLastFocusedIndex = trendingSelectedIndex
+                                val currentMovie = trendingMovies.movies.getOrNull(trendingSelectedIndex)
+                                if (currentMovie != null) {
+                                    val trendingFocusKey = "trending_row_movie_${currentMovie.id}"
+                                    GlobalFocusState.setLastFocusedItemForRow("movies", "trending_row", trendingFocusKey)
+                                    Log.d(
+                                        "MoviesPage",
+                                        "💾 Manually saved trending focus: $trendingFocusKey for index $trendingSelectedIndex"
+                                    )
+                                }
+                                popularSelectedIndex = popularLastFocusedIndex
+                                Log.d(
+                                    "MoviesPage",
+                                    "💾 Saved Trending at $trendingSelectedIndex, restored Popular to $popularLastFocusedIndex"
+                                )
+                                focusedRowIndex = 1
+                            }
                         },
                         onNavigateLeft = { canGoLeft ->
                             if (!canGoLeft) {
@@ -215,13 +296,46 @@ fun MoviesPage(
                         hasMore = popularMovies.hasMore,
                         isFocused = isPageFocused && focusedRowIndex == 1,
                         selectedIndex = popularSelectedIndex,
-                        onSelectionChanged = { popularSelectedIndex = it },
+                        onSelectionChanged = {
+                            Log.d(
+                                "MoviesPage",
+                                " Popular selection changed: $popularSelectedIndex -> $it"
+                            )
+                            popularSelectedIndex = it
+                            popularLastFocusedIndex = it  // Always save the current position
+                        },
                         onMovieClick = { movie ->
+                            // Save popular focus before navigating to details
+                            val popularFocusKey = "popular_row_movie_${movie.id}"
+                            GlobalFocusState.setLastFocusedItemForRow("movies", "popular_row", popularFocusKey)
+                            Log.d(
+                                "MoviesPage",
+                                "💾 Saved popular focus before details navigation: $popularFocusKey"
+                            )
                             onNavigateToDetails?.invoke(movie.id)
                         },
                         onLoadMore = { viewModel.loadPopularMovies() },
                         onNavigateUp = {
-                            if (trendingMovies.movies.isNotEmpty()) focusedRowIndex = 0
+                            if (trendingMovies.movies.isNotEmpty()) {
+                                Log.d("MoviesPage", "🔼 Navigating from Popular to Trending row")
+                                // Save current popular position and restore trending position
+                                popularLastFocusedIndex = popularSelectedIndex
+                                val currentMovie = popularMovies.movies.getOrNull(popularSelectedIndex)
+                                if (currentMovie != null) {
+                                    val popularFocusKey = "popular_row_movie_${currentMovie.id}"
+                                    GlobalFocusState.setLastFocusedItemForRow("movies", "popular_row", popularFocusKey)
+                                    Log.d(
+                                        "MoviesPage",
+                                        "💾 Manually saved popular focus: $popularFocusKey for index $popularSelectedIndex"
+                                    )
+                                }
+                                trendingSelectedIndex = trendingLastFocusedIndex
+                                Log.d(
+                                    "MoviesPage",
+                                    "💾 Saved Popular at $popularSelectedIndex, restored Trending to $trendingLastFocusedIndex"
+                                )
+                                focusedRowIndex = 0
+                            }
                         },
                         onNavigateDown = { /* Already at bottom */ },
                         onNavigateLeft = { canGoLeft ->
@@ -264,7 +378,7 @@ private fun SimpleMovieRow(
     val listState = rememberLazyListState()
     val focusRequester = remember { FocusRequester() }
     var isInternallyFocused by remember { mutableStateOf(false) }
-    val lastFocusedItemPerDestination = useLocalLastFocusedItemPerDestination()
+    val lastFocusedItemPerDestination = useLocalLastFocusedItemPerDestinationAndRow()
     val currentRouteFromHook = useLocalCurrentRoute()
 
     val posterWidth = 115.dp
@@ -298,7 +412,17 @@ private fun SimpleMovieRow(
     // Scroll to keep selected poster in static focus position
     LaunchedEffect(selectedIndex, isFocused) {
         if (isFocused && movies.isNotEmpty() && selectedIndex in 0 until movies.size) {
+            // Ensure proper delay for UI to be ready
+            delay(100)
             listState.animateScrollToItem(selectedIndex)
+            Log.d(
+                "MoviesPage",
+                "📍 Smooth scrolling ${title} to index $selectedIndex (${
+                    movies.getOrNull(
+                        selectedIndex
+                    )?.title
+                }) - isFocused: $isFocused"
+            )
         }
     }
 
@@ -309,12 +433,22 @@ private fun SimpleMovieRow(
         }
     }
 
-    // Also handle initial positioning when row becomes focused with pre-set selectedIndex
-    LaunchedEffect(isFocused, movies.size) {
-        if (isFocused && movies.isNotEmpty() && selectedIndex > 0) {
-            // Small delay to ensure the row is ready, then position the selected poster
-            delay(150) // Increased delay
-            listState.scrollToItem(selectedIndex)
+    // Enhanced initial positioning when row becomes focused with pre-set selectedIndex
+    LaunchedEffect(isFocused, movies.size, selectedIndex) {
+        if (isFocused && movies.isNotEmpty() && selectedIndex >= 0) {
+            // Enhanced delay to ensure the row is ready, then position the selected poster
+            delay(200)
+            if (selectedIndex < movies.size) {
+                listState.scrollToItem(selectedIndex)
+                Log.d(
+                    "MoviesPage",
+                    "🎯 Positioning ${title} row to index $selectedIndex (${
+                        movies.getOrNull(
+                            selectedIndex
+                        )?.title
+                    }) - isFocused: $isFocused"
+                )
+            }
         }
     }
 
@@ -377,12 +511,15 @@ private fun SimpleMovieRow(
                                     movies.getOrNull(selectedIndex)?.let { movie ->
                                         // Save the focus key manually before navigation (same as onClick)
                                         val focusKey = "${rowKey}_movie_${movie.id}"
-                                        val currentRoute = "movies"
+                                        val currentRoute = "movies" // Force to movies for debugging
                                         Log.d(
                                             "MoviesPage",
                                             " Route debugging - useLocalCurrentRoute(): $currentRouteFromHook, hardcoded: $currentRoute"
                                         )
-                                        lastFocusedItemPerDestination[currentRoute] = focusKey
+                                        GlobalFocusState.setLastFocusedItemKey(
+                                            currentRoute,
+                                            focusKey
+                                        )
                                         Log.d(
                                             "MoviesPage",
                                             "🎬 Movie selected via DPAD_CENTER: ${movie.title} (ID: ${movie.id})"
@@ -427,6 +564,7 @@ private fun SimpleMovieRow(
                             .focusRequester(posterFocusRequester)
                             .focusOnMount(
                                 itemKey = "${rowKey}_movie_${movie.id}",
+                                rowKey = rowKey,
                                 onFocus = {
                                     onSelectionChanged(index)
                                     Log.d(
@@ -462,7 +600,7 @@ private fun SimpleMovieRow(
                                     "MoviesPage",
                                     "🔍 Route debugging - useLocalCurrentRoute(): $currentRouteFromHook, hardcoded: $currentRoute"
                                 )
-                                lastFocusedItemPerDestination[currentRoute] = focusKey
+                                GlobalFocusState.setLastFocusedItemKey(currentRoute, focusKey)
                                 Log.d(
                                     "MoviesPage",
                                     "🎬 Movie clicked: ${movie.title} (ID: ${movie.id})"
