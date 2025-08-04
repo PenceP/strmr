@@ -421,7 +421,7 @@ private fun SimpleMovieRow(
                     movies.getOrNull(
                         selectedIndex
                     )?.title
-                }) - isFocused: $isFocused"
+                })"
             )
         }
     }
@@ -446,7 +446,7 @@ private fun SimpleMovieRow(
                         movies.getOrNull(
                             selectedIndex
                         )?.title
-                    }) - isFocused: $isFocused"
+                    })"
                 )
             }
         }
@@ -509,15 +509,16 @@ private fun SimpleMovieRow(
 
                                 android.view.KeyEvent.KEYCODE_DPAD_CENTER, android.view.KeyEvent.KEYCODE_ENTER -> {
                                     movies.getOrNull(selectedIndex)?.let { movie ->
-                                        // Save the focus key manually before navigation (same as onClick)
+                                        // Save the focus key using row-specific method
                                         val focusKey = "${rowKey}_movie_${movie.id}"
-                                        val currentRoute = "movies" // Force to movies for debugging
+                                        val currentRoute = "movies"
                                         Log.d(
                                             "MoviesPage",
-                                            " Route debugging - useLocalCurrentRoute(): $currentRouteFromHook, hardcoded: $currentRoute"
+                                            "🔍 Route debugging - useLocalCurrentRoute(): $currentRouteFromHook, hardcoded: $currentRoute"
                                         )
-                                        GlobalFocusState.setLastFocusedItemKey(
+                                        GlobalFocusState.setLastFocusedItemForRow(
                                             currentRoute,
+                                            rowKey,
                                             focusKey
                                         )
                                         Log.d(
@@ -526,11 +527,11 @@ private fun SimpleMovieRow(
                                         )
                                         Log.d(
                                             "MoviesPage",
-                                            "🔑 Manually saved focus key via DPAD: $focusKey for route: $currentRoute"
+                                            "🔑 Saved focus key via DPAD (row-specific): $focusKey for route: $currentRoute, row: $rowKey"
                                         )
                                         Log.d(
                                             "MoviesPage",
-                                            "🗂️ Current focus map contents: $lastFocusedItemPerDestination"
+                                            "🗂️ Current focus map contents: ${GlobalFocusState.lastFocusedItemPerDestinationAndRow}"
                                         )
                                         onMovieClick(movie)
                                     }
@@ -593,25 +594,25 @@ private fun SimpleMovieRow(
                             isFocused = isPosterFocused, // Use individual poster focus state
                             onClick = {
                                 onSelectionChanged(index)
-                                // Save the focus key manually before navigation
+                                // Save the focus key using row-specific method
                                 val focusKey = "${rowKey}_movie_${movie.id}"
-                                val currentRoute = "movies" // Force to movies for debugging
+                                val currentRoute = "movies"
                                 Log.d(
                                     "MoviesPage",
                                     "🔍 Route debugging - useLocalCurrentRoute(): $currentRouteFromHook, hardcoded: $currentRoute"
                                 )
-                                GlobalFocusState.setLastFocusedItemKey(currentRoute, focusKey)
+                                GlobalFocusState.setLastFocusedItemForRow(currentRoute, rowKey, focusKey)
                                 Log.d(
                                     "MoviesPage",
                                     "🎬 Movie clicked: ${movie.title} (ID: ${movie.id})"
                                 )
                                 Log.d(
                                     "MoviesPage",
-                                    "🔑 Manually saved focus key: $focusKey for route: $currentRoute"
+                                    "🔑 Saved focus key via onClick (row-specific): $focusKey for route: $currentRoute, row: $rowKey"
                                 )
                                 Log.d(
                                     "MoviesPage",
-                                    "🗂️ Current focus map contents: $lastFocusedItemPerDestination"
+                                    "🗂️ Current focus map contents: ${GlobalFocusState.lastFocusedItemPerDestinationAndRow}"
                                 )
                                 onMovieClick(movie)
                             }
