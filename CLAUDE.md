@@ -1,4 +1,6 @@
-# Project Configuration
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
 
@@ -13,62 +15,157 @@
 - **Async**: Coroutines + Flow
 - **Build System**: Gradle with Kotlin DSL
 
-## AI Development Team Configuration
+## Essential Commands
 
-Your project uses: Android SDK 35, Kotlin 2.0, Jetpack Compose, Room, Hilt, Retrofit
+### Building and Running
+```bash
+# Build debug APK
+./gradlew assembleDebug
 
-### Specialist Assignments
+# Build release APK
+./gradlew assembleRelease
 
-Since we don't have Android/Kotlin specific specialists, I'm configuring universal specialists with Android expertise:
+# Clean build
+./gradlew clean
 
-- **API Development** → @api-architect
-  - Retrofit service interfaces, API models
-  - Repository pattern implementation
-  - Network error handling, interceptors
-  
-- **Backend Logic** → @backend-developer
-  - ViewModels, Use Cases, business logic
-  - Coroutines, Flow, state management
-  - Data transformation and mapping
-  
-- **UI Components** → @frontend-developer
-  - Jetpack Compose UI components
-  - Android TV specific layouts
-  - Material Design implementation
-  
-- **Database** → @backend-developer
-  - Room entities, DAOs, migrations
-  - Paging 3 integration
-  - Query optimization
-  
-- **Performance** → @performance-optimizer
-  - Memory management, leak detection
-  - Compose performance optimization
-  - Video playback optimization
-  
-- **Code Quality** → @code-reviewer
-  - Kotlin idioms and best practices
-  - Android architecture guidelines
-  - Security and API key management
+# Install on connected device
+./gradlew installDebug
+```
 
-### How to Use Your Team
+### Testing
+```bash
+# Run all unit tests
+./gradlew test
 
-- **For UI work**: "Create a Compose component for movie details"
-- **For API integration**: "Add Trakt API endpoint for watchlist"
-- **For database**: "Optimize Room queries for better performance"
-- **For video player**: "Fix ExoPlayer HLS streaming issues"
-- **For architecture**: "Refactor to clean architecture pattern"
-- **For reviews**: "Review my ViewModel implementation"
+# Run specific test class
+./gradlew test --tests "com.strmr.ai.domain.usecase.FetchLogoUseCaseTest"
 
-### Android-Specific Guidance
+# Run all checks (includes lint)
+./gradlew check
+```
 
-When working with specialists, provide Android context:
-- Mention target SDK version (35) and minimum SDK (30)
-- Specify if it's for Android TV vs mobile
-- Include relevant dependencies (Hilt, Room, etc.)
-- Reference Material Design guidelines for TV
+### Required Setup
+Before building, create a `secrets.properties` file in the project root with API keys:
+```
+TRAKT_API_KEY=your_trakt_key_here
+TMDB_READ_KEY=your_tmdb_key_here
+OMDB_API_KEY=your_omdb_key_here
+```
 
-Your specialized AI team is ready to help build your Android TV streaming app!
+## Architecture Overview
 
----
-*Configuration created by team-configurator on 2025-07-28*
+### Project Structure
+```
+app/src/main/java/com/strmr/ai/
+├── data/               # Data layer - API services, repositories, models
+│   ├── api/           # Retrofit services (Trakt, TMDB, OMDb)
+│   ├── database/      # Room entities, DAOs, converters
+│   ├── models/        # API response models
+│   └── paging/        # Paging 3 sources
+├── di/                # Hilt dependency injection modules
+├── domain/            # Business logic layer
+│   └── usecase/       # Use cases for business operations
+├── ui/                # Presentation layer
+│   ├── components/    # Reusable Compose components
+│   ├── navigation/    # Navigation components
+│   ├── screens/       # Screen composables
+│   └── theme/         # Material theme configuration
+├── utils/             # Utility classes and extensions
+├── viewmodel/         # ViewModels for UI state management
+└── MainActivity.kt    # Main activity with navigation setup
+```
+
+### Key Architectural Patterns
+
+1. **MVVM with Repository Pattern**
+   - ViewModels manage UI state and business logic
+   - Repositories abstract data sources (API, database)
+   - Use cases encapsulate single business operations
+
+2. **Dependency Injection with Hilt**
+   - All major components use constructor injection
+   - Modules provide implementations in `di/` directory
+   - ViewModels use `@HiltViewModel` annotation
+
+3. **Reactive Data Flow**
+   - Kotlin Flow for data streams
+   - StateFlow in ViewModels for UI state
+   - Coroutines for async operations
+
+4. **Paging 3 Integration**
+   - Used for infinite scrolling in content lists
+   - Integrated with Room for caching
+   - Custom PagingSource implementations
+
+5. **Navigation**
+   - Jetpack Compose Navigation
+   - Focus management for TV navigation
+   - Custom FocusMemoryManager for focus restoration
+
+## Important Implementation Details
+
+### API Integration
+- **Trakt API**: User authentication, watchlists, trending content
+- **TMDB API**: Movie/TV metadata, images, trailers
+- **OMDb API**: Ratings from IMDb, Rotten Tomatoes, Metacritic
+- **Scrapers**: Torrentio integration for stream sources
+
+### Database Schema
+- Room database with entities for movies, TV shows, episodes
+- Caching strategy for API responses
+- Paging 3 RemoteMediator for cache + network
+
+### TV-Specific Considerations
+- Focus handling with custom `FocusMemoryManager`
+- D-pad navigation support
+- Large screen layouts optimized for 10-foot UI
+- Hardware remote key handling (including backspace as back)
+
+### Video Playback
+- ExoPlayer (Media3) as primary player
+- LibVLC as fallback for better codec support
+- YouTube video extraction for trailers
+- Stream selection from multiple sources
+
+## Development Workflow
+
+1. **Feature Development**
+   - Create feature branch from `main`
+   - Follow existing patterns in similar components
+   - Add appropriate error handling and loading states
+   - Test on Android TV emulator (API 30+)
+
+2. **Code Style**
+   - Follow Kotlin coding conventions
+   - Use Compose preview annotations for UI components
+   - Maintain consistent naming patterns
+   - Keep composables small and focused
+
+3. **Testing Approach**
+   - Unit tests for ViewModels and use cases
+   - Mock repositories for testing
+   - Use `kotlinx-coroutines-test` for async testing
+
+4. **Performance Considerations**
+   - Minimize recompositions in Compose
+   - Use proper keys in lazy lists
+   - Cache network responses in Room
+   - Optimize image loading with Coil
+
+## Current Development Focus
+
+The project uses a detailed task tracking system in `TASKS.md`. Key priorities:
+
+1. **Code Quality & Architecture** - Refactoring to improve maintainability
+2. **Performance Optimization** - Improving app speed and responsiveness
+3. **Torrent Scraper Integration** - Adding stream sources via debrid services
+4. **Trakt Scrobbling** - Automatic watch progress tracking
+
+## Android TV Specific Guidelines
+
+- Always test with D-pad navigation
+- Ensure focus indicators are clearly visible
+- Handle back button properly for navigation
+- Support voice search where applicable
+- Optimize for landscape orientation only
+- Test on actual Android TV hardware when possible
