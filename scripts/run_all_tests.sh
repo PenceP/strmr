@@ -144,9 +144,22 @@ if [ "$TEST_SUITE" != "quick" ] || [ "$TEST_SUITE" = "memory-only" ]; then
         MEMORY_DURATION=5
         [ "$TEST_SUITE" = "memory-only" ] && MEMORY_DURATION=10
         
-        run_test_suite "Device Memory Monitoring (${MEMORY_DURATION}min)" "./scripts/memory_monitor.sh $MEMORY_DURATION $DEVICE_ID" false
+        # Run memory monitor but handle graceful failures (app not installed)
+        if ./scripts/memory_monitor.sh $MEMORY_DURATION $DEVICE_ID; then
+            PASSED_TESTS=$((PASSED_TESTS + 1))
+            echo "✅ **PASSED**: Device Memory Monitoring (${MEMORY_DURATION}min)" >> "$MAIN_REPORT"
+        else
+            # Check if it was a graceful skip (exit code 0) or actual failure
+            if [ $? -eq 0 ]; then
+                skip_test "Device Memory Monitoring" "App not installed on device"
+            else
+                FAILED_TESTS=$((FAILED_TESTS + 1))
+                echo "❌ **FAILED**: Device Memory Monitoring (${MEMORY_DURATION}min)" >> "$MAIN_REPORT"
+            fi
+        fi
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
         
-        # Add memory report link
+        # Add memory report link if available
         LATEST_MEMORY_REPORT=$(ls -t build/memory_reports/memory_report_*.txt 2>/dev/null | head -1)
         if [ -n "$LATEST_MEMORY_REPORT" ]; then
             echo "**Memory Report**: [$LATEST_MEMORY_REPORT]($LATEST_MEMORY_REPORT)" >> "$MAIN_REPORT"
