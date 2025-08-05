@@ -92,6 +92,10 @@ dependencies {
     // Paging 3
     implementation(libs.androidx.paging.runtime)
     implementation(libs.androidx.paging.compose)
+    
+    // DpadRecyclerView for Android TV focus management
+    implementation("com.rubensousa.dpadrecyclerview:dpadrecyclerview:1.3.0")
+    implementation("com.rubensousa.dpadrecyclerview:dpadrecyclerview-compose:1.3.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.9.3")
     implementation("androidx.work:work-runtime-ktx:2.9.0")
     
