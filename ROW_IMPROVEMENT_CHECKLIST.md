@@ -18,13 +18,39 @@ This checklist provides a step-by-step implementation guide based on ROW_IMPROVE
 ## Phase 0: Test Coverage Assessment & Creation
 
 ### Step 0.1: Analyze Current Test Coverage
-- [ ] Run coverage report: `./gradlew testDebugUnitTestCoverage`
-- [ ] Document current coverage percentage: _____%
-- [ ] Identify critical untested components:
-  - [ ] ViewModels without tests
-  - [ ] Repositories without tests
-  - [ ] Complex UI components without tests
-  - [ ] Navigation logic without tests
+- [x] Run coverage report: `./gradlew testDebugUnitTestCoverage` (Note: task not available, used `./gradlew test` instead)
+- [x] Document current coverage percentage: **VERY LOW** - Only 3 test files found
+- [x] Identify critical untested components:
+  - [x] ViewModels without tests (13 found, 0 tested):
+    - HomeViewModel ⚠️ CRITICAL
+    - DetailsViewModel ⚠️ CRITICAL
+    - SearchViewModel ⚠️ CRITICAL
+    - GenericMoviesViewModel
+    - GenericTvShowsViewModel
+    - IntermediateViewViewModel
+    - OnboardingViewModel
+    - PremiumizeSettingsViewModel
+    - SettingsViewModel
+    - StreamSelectionViewModel
+    - UpdateViewModel
+    - BaseConfigurableViewModel (abstract)
+    - BaseMediaViewModel (abstract)
+  - [x] Repositories without tests (10 found, 1 tested):
+    - MovieRepository ⚠️ CRITICAL
+    - TvShowRepository ⚠️ CRITICAL
+    - HomeRepository ⚠️ CRITICAL
+    - AccountRepository
+    - GenericTraktRepository
+    - IntermediateViewRepository
+    - OmdbRepository
+    - ScraperRepository
+    - SearchRepository
+    - UpdateRepository
+  - [x] Complex UI components without tests:
+    - UnifiedMediaRow (451 lines) ⚠️ CRITICAL
+    - CollectionRow (160 lines)
+    - SimilarContentRow (161 lines)
+  - [x] Navigation logic without tests (No test files found)
 
 ### Step 0.2: Create Tests for Critical Existing Components
 **Before refactoring, ensure safety net exists:**
