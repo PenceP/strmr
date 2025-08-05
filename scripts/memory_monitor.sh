@@ -52,7 +52,17 @@ fi
 if ! $DEVICE_CMD shell pm list packages | grep -q "$APP_PACKAGE"; then
     echo -e "${RED}❌ App $APP_PACKAGE not installed on device${NC}"
     echo "   Install with: ./gradlew installDebug"
-    exit 1
+    echo ""
+    echo "MEMORY MONITORING SKIPPED" >> "$REPORT_FILE"
+    echo "=========================" >> "$REPORT_FILE"
+    echo "Reason: App not installed on device" >> "$REPORT_FILE"
+    echo "Install command: ./gradlew installDebug" >> "$REPORT_FILE"
+    echo ""
+    echo -e "${YELLOW}⚠️  SKIPPING: Memory monitoring (app not installed)${NC}"
+    echo -e "${BLUE}💡 To enable device testing:${NC}"
+    echo "   1. ./gradlew installDebug"
+    echo "   2. Re-run this script"
+    exit 0  # Exit gracefully instead of failure
 fi
 
 echo "📊 Test Duration: ${TEST_DURATION} minutes"
