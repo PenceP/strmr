@@ -15,6 +15,75 @@ This checklist provides a step-by-step implementation guide based on ROW_IMPROVE
 
 ---
 
+## Phase 0: Test Coverage Assessment & Creation
+
+### Step 0.1: Analyze Current Test Coverage
+- [ ] Run coverage report: `./gradlew testDebugUnitTestCoverage`
+- [ ] Document current coverage percentage: _____%
+- [ ] Identify critical untested components:
+  - [ ] ViewModels without tests
+  - [ ] Repositories without tests
+  - [ ] Complex UI components without tests
+  - [ ] Navigation logic without tests
+
+### Step 0.2: Create Tests for Critical Existing Components
+**Before refactoring, ensure safety net exists:**
+
+#### Repository Tests
+- [ ] Create `MovieRepositoryTest` if missing
+  - [ ] Test API calls
+  - [ ] Test database operations
+  - [ ] Test error handling
+- [ ] Create `TvShowRepositoryTest` if missing
+  - [ ] Test similar operations
+- [ ] Create `PlaybackRepositoryTest` if missing
+  - [ ] Test progress tracking
+  - [ ] Test continue watching logic
+- [ ] **VERIFY**: All repository tests pass
+
+#### ViewModel Tests
+- [ ] Create `HomeViewModelTest` if missing
+  - [ ] Test data loading
+  - [ ] Test state management
+  - [ ] Test error states
+- [ ] Create `DetailsViewModelTest` if missing
+  - [ ] Test media details loading
+  - [ ] Test user interactions
+- [ ] **VERIFY**: All ViewModel tests pass
+
+#### Critical UI Component Tests
+- [ ] Create tests for existing row components (before migration):
+  - [ ] `UnifiedMediaRowTest` - capture current behavior
+  - [ ] `CollectionRowTest` - document expected behavior
+  - [ ] `SimilarContentRowTest` - focus/navigation tests
+- [ ] **DOCUMENT**: Current behavior as baseline
+
+### Step 0.3: Create Integration Test Suite
+- [ ] Create `NavigationIntegrationTest`
+  - [ ] Test screen-to-screen navigation
+  - [ ] Test deep linking
+  - [ ] Test back navigation
+- [ ] Create `MediaPlaybackIntegrationTest`
+  - [ ] Test play/pause flow
+  - [ ] Test progress saving
+  - [ ] Test resume functionality
+- [ ] **BASELINE**: Record current performance metrics
+
+### Step 0.4: Establish Testing Guidelines
+- [ ] Create `TESTING_GUIDELINES.md` with:
+  - [ ] Naming conventions for tests
+  - [ ] Required test coverage for new code (minimum 80%)
+  - [ ] Test structure template
+  - [ ] Mock/fake object patterns
+
+### 🔍 **PHASE 0 VERIFICATION**
+- [ ] **Coverage increased** by at least 20%
+- [ ] **All new tests pass**
+- [ ] **Baseline metrics documented**
+- [ ] **COMMIT**: "Phase 0: Test coverage baseline established"
+
+---
+
 ## Phase 1: Foundation & DpadRecyclerView Integration (Week 1)
 
 ### Step 1.1: Add DpadRecyclerView Dependency
@@ -226,6 +295,10 @@ This checklist provides a step-by-step implementation guide based on ROW_IMPROVE
 
 ### Step 2.4: Migrate First Row (Test Case)
 - [ ] Choose simplest row (e.g., CollectionRow)
+- [ ] **CREATE TESTS FIRST** (if missing):
+  - [ ] Write test capturing current behavior
+  - [ ] Document expected focus patterns
+  - [ ] Test edge cases (empty data, single item)
 - [ ] Create backup of original implementation
 - [ ] Replace with new MediaRow
 - [ ] **COMPILE CHECK** ✅
@@ -235,6 +308,7 @@ This checklist provides a step-by-step implementation guide based on ROW_IMPROVE
   - [ ] Click handling works
   - [ ] Focus behavior correct
 - [ ] **PERFORMANCE TEST**: Measure scroll FPS
+- [ ] **REGRESSION TEST**: Original tests still pass
 
 ### 🔍 **PHASE 2 VERIFICATION**
 - [ ] **FULL COMPILE** of entire project
@@ -542,6 +616,52 @@ If any phase fails:
 4. **FIX**: Address root cause
 5. **RETRY**: Smaller incremental change
 
+## Testing Philosophy & Requirements
+
+### When to Create Tests
+
+**ALWAYS create tests when:**
+- 🆕 Adding new functionality
+- 🔧 Fixing bugs (test to prevent regression)
+- 🔄 Refactoring existing code
+- 🚨 Finding untested critical paths
+- 📊 Coverage drops below 80% for a module
+
+### Test Creation Checklist
+
+For **EVERY** new component:
+- [ ] **Unit Test**: Test in isolation
+- [ ] **Integration Test**: Test with dependencies
+- [ ] **Edge Cases**: Empty data, nulls, errors
+- [ ] **Performance Test**: If performance critical
+
+For **EVERY** bug fix:
+- [ ] **Failing Test**: Write test that reproduces bug
+- [ ] **Fix Implementation**: Make test pass
+- [ ] **Regression Test**: Ensure it stays fixed
+
+For **EVERY** refactor:
+- [ ] **Baseline Test**: Capture current behavior
+- [ ] **Refactor Code**: With confidence
+- [ ] **Verify Tests**: All still pass
+
+### Testing Standards
+
+**Minimum Coverage Requirements:**
+- New code: 80% coverage
+- Critical paths: 95% coverage
+- UI components: Snapshot tests + interaction tests
+- Business logic: 100% coverage
+
+**Test Naming Convention:**
+```kotlin
+@Test
+fun `methodName - given condition - should expected behavior`() {
+    // Example:
+    // `loadMovies - given network error - should show error state`
+}
+```
+
 ## Testing Commands Reference
 
 ```bash
@@ -562,6 +682,9 @@ If any phase fails:
 
 # Performance profiling
 # Use Android Studio Profiler during manual testing
+
+# Coverage report location
+# app/build/reports/coverage/testDebugUnitTest/html/index.html
 ```
 
 ## Success Criteria
