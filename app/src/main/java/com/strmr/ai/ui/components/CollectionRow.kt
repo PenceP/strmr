@@ -18,6 +18,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.strmr.ai.ui.components.common.image.PosterImage
 import com.strmr.ai.data.CollectionMovie
 import com.strmr.ai.ui.components.UnifiedMediaRow
 import com.strmr.ai.ui.components.MediaRowConfig
@@ -109,20 +110,12 @@ fun CollectionMovieCard(
                 .background(Color.Gray),
             contentAlignment = Alignment.Center
         ) {
-            if (!movie.poster_path.isNullOrBlank()) {
-                AsyncImage(
-                    model = "https://image.tmdb.org/t/p/w500${movie.poster_path}",
-                    contentDescription = movie.title,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Text(
-                    text = movie.title.firstOrNull()?.uppercase() ?: "?",
-                    color = Color.White,
-                    fontSize = 24.sp
-                )
-            }
+            PosterImage(
+                url = movie.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" },
+                title = movie.title,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
         }
         
         Spacer(modifier = Modifier.height(8.dp))
